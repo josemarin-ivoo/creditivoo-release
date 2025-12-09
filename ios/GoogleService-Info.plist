@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>393027277394-d109vkqe7qr20tic265dkj7arukta0n5.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.393027277394-d109vkqe7qr20tic265dkj7arukta0n5</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>393027277394-0m4qncmqj748ge6inlndjiqsioamhd8n.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBa-mGAq9ko5ASdeahv3DKrH6qUF0oTi8E</string>
+	<key>GCM_SENDER_ID</key>
+	<string>393027277394</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.siragon</string>
+	<key>PROJECT_ID</key>
+	<string>ivoo-ac17a</string>
+	<key>STORAGE_BUCKET</key>
+	<string>ivoo-ac17a.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:393027277394:ios:f223275e0a62a0de97858b</string>
+	<key>DATABASE_URL</key>
+	<string>https://ivoo-ac17a-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>

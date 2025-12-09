@@ -1,0 +1,237 @@
+// import { useLazyQuery, useQuery } from '@apollo/client'
+// import { useNavigation, StackActions } from '@react-navigation/native'
+// import React, { useEffect, useState } from 'react'
+// import { View, Text, Image, TouchableOpacity, FlatList, StatusBar, SafeAreaView, ScrollView, StyleSheet, Button, BackHandler } from 'react-native'
+// import commonStyle from '../../../../commonStyle'
+// import CustomPBar from '../../../Components/CustomPBar'
+// import { Layout } from '../../../Components/Layout'
+// import Helper from '../../../Utils/Helper'
+// import ProgressiveImage from '../../../Components/ProgressiveImage'
+// import { add, log } from 'react-native-reanimated'
+// import { DELETE_DATA, GLOBAL_DATA } from '../../../redux/actionTypes'
+// import { useSelector, useDispatch } from 'react-redux'
+// import { useNetInfo } from "@react-native-community/netinfo";
+// import { CustomButton } from '../../../Components/CustomButton';
+// import { translate } from '../../../locales';
+// import { getAvailablePaymentandShipping, setShipping } from '../../../Queries/queries'
+// import CustomHeader from '../../../Components/CustomHeader'
+// import ResImage from '../../../Utils/Image'
+// import Colors from '../../../Utils/Colors'
+
+// const WayOfTransport = (props) => {
+
+//     const netInfo = useNetInfo();
+//     const navigation = useNavigation();
+//     const dispatch = useDispatch();
+//     const [getAvailable, { loading, error, data }] = useLazyQuery(getAvailablePaymentandShipping);
+//     const [setship, { loading: aLoading, error: aError, data: aData }] = setShipping();
+//     const [selectedShip, setselectedShip] = useState(null);
+//     const [cdID, setCartId] = useState(props.route.params.cartId);
+   
+
+//     useEffect(() => {
+//         error && Helper.ShowAlert(`${error}`);
+//     }, [error])
+
+//     const openDeliveryInfo = () => {
+//         console.log(`Open Delivery Info`)
+//     }
+
+//     useEffect(() => {
+//         const unsubscribe = navigation.addListener('focus', () => {
+//             getAvailable()
+//         });
+//         return unsubscribe;
+//     }, [navigation]);
+
+//     if (data) {
+//         console.log(`========= Way of Transport ============`)
+//         console.log(`${JSON.stringify(data)}`)
+//     }
+
+//     const goBack = () => {
+       
+//         setship(
+//             {
+//                 variables: {
+//                     cID: cdID,
+//                     ccode: selectedShip.id,
+//                     mcode: selectedShip.id,
+//                 }
+//             }
+//         )
+//     }
+
+//     //   Set Shipping API call
+//     useEffect(() => {
+//         aError && Helper.ShowAlert( `${ aError }` );
+        
+//     }, [aError])
+
+//     useEffect(() => {
+//         if (aData) {
+//             if (aData.setBillingAddressOnCart) {
+//                 //let fData = data.customerCart.shipping_addresses.filter(data => data.id == selectedId)
+//                 //navigation.navigate('Checkout', { dID: selectedId , address:fData[0]});
+//             }
+//         }
+//     }, [aData])
+//     /**
+//   * @param item - Items from Response
+//   */
+//     const renderDom = (item: any) => {
+//         return (
+//             <TouchableOpacity style={styles.bg_container} onPress={() => {
+//                 setselectedShip(item)
+//             }}>
+//                 <View style={styles.add_top_container}>
+//                     {
+//                         item.address_type == '1' &&
+//                         <View style={styles.add_inner_container}>
+//                             <ProgressiveImage source={ResImage.ic_add_home_de} style={styles.type_icon} resizeMode="center" />
+//                             <Text style={[commonStyle.h5, styles.text_add_title]}>{translate('address.lbl_home')}</Text>
+//                         </View>
+//                     }
+//                     {
+//                         item.address_type == '2' &&
+//                         <View style={styles.add_inner_container}>
+//                             <ProgressiveImage source={ResImage.ic_add_work} style={styles.type_icon} resizeMode="center" />
+//                             <Text style={[commonStyle.h5, styles.text_add_title]}>{translate('address.lbl_work')}</Text>
+//                         </View>
+//                     }
+//                     {
+//                         item.address_type != '1' && item.address_type != '2' &&
+//                         <View style={styles.add_inner_container}>
+//                             <ProgressiveImage source={ResImage.ic_add_other} style={styles.type_icon} resizeMode="center" />
+//                             <Text style={[commonStyle.h5, styles.text_add_title]}>{translate('address.lbl_other')}</Text>
+//                         </View>
+//                     }
+//                     {
+//                         selectedShip.id == item.id &&
+//                         <ProgressiveImage source={ResImage.ic_checked_green} style={styles.close_icon} resizeMode="center" />
+//                     }
+
+//                 </View>
+//                 <View style={styles.container_address}>
+//                     {
+//                         (item.firstname || item.lastname) &&
+//                         <Text style={styles.text_address_name}>{item.firstname} {item.lastname}</Text>
+
+//                     }
+//                     {
+//                         (item.apartment_number || item.street) &&
+//                         <Text style={styles.text_address}>{item.street} {item.apartment_number}</Text>
+
+//                     }
+
+//                     <Text style={styles.text_address}>{item.city}, {item.postcode}</Text>
+//                 </View>
+//             </TouchableOpacity>
+//         );
+//     }
+
+//     const renderItem = ({ item }) => {
+//         return renderDom(item)
+//     };
+
+//     return <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+//         <CustomHeader gradientHeader={false} gradientHeaderOption={false} scrolledValue={false} />
+//         <StatusBar backgroundColor="transparent"  barStyle="dark-content" />
+//         <Text style={[commonStyle.h2, commonStyle.fontBold, { color: "#000", backgroundColor: "#fff", padding: 16 }]}>{/* Delivery */}{'Way of transportation'}</Text>
+//         <ScrollView style={commonStyle.padding_16}>
+//             {
+//                 data &&
+//                 (data.customerCart.shipping_addresses.length == 0 ? <Text style={[commonStyle.h5, { marginTop: 20 }]}>
+//                     {/* No Address Found */}
+//                     {'No Method found'}
+//                 </Text>
+//                     : <FlatList
+//                         data={data.customerCart.shipping_addresses}
+//                         renderItem={renderItem}
+//                         keyExtractor={(item) => `${item.id}`}
+//                         numColumns={1}
+//                         style={{ flex: 1, paddingTop: 40 }} />
+//                 )
+//             }
+//         </ScrollView>
+//         <CustomPBar showProgress={loading} />
+//     </SafeAreaView>
+// }
+
+// const styles = StyleSheet.create({
+
+//     page_sub_title: {
+//         fontSize: 20,
+//         lineHeight: 28,
+//         fontFamily: 'Gilroy-Regular',
+//         fontWeight: '700'
+//     },
+
+//     type_icon: {
+//         width: 24,
+//         height: 24
+//     },
+//     close_icon: {
+//         width: 24,
+//         height: 24,
+//     },
+
+//     btn_submit: {
+//         fontWeight: '600',
+//         color: 'white'
+//     },
+//     text_header: {
+//         marginTop: 8,
+//     },
+//     bg_container: {
+//         backgroundColor: Themecolors.InputBoxBGColor,
+//         justifyContent: 'center',
+//         alignContent: 'center',
+//         borderRadius: 16,
+//         flexDirection: 'column',
+//         marginBottom: 24
+//     },
+//     add_top_container: {
+//         flex: 1,
+//         flexDirection: 'row',
+//         justifyContent: 'space-between',
+//         alignItems: 'center',
+//         height: 30,
+//         margin: 16,
+//         marginTop: 12,
+//         marginBottom: 4
+//     },
+//     add_inner_container: {
+//         width: '80%',
+//         flexDirection: 'row',
+//         alignItems: 'center',
+//         justifyContent: 'flex-start',
+//     },
+//     text_add_title: {
+//         paddingLeft: 10,
+//         fontWeight: '700'
+//     },
+//     text_address: {
+//         fontSize: 14,
+//         fontFamily: 'Inter-Regular',
+//         lineHeight: 24,
+//         paddingBottom: 4,
+//         fontWeight: '400'
+//     },
+//     text_address_name: {
+//         fontSize: 14,
+//         fontFamily: 'Inter-Regular',
+//         lineHeight: 24,
+//         paddingBottom: 4,
+//         fontWeight: '600'
+//     },
+//     container_address: {
+//         paddingLeft: 48,
+//         paddingRight: 48,
+//         flexDirection: 'column',
+//         justifyContent: 'flex-start',
+//         paddingBottom: 12
+//     }
+// })
+
+// export default WayOfTransport

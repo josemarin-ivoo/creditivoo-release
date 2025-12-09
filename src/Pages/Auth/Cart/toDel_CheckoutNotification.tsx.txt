@@ -1,0 +1,66 @@
+import React, { useState } from 'react';
+import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { Text, Overlay } from 'react-native-elements';
+import { usesAutoDateAndTime } from 'react-native-localize';
+import commonStyle from '../../../../commonStyle';
+// import { translate } from '../../../locales';
+import ResColors from '../../../../src/Utils/Colors'
+import { useNavigation } from '@react-navigation/native';
+import ProgressiveImage from '../../../Components/ProgressiveImage';
+import ResImage from '../../../../src/Utils/Image';
+import { translate } from '../../../locales';
+
+const CheckoutNotification = (props) => {
+    const [visible, setVisible] = useState(props.visibleView);
+    const [showGuestLoginState, setShowGuestLogin] = useState('hide')
+    const navigation = useNavigation();
+
+
+    return (
+
+        <View style={{ margin: 15 }}>
+            <Overlay overlayStyle={{ borderRadius: 24, margin: 24 }} isVisible={visible} onBackdropPress={props.OnClose} >
+                <View style={[styles.mainContainer]}>
+                    <View style={{ alignItems: 'center', justifyContent: "center", }}>
+                        <ProgressiveImage
+                            source={ResImage.ic_checkout_notification}
+                            resizeMode="center"
+                            style={styles.notification_icon}
+                        />
+                        <Text style={[commonStyle.h2, commonStyle.fontBold, { color: ResColors.black, backgroundColor: ResColors.white, padding: 16 }]}>{translate('notificationmodal.lbl_notification')}</Text>
+                        <Text style={styles.desc_notification}> {translate('notificationmodal.msg_notify')}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <TouchableOpacity
+                            style={[commonStyle.btngreay, { width: "51%", }]} >
+                            <Text style={[commonStyle.h5, commonStyle.fontBold, { color:ResColors.blackShade, paddingTop: 8 }]}>{translate('notificationmodal.lbl_maybe')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[commonStyle.btnaddcart, { width: "47%" }]} >
+                            <Text style={[commonStyle.h5, commonStyle.fontBold, { color: ResColors.white, }]}>{translate('notificationmodal.lbl_allow')}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                </View>
+            </Overlay>
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    mainContainer: { padding: 16, backgroundColor: ResColors.white },
+    msg_signIn_Text: { fontSize: 24, textAlign: "center" },
+    notification_icon: {
+        width: 105,
+        height: 127
+    },
+    desc_notification: {
+        fontSize: 16,
+        lineHeight: 24,
+        color: ResColors.Gray,
+        textAlign: "center",
+        marginBottom: 40
+    }
+})
+
+export default CheckoutNotification

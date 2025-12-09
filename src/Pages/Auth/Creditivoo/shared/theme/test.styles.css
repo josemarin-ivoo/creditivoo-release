@@ -1,0 +1,105 @@
+/* Default */
+:root {
+  --primary: #0564d4;
+  --secondary: #ff6a00;
+  --background: #f6f8fa;
+  --white: #fff;
+  --black: #101214;
+  --button: #1c1e21;
+  --shadow: #757575;
+  --text: #30363b;
+  --borderColor: #d0d7de;
+  --borderColorDark: #333942;
+  --placeholder: #a1a1a1;
+  --danger: rgb(208, 2, 27);
+  --title: rgb(102, 102, 102);
+  --separator: rgb(194, 194, 195);
+  --highlight: rgb(199, 198, 203);
+  --blackOverlay: rgba(0, 0, 0, 0.6);
+  --iconWhite: #fff;
+  --iconBlack: #101214;
+  --dynamicWhite: #fff;
+  --dynamicBlack: #1c1e21;
+  --dynamicBackground: #fff;
+  --transparent: transparent;
+  --calpyse: #2b7488;
+}
+
+/* Orange */
+:root {
+  --mainOrange: #f93b00;
+  --orange20: #ff5c33;
+  --orange40: #ff7d66;
+  --orange60: #ffb399;
+  --orange80: #ffe0cc;
+}
+
+/* Bronze */
+:root {
+  --darkBronze: #875202;
+  --golden: #dda921;
+  --mango: #fdc228;
+  --blond: #ffecba;
+  --floralWhite: #fffaec;
+}
+
+/* Purple */
+:root {
+  --americanPurple: #540f55;
+  --violet: #963898;
+  --pearlyPurple: #b462b6;
+  --brightGray: #f2e1f2;
+  --powder: #fff6ff;
+}
+
+/* Maroon */
+:root {
+  --maroon: #6f1212;
+  --goldenGateBrigde: #b83232;
+  --jellyBean: #e05555;
+  --palePink: #ffd6d6;
+  --snow: #fff6f6;
+}
+
+/* Green */
+:root {
+  --laSalleGreen: #117031;
+  --seaGreen: #289b4f;
+  --shamrock: #4da66b;
+  --brightGreen: #e6f6ec;
+  --mintCream: #f4fff8;
+}
+
+/* Grass */
+:root {
+  --grass: #0b453b;
+  --emerald: #2a907e;
+  --verdigris: #4fbca8;
+  --columbiaBlue: #c9ebe5;
+  --bubbles: #e9fffb;
+}
+
+/* Blue */
+:root {
+  --catalinaBlue: #020056;
+  --celticBlue: #343a87;
+  --bleuDeFrance: #5756b8;
+  --cloud: #797be9;
+  --ghostWhite: #9c9dff;
+}
+
+/* Black */
+:root {
+  --black: #191919;
+  --blackCoral: #535d66;
+  --slateGray: #78838d;
+  --sliverSand: #bac2c7;
+  --azureishWhite: #e1e3ed;
+}
+
+/* White */
+:root {
+  --aliceBlue: #edeff6;
+  --cultured: #f7f8fe;
+  --white: #ffffff;
+}

@@ -1,0 +1,66 @@
+// import { useNavigation } from '@react-navigation/native'
+// import React, { useState } from 'react'
+// import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native'
+// import commonStyle from '../../../../commonStyle'
+// import CustomPBar from '../../../Components/CustomPBar'
+// import ProgressiveImage from '../../../Components/ProgressiveImage'
+// import { translate } from '../../../locales'
+// import imgs from '../../../Utils/Image'
+// import clr from '../../../Utils/Colors'
+
+//const WishtList = () => {
+  //  const [] = useState(null);
+   // const navigation = useNavigation();
+
+   
+
+    // const renderDom = (item: any) => {
+    //     return (
+    //         <TouchableOpacity style={{ marginHorizontal: 10 }} onPress={() => navigation.navigate("ProductDetails", {id: item.sku})}>
+    //             <View style={commonStyle.productCard}>
+    //                 <View style={{ flexDirection: "row", flexWrap: "nowrap",overflow: 'hidden', backgroundColor:clr.white  , position: "relative", borderRadius: 16, justifyContent: "center" }}>
+    //                     {
+    //                         item.small_image != undefined &&
+    //                         <View>
+    //                             <ProgressiveImage
+    //                                 source={{ uri: item.small_image.url }}
+    //                                 style={[commonStyle.he_wi_170]}
+    //                                 resizeMode="cover"
+    //                             />
+    //                         </View>
+    //                     }
+    //                     <View style={[commonStyle.wishlistImage]}>
+    //                         <ProgressiveImage
+    //                             source={imgs.ic_wishlist}
+    //                                 style={[commonStyle.he_wi_30]}
+    //                             resizeMode="stretch"
+    //                         />
+
+    //                     </View>
+    //                 </View>
+    //                 <Text style={[commonStyle.h6, { lineHeight: 16, marginTop: 5, width: 150 }]}>{item.name}</Text>
+    //                 <View style={{ flexDirection: "row" }}>
+    //                     <View style={{ marginRight: 10 }}>
+    //                         <Text style={[commonStyle.h6, { lineHeight: 16, marginTop: 5, color: ResColor.disc_rate_clr, textDecorationLine: "line-through" }]}>{`$${item.price_range.minimum_price.regular_price.value}`}</Text>
+    //                     </View>
+    //                     <View>
+    //                         <Text style={[commonStyle.h6, commonStyle.fontBold, { lineHeight: 16, marginTop: 5, color: ResColor.pink_product_price }]}>{`$${item.price_range.maximum_price.regular_price.value}`}</Text>
+    //                     </View>
+    //                 </View>
+    //             </View>
+    //         </TouchableOpacity>
+    //     );
+    // }
+ //   return <></>
+//     <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+//         <View style={{ padding: 16 }}>
+//             <Text style={[commonStyle.h2, commonStyle.fontBold, { marginBottom: 10, alignSelf: "center" }]}>
+//                 {/* No Item in cart */}
+//                 {translate('cart.lbl_no_cart_item')}
+//                 </Text>
+//             <CustomPBar showProgress={false} />
+//         </View>
+//   </SafeAreaView>
+//}
+
+//export default WishtList

@@ -1,0 +1,322 @@
+{
+  "appName": "ivoo app",
+  "lbl_version": "Versión",
+  "navigation": {
+    "home": "Startseite"
+  },
+  "email": {
+    "msg_email_valid": "Por favor introduzca un correo electrónico válido"
+  },
+  "progressbar": {
+    "loading_text": "Cargando..."
+  },
+  "home": {
+    "lbl_seeall": "Ver todo",
+    "msg_offline": "Estás desconectado !!!",
+    "lbl_your_orders_process": "Estatus de tus pedidos",
+    "msg_error": "Algo salió mal, Inténtalo de nuevo.",
+    "lbl_alert": "Lo sentimos 😥",
+    "lbl_logouttext": "Su sesión ha sido cerrada, por favor ingrese de nuevo."
+  },
+  "splash": {
+    "msg_signIn": "Para administrar su cuenta, inicia sesión",
+    "msg_LoginOverlay1": "Para continuar,",
+    "msg_LoginOverlay2": "Por favor, registrese"
+  },
+  "address": {
+    "lbl_new_address": "Nueva direccion",
+    "lbl_save_address": "Guardar la dirección",
+    "lbl_optional": "Opcional",
+    "lbl_note_for_courier": "Nota para el mensajero",
+    "lbl_appartment_number": "Número apartamento",
+    "lbl_streename_number": "Calle y número",
+    "lbl_urbanization": "Dirección",
+    "lbl_city": "Ciudad",
+    "lbl_last_name": "Apellido",
+    "lbl_first_name": "Primer nombre",
+    "lbl_enter_fname": "Ponga su primer nombre",
+    "lbl_enter_lname": "Introduzca su apellido",
+    "lbl_enter_city": "Ingrese ciudad de entrega",
+    "lbl_enter_urbanization": "Introduzca su dirección de envío",
+    "lbl_enter_stree_name": "Introduzca su nombre de la calle y número",
+    "lbl_enter_appartment": "Introduzca su número de apartamento",
+    "lbl_home": "Hogar",
+    "lbl_work": "Trabajo",
+    "lbl_other": "Otro",
+    "lbl_addresses": "Direcciones",
+    "lbl_add_new_address": "Agregar nueva dirección",
+    "lbl_appartment_optional": "Número Residencia (opcional)",
+    "lbl_note_courier_optional": "Nota para el mensajero (opcional)",
+    "lbl_postal_code": "Código postal",
+    "msg_address_added": "Nueva dirección Agregada",
+    "lbl_show_map": "Mostrar mapa",
+    "lbl_nearest_city": "La ciudad mas cercana",
+    "lbl_addrs": "Nota de envío",
+    "lbl_addrs_input": "Escriba su nota de envío",
+    "lbl_person_id": "Prueba de identificación de la persona",
+    "lbl_person_id_details": "Ingrese los detalles de identificación",
+    "lbl_receiver_address": "Dirección",
+    "lbl_representative": "Representante",
+    "lbl_address_note": "La dirección se puede cambiar desde el perfil"
+  },
+  "recipient": {
+    "lbl_add_recipient": "Agregar nueva representante",
+    "lbl_recipient": "Representante"
+  },
+  "contactus_form": {
+    "lbl_heading": "Contáctenos",
+    "lbl_name": "Nombre",
+    "lbl_email": "Correo electrónico",
+    "lbl_subject": "Sujeto",
+    "lbl_message": "Tu mensaje",
+    "placeholder_name": "Tu nombre",
+    "placeholder_email": "Dirección de correo electrónico",
+    "placeholder_subject": "Escribir su tema",
+    "placeholder_message": "Tu mensaje",
+    "submit_btn": "Enviar",
+    "msg_error": "Algo salió mal, Inténtalo de nuevo."
+  },
+  "social_login": {
+    "lbl_continue_with_apple": "Continuar con Apple",
+    "lbl_continue_with_facebook": "Continuar con Facebook",
+    "lbl_continue_with_google": "Continuar con Google",
+    "lbl_continue_with_email": "Continuar con email",
+    "lbl_try_app_now": "Explorar Ivoo App "
+  },
+  "pre_login": {
+    "lbl_fill_email": "Inicie sesión con correo electrónico",
+    "lbl_email_address": "Correo electrónico",
+    "lbl_password": "Contraseña",
+    "lbl_forgot_password": "He olvidado la contraseña",
+    "lbl_sign_in": "Registrarse",
+    "forgot_password": "¿Se te olvidó tu contraseña?",
+    "enter_email_for_account": "Introduzca la dirección de correo",
+    "lbl_submit": "Guardar",
+    "lbl_new_password": "Nueva contraseña",
+    "lbl_enter_otp": "Introduzca OTP",
+    "lbl_sign_up": "Regístrate",
+    "lbl_dont_have_account": "No tienes cuenta?",
+    "lbl_create_account": "Crear una nueva cuenta",
+    "msg_mobile_not_registered": "Su número de móvil no está registrado",
+    "lbl_email": "Correo electrónico",
+    "lbl_enter_your_email": "Introduzca su correo",
+    "lbl_citizen_id": "Numero de Cédula (ID)",
+    "lbl_enter_id_number": "Introduzca su número de cédula ",
+    "lbl_enter_phone_number": "Número de teléfono",
+    "lbl_sendOTP": "Enviar OTP",
+    "lbl_change_mob_num_Q": "Cambiar el número de telefono?",
+    "lbl_enter_your_phone_number": "Ingrese su número telefónico",
+    "lbl_type_password": "Escribe tu contraseña",
+    "lbl_create_an_account": "Crear cuenta",
+    "lbl_phone_number_verification": "Verifique su número de teléfono",
+    "lbl_sent_to_your_mobile": "El código OTP fue enviado a su número de teléfono.",
+    "lbl_you_can_send_after": "Si no recibe el código, puede solicitarlo de nuevo después de los siguientes",
+    "lbl_minutes": "Minutos.",
+    "lbl_resend_the_code": "Vuelva a enviar el código ",
+    "lbl_account_created": "Tu cuenta ha sido creada",
+    "lbl_thank_you_for_registration": "Felicidades por su nueva cuenta!",
+    "lbl_explore_app": "Explorar la aplicación",
+    "lbl_Continue": "Seguir",
+    "msg_incorrect_otp": "OTP incorrecta",
+    "lbl_first_name": "Primer nombre",
+    "lbl_enter_fname": "Ponga su primer nombre",
+    "lbl_last_name": "Apellido",
+    "lbl_enter_lname": "Introduzca su apellido",
+    "lbl_code": "Código"
+  },
+  "changepassword_form": {
+    "lbl_heading": "Cambia la contraseña",
+    "lbl_current_password": "Contraseña actual",
+    "lbl_new_password": "Nueva contraseña",
+    "lbl_confirm_new_password": "Confirmar nueva contraseña",
+    "placeholder_current_password": "Introduzca la contraseña actual",
+    "placeholder_new_password": "Nueva contraseña",
+    "placeholder_confirm_new_password": "Confirmar nueva contraseña",
+    "success_message": "Tu contraseña ha sido cambiada exitosamente",
+    "confirm_password_not_match": "La nueva contraseña no coincide con la confirmación de contraseña",
+    "submit_btn": "cambia la contraseña"
+  },
+  "cardDetails": {
+    "lbl_noOffers": "Insufficient offers data"
+  },
+  "profile": {
+    "lbl_logout": "Cerrar sesión",
+    "lbl_bug_report": "Informe de error",
+    "lbl_contact_form": "Formulario de contacto",
+    "lbl_contact": "Contacto",
+    "lbl_change_pwd": "Cambia la contraseña",
+    "lbl_mypurchases": "Mis compras",
+    "lbl_credit_card": "Mis Tarjetas",
+    "lbl_ordered_products": "Mis pedidos",
+    "lbl_myaccount": "Mi cuenta",
+    "lbl_favourites": "Mis favoritos",
+    "msg_fail_to_logout": "No se ha podido Salir de aplicación, inténte de nuevo",
+    "lbl_order_history": "Historial de pedidos",
+    "lbl_change_permision": "Cambiar permisos",
+    "lbl_delete_accout":"Borrar Cuenta",
+    "title_delete_accout":"¿Está seguro de que desea eliminar su cuenta?",
+    "msg_delete_user_accout":"Vas a eliminar tu cuenta, esta acción eliminará la siguiente\n- Su cuenta de inicio de sesión\n- Los detalles de tu perfil\n- Los artículos de su carrito actual, excepto los detalles del pedido realizado anteriormente.\n- Tus tarjetas de pago registradas, en su caso.\n\nNota: Si tiene un pedido activo, no puede eliminar la cuenta.",
+    "lbl_chat": "Charlar"
+  },
+  "addrslist": {
+    "msg_fail_del_address": "No se pudo eliminar Dirección, inténtelo de nuevo",
+    "msg_addres_del_success": "Dirección eliminada correctamente",
+    "lbl_noaddrs": "Dirección no encontrada",
+    "lbl_addrs_update": "Dirección Actualizado"
+  },
+  "filter": {
+    "lbl_filter": "Filtrar",
+    "lbl_clearall": "Despejar filtros",
+    "lbl_apply": "Aplicar",
+    "lbl_reset": "Reiniciar"
+  },
+  "search": {
+    "lbl_recent_search": "Búsquedas recientes",
+    "lbl_product_search": "Sugerencias de producto",
+    "lbl_search": "Búsqueda",
+    "lbl_locationsearch": "sugerencias",
+    "lbl_location_lastSel": "última seleccionado",
+    "lbl_no_result": "No se han encontrado resultados a tu búsqueda"
+  },
+  "products": {
+    "lbl_no_product_found": "No se han encontrado productos",
+    "lbl_no_product_details_found": "No se han encontrado Detalle del producto",
+    "lbl_similar_product": "Productos similares",
+    "lbl_product": "Producto",
+    "lbl_spec": "Spec",
+    "lbl_desc": "Descripción",
+    "lbl_pieces": "Disponibilidad ",
+    "lbl_extra_accessories": "Accesorios ",
+    "lbl_specification": "Especificación",
+    "lbl_price": "Precio",
+    "lbl_pay": "Pagar",
+    "lbl_add_to_cart": "Añadir al carrito",
+    "lbl_in_stock": "En stock",
+    "lbl_out_stock": "Agotado",
+    "lbl_show_more": "Ver mas",
+    "lbl_show_less": "Ver menos",
+    "lbl_id": "Identificación",
+    "lbl_added_product_success": "El producto ha sido añadido a tu carrito."
+  },
+  "cart": {
+    "lbl_no_cart_item": "Ningún artículo",
+    "lbl_empty_cart": "Tu carrito esta vacío",
+    "lbl_qty": "Cantidad",
+    "lbl_cart_title": "Carrito",
+    "lbl_checkout": "Finalizar compra ",
+    "lbl_sub_total": "Cantidad total"
+  },
+  "notificationmodal": {
+    "lbl_notification": "Notificaciones",
+    "msg_notify": " Podemos notificarle cuando se cambia el estado del pedido.",
+    "lbl_maybe": "Quizas mas tarde",
+    "lbl_allow": "Permitir"
+  },
+  "orderaccepted": {
+    "msg_order_accepted": "¡Felicidades por tu compra!",
+    "msg_order_status": "Te notificaremos cuando tu orden esté llegando",
+    "lbl_done": "Continuar"
+  },
+  "wishlist": {
+    "lbl_favourites": "Mis favoritos",
+    "lbl_enter_fname": "Ponga su primer nombre",
+    "lbl_enter_lname": "Introduzca su apellido",
+    "lbl_enter_city": "Ingrese ciudad de entrega",
+    "lbl_enter_urbanization": "Introduzca su urbanización",
+    "lbl_enter_stree_name": "Introduzca su nombre de la calle y número",
+    "lbl_enter_appartment": "Introduzca su número de apartamento",
+    "lbl_home": "Hogar",
+    "lbl_work": "Trabajo",
+    "lbl_other": "Otro",
+    "lbl_addresses": "Direcciones",
+    "lbl_add_new_address": "Agregar nueva dirección",
+    "lbl_appartment_optional": "Número Residencia (opcional)",
+    "lbl_note_courier_optional": "Nota para el mensajero (opcional)",
+    "lbl_postal_code": "Código postal"
+  },
+  "order": {
+    "lbl_order": "Orden",
+    "lbl_order_history": "Historial de pedidos",
+    "lbl_no_order_found": "Orden no encontrada ",
+    "lbl_status": "Estado",
+    "lbl_date": "Fecha y hora de entrega",
+    "lbl_products": "Productos",
+    "lbl_billing_address": "Dirección de Envio",
+    "lbl_address_here": "Dirección aquí",
+    "lbl_shipping_address": "Dirección de Envío",
+    "lbl_delivery_method": "Método de entrega",
+    "lbl_payment": "Pago",
+    "lbl_cancel": "Cancelar",
+    "lbl_total_amt": "Monto total",
+    "lbl_amt": "Cantidad",
+    "lbl_Continue": "Continuar",
+    "msg_order_cancel": "Tu orden ha sido cancelada",
+    "lbl_ordervalidate": "Rellenar los datos requeridos",
+    "lbl_representative_address": "Dirección del representante"
+  },
+  "changeMobile": {
+    "lbl_change_mob_num_title": "Cambie el número",
+    "lbl_change_mob_num": "Cambiar número de telefono"
+  },
+  "checkout": {
+    "lbl_delivery": "Delivery",
+    "lbl_to_the_address": "A la dirección",
+    "lbl_to_the_pickpoint": "Punto de pickup",
+    "lbl_select_payment": "Seleccione metodo de pago",
+    "lbl_finish_and_order": "Continuar con orden y pagar",
+    "lbl_deliveryfee": "Costo de envio",
+    "lbl_continue_checkout": "Continuar a la comprobación",
+    "lbl_pickup": "Punto de pickup",
+    "lbl_set_delivery_window": "Seleccione ventana de entrega",
+    "lbl_fill_delivery_info": "Complete la información de entrega",
+    "lbl_iVoo_Pay": "iVoo pagar",
+    "lbl_delivery_title": "Fecha y hora de entrega",
+    "lbl_store": "Tienda",
+    "lbl_receipient_can_receive_order": "¿Recibe otra persona?",
+    "lbl_receipient_address": "Seleccione la dirección del representante"
+  },
+  "selectdelivery": {
+    "lbl_select_address": "Seleccionar dirección",
+    "lbl_send_point": "Enviar a este punto",
+    "lbl_add_new_address": "agregar nueva dirección"
+  },
+  "Intro": {
+    "lbl_skip": "Saltar",
+    "lbl_done": "Continuar",
+    "lbl_next": "Siguiente"
+  },
+  "payment": {
+    "lbl_add_pay_method": "Agregar nuevo método de pago",
+    "lbl_incash": "Pagar en la entrega",
+    "lbl_credit_card_placeholder": "Su número de tarjeta de crédito",
+    "lbl_date_placeholder": "MM / AAAA",
+    "lbl_cvv_code": "Código",
+    "lbl_save_credit": "Guardar la tarjeta de crédito",
+    "lbl_credt_card_title": "Número de tarjeta de crédito",
+    "lbl_credit_page_title": "Añadir nueva tarjeta de crédito",
+    "lbl_scan_card": "Escaneo de tarjetas de crédito",
+    "lbl_no_money": "Dinero insuficiente",
+    "lbl_sendpayslip": "Enviar el comprobante de pago",
+    "lbl_docno": "Ingresar documento"
+  },
+  "addpayment": {
+    "lbl_expiration_date": "Fecha de caducidad"
+  },
+  "DateTimeSlot": {
+    "lbl_dttime_title": "Fecha y hora de entrega"
+  },
+  "pickup": {
+    "lbl_noPickup": "Ninguna recogida encontrado ubicación"
+  },
+  "NewPaymentMethods": {
+    "zelleTitle": "Zelle",
+    "movilTitle": "Pago Movil",
+    "bolivaresTitle": "Transferencia en Bolivares",
+    "paypalTitle": "Paypal",
+    "banescoTitle": "Banesco Panamá"
+  },
+  "coupon": {
+    "couponSubmit": "Confirmar",
+    "couponPlaceholder": "Ingresar código aquí"
+  }
+}

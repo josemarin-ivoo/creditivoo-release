@@ -1,0 +1,307 @@
+{
+  "appName": "ivoo",
+  "lbl_version": "version",
+  "navigation": {
+    "home": "Home"
+  },
+  "email": {
+    "msg_email_valid": "Please enter valid email"
+  },
+  "progressbar": {
+    "loading_text": "Loading..."
+  },
+  "home": {
+    "lbl_seeall": "See All",
+    "msg_offline": "Your are offline!!!",
+    "lbl_your_orders_process": "Your orders process",
+    "msg_error": "Something Went Wrong. Please try again",
+    "lbl_alert": "Alert",
+    "lbl_logouttext": "You have been logout from other device you logged in."
+  },
+  "splash": {
+    "msg_signIn": "For managing your account, please sign in",
+    "msg_LoginOverlay1": "In order to continue,",
+    "msg_LoginOverlay2": "please sign in"
+  },
+  "address": {
+    "lbl_new_address": "New address",
+    "lbl_save_address": "Save the address",
+    "lbl_optional": "optional",
+    "lbl_note_for_courier": "Note for courier",
+    "lbl_appartment_number": "Appartment number",
+    "lbl_streename_number": "Street name and number",
+    "lbl_urbanization": "Building name",
+    "lbl_city": "City",
+    "lbl_last_name": "Last Name",
+    "lbl_first_name": "First Name",
+    "lbl_enter_fname": "Enter your first name",
+    "lbl_enter_lname": "Enter your last name",
+    "lbl_enter_city": "Enter your city",
+    "lbl_enter_urbanization": "Enter your Building Name",
+    "lbl_enter_stree_name": "Enter your street name and number",
+    "lbl_enter_appartment": "Enter your appartment number",
+    "lbl_home": "Home",
+    "lbl_work": "Work",
+    "lbl_other": "Other",
+    "lbl_addresses": "Addresses",
+    "lbl_add_new_address": "Add new address",
+    "lbl_appartment_optional": "Appartment number (optional)",
+    "lbl_note_courier_optional": "Note for courier (optional)",
+    "lbl_postal_code": "Postal Code",
+    "msg_address_added": "New Address Added",
+    "lbl_show_map": "Show Map",
+    "lbl_nearest_city": "Nearest City",
+    "lbl_addrs": "Address",
+    "lbl_addrs_input": "Address",
+    "lbl_person_id": "Proof of identification of the person",
+    "lbl_person_id_details": "Enter identification details",
+    "lbl_receiver_address": "Address",
+    "lbl_representative": "Representative",
+    "lbl_address_note": "Address can be changed from profile"
+  },
+  "recipient": {
+    "lbl_add_recipient": "Add new representative",
+    "lbl_recipient": "Representative"
+  },
+  "contactus_form": {
+    "lbl_heading": "Contact us",
+    "lbl_name": "Name",
+    "lbl_email": "Email",
+    "lbl_subject": "Subject",
+    "lbl_message": "Your message",
+    "placeholder_name": "Your Name",
+    "placeholder_email": "Email address",
+    "placeholder_subject": "Write your subject",
+    "placeholder_message": "Your message",
+    "submit_btn": "submit",
+    "msg_error": "Something Went Wrong. Please try again"
+  },
+  "social_login": {
+    "lbl_continue_with_apple": "Continue with Apple",
+    "lbl_continue_with_facebook": "Continue with Facebook",
+    "lbl_continue_with_google": "Continue with Google",
+    "lbl_continue_with_email": "Continue with email",
+    "lbl_try_app_now": "Try the app now!"
+  },
+  "pre_login": {
+    "lbl_fill_email": "Fill in your email",
+    "lbl_Continue": "Continue",
+    "lbl_password": "Password",
+    "lbl_forgot_password": "I have forgot the password",
+    "lbl_sign_in": "Sign In",
+    "forgot_password": "Forgot password?",
+    "enter_email_for_account": "Enter the email address with your account",
+    "lbl_submit": "Submit",
+    "lbl_new_password": "New Password",
+    "lbl_enter_otp": "Enter OTP",
+    "lbl_sign_up": "Sign up",
+    "lbl_dont_have_account": "You don't have account ?",
+    "lbl_create_account": "Create new account",
+    "msg_mobile_not_registered": "your mobile number is not registered with server",
+    "lbl_last_name": "Last Name",
+    "lbl_first_name": "First Name",
+    "lbl_enter_fname": "Enter your first name",
+    "lbl_enter_lname": "Enter your last name",
+    "lbl_email": "Email",
+    "lbl_enter_your_email": "Enter your email",
+    "lbl_citizen_id": "Citizen ID",
+    "lbl_enter_id_number": "Enter your ID number",
+    "lbl_enter_phone_number": "Phone number",
+    "lbl_sendOTP": "Send OTP",
+    "lbl_change_mob_num_Q": "Change mobile number ?",
+    "lbl_enter_your_phone_number": "Enter your phone number",
+    "lbl_type_password": "Type your password",
+    "lbl_create_an_account": "Create an account",
+    "lbl_phone_number_verification": "Phone number verification",
+    "lbl_sent_to_your_mobile": "OTP code sent to your mobile number.",
+    "lbl_you_can_send_after": "You can able to resend after",
+    "lbl_minutes": "minutes.",
+    "lbl_resend_the_code": "Resend the code",
+    "lbl_account_created": "Your account has been created",
+    "lbl_thank_you_for_registration": "Thank you for your registration.",
+    "lbl_explore_app": "Explore the app",
+    "lbl_email_address": "Email Address",
+    "msg_incorrect_otp": "Incorrect OTP",
+    "lbl_code": "code"
+  },
+  "changepassword_form": {
+    "lbl_heading": "Change Password",
+    "lbl_current_password": "Current Password",
+    "lbl_new_password": "New Password",
+    "lbl_confirm_new_password": "Confirm New Password",
+    "placeholder_current_password": "Type Current password",
+    "placeholder_new_password": "Type New Password",
+    "placeholder_confirm_new_password": "Confirm New password",
+    "success_message": "Your password has been changed successfully",
+    "confirm_password_not_match": "New password does not match with confirm password",
+    "submit_btn": "change password"
+  },
+  "cardDetails": {
+    "lbl_noOffers": "Insufficient offers data"
+  },
+  "profile": {
+    "lbl_logout": "Logout",
+    "lbl_bug_report": "Bug report",
+    "lbl_contact_form": "Contact form",
+    "lbl_contact": "Contact",
+    "lbl_change_pwd": "Change Password",
+    "lbl_mypurchases": "My purchases",
+    "lbl_credit_card": "Credit Cards",
+    "lbl_ordered_products": "Ordered products",
+    "lbl_myaccount": "My account",
+    "lbl_favourites": "My favourites",
+    "msg_fail_to_logout": "Failed to Logout from App, Please try again",
+    "lbl_order_history": "Order history",
+    "lbl_change_permision": "Change permission",
+    "lbl_delete_accout":"Delete Account",
+    "title_delete_accout":"Are you sure you want to delete your account?",
+    "msg_delete_user_accout":"You are going to delete your account, this action will delete your login account, profile details, cart items, and registered payment cards if any.",
+    "lbl_chat": "Chat"
+  },
+  "addrslist": {
+    "msg_fail_del_address": "Failed to Delete Address, Please try Again",
+    "msg_addres_del_success": "Address Deleted successfully",
+    "lbl_noaddrs": "No Address Found",
+    "lbl_addrs_update": "Address Updated"
+  },
+  "filter": {
+    "lbl_filter": "Filter",
+    "lbl_clearall": "Clear all",
+    "lbl_apply": "Apply",
+    "lbl_reset": "Reset"
+  },
+  "search": {
+    "lbl_recent_search": "Recent Search",
+    "lbl_product_search": "Product Suggestions",
+    "lbl_search": "Search",
+    "lbl_locationsearch": "Suggestions",
+    "lbl_location_lastSel": "Last selected",
+    "lbl_no_result": "No results found in your search"
+  },
+  "products": {
+    "lbl_no_product_found": "No Product Found",
+    "lbl_no_product_details_found": "No Product Detail Found",
+    "lbl_similar_product": "Similar products",
+    "lbl_product": "Product",
+    "lbl_spec": "Spec",
+    "lbl_desc": "Description",
+    "lbl_pieces": "Pieces",
+    "lbl_extra_accessories": "Extra accessories",
+    "lbl_specification": "Specification",
+    "lbl_price": "Price",
+    "lbl_pay": "Pay",
+    "lbl_add_to_cart": "Add to Cart",
+    "lbl_in_stock": "In Stock",
+    "lbl_out_stock": "Out of Stock",
+    "lbl_show_more": "Show more",
+    "lbl_show_less": "Show less",
+    "lbl_id": "Id",
+    "lbl_added_product_success": "The product has been added to your cart."
+  },
+  "cart": {
+    "lbl_no_cart_item": "No Item in cart",
+    "lbl_empty_cart": "Your cart is empty",
+    "lbl_qty": "Qty",
+    "lbl_cart_title": "Cart",
+    "lbl_checkout": "Checkout",
+    "lbl_sub_total": "Total"
+  },
+  "notificationmodal": {
+    "lbl_notification": "Notifications",
+    "msg_notify": " We can notify you when the order status is changed.",
+    "lbl_maybe": "Maybe Later",
+    "lbl_allow": "Allow"
+  },
+  "orderaccepted": {
+    "msg_order_accepted": "Your order has been accepted.",
+    "msg_order_status": "We will let you know about the order status",
+    "lbl_done": "Done"
+  },
+  "wishlist": {
+    "lbl_favourites": "My favourites"
+  },
+  "order": {
+    "lbl_order": "Order",
+    "lbl_order_history": "Order history",
+    "lbl_no_order_found": "No order found",
+    "lbl_status": "Status",
+    "lbl_date": "Date",
+    "lbl_products": "Products",
+    "lbl_billing_address": "Billing Address",
+    "lbl_address_here": "Address Here",
+    "lbl_shipping_address": "Shipping Address",
+    "lbl_delivery_method": "Delivery Method",
+    "lbl_payment": "Payment",
+    "lbl_cancel": "Cancel",
+    "lbl_total_amt": "Total Amount",
+    "lbl_amt": "Amount",
+    "lbl_Continue": "Continue",
+    "msg_order_cancel": "Your order has been canceled.",
+    "lbl_ordervalidate": "Fill in the required details",
+    "lbl_representative_address": "Representative Address"
+  },
+  "changeMobile": {
+    "lbl_change_mob_num_title": "Change number",
+    "lbl_change_mob_num": "Change mobile number ?"
+  },
+  "checkout": {
+    "lbl_delivery": "Delivery",
+    "lbl_to_the_address": "To the address",
+    "lbl_to_the_pickpoint": "To the pickup point",
+    "lbl_select_payment": "Select a payment",
+    "lbl_finish_and_order": "Finish the order & pay",
+    "lbl_deliveryfee": "Delivery fee",
+    "lbl_continue_checkout": "Continue to checkout",
+    "lbl_pickup": "Pickup",
+    "lbl_set_delivery_window": "Set delivery window",
+    "lbl_fill_delivery_info": "Fill in the delivery info",
+    "lbl_iVoo_Pay": "iVoo Pay",
+    "lbl_store": "Store",
+    "lbl_receipient_can_receive_order": "Receive another person?",
+    "lbl_receipient_address": "Select the representative address"
+  },
+  "selectdelivery": {
+    "lbl_select_address": "Select address",
+    "lbl_add_new_address": "Add new address",
+    "lbl_send_point": "Send to this Point "
+  },
+  "Intro": {
+    "lbl_skip": "Skip",
+    "lbl_done": "Done",
+    "lbl_next": "Next"
+  },
+  "payment": {
+    "lbl_add_pay_method": "Add new payment method",
+    "lbl_incash": "Cash On delivery",
+    "lbl_credit_card_placeholder": "Your credit card number",
+    "lbl_date_placeholder": "MM/YYYY",
+    "lbl_cvv_code": "Code",
+    "lbl_save_credit": "Save credit card",
+    "lbl_credt_card_title": "Credit card number",
+    "lbl_credit_page_title": "Add new credit card",
+    "lbl_scan_card": "Scan credit card",
+    "lbl_no_money": "Not enough money",
+    "lbl_sendpayslip": "Send proof of payment",
+    "lbl_docno": "Enter document"
+  },
+  "addpayment": {
+    "lbl_expiration_date": "Expiration date"
+  },
+  "DateTimeSlot": {
+    "lbl_dttime_title": "Select a date & time"
+  },
+  "pickup": {
+    "lbl_noPickup": "No Pickup location found"
+  },
+  "NewPaymentMethods": {
+    "zelleTitle": "Zelle",
+    "movilTitle": "Pago Movil",
+    "bolivaresTitle": "Transferencia en Bolivares",
+    "paypalTitle": "Paypal",
+    "banescoTitle": "Banesco Panamá"
+  },
+  "coupon": {
+    "couponSubmit": "Confirm",
+    "couponPlaceholder": "Enter code here"
+  }
+}

@@ -1,0 +1,107 @@
+import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react'
+import { View, Text, StyleSheet, TouchableHighlight, Platform, TouchableWithoutFeedback, Keyboard, } from 'react-native'
+import commonStyle from '../../../commonStyle';
+import { CustomButton } from '../../Components/CustomButton';
+import CustomInput from '../../Components/CustomInput';
+import { Layout } from '../../Components/Layout';
+import { mobileVerification } from '../../Queries/queries';
+import ResColor from '../../Utils/Colors';
+import CustomPBar from '../../Components/CustomPBar'
+import { translate } from '../../locales';
+import { Routes } from '../../Utils/NavigationRoutes';
+import { Input } from 'react-native-elements';
+import ResColors from '../../Utils/Colors';
+import Helper from '../../Utils/Helper';
+
+export const MobileVerification = ( props ) =>
+{
+
+    const navigation = useNavigation();
+    const [mobile, setMobile] = useState( props.route.params.mobile );
+    const [sendOTPParams, { loading, error, data }] = mobileVerification()
+    const [phone_pincode, setphone_pincode] = useState( props.route.params.phone_pincode );
+
+    useEffect( () =>
+    {
+        setMobile( props.route.params.mobile )
+        setphone_pincode( props.route.params.phone_pincode )
+    }, [props.route.params.mobile, props.route.params.phone_pincode] )
+
+    const mobileUpdate = ( value ) =>
+    {
+        setMobile( value );
+    }
+    const next = () =>
+    {
+        Helper.HandleVibration();
+        sendOTPParams( { variables: { phone: mobile } } );
+    }
+
+    useEffect( () =>
+    {
+        if ( error )
+        {
+            error && Helper.ShowAlert( `${ error }` );
+        }
+    }, [error] )
+
+    useEffect( () =>
+    {
+        if ( data )
+        {
+            data.generatePhoneOtp.is_sent ? navigation.navigate( Routes.NAVIGATION_TO_VERIFICATION, { mobile: mobile, isnew: false } ) : Helper.ShowAlert( translate( 'pre_login.msg_mobile_not_registered' ) )
+        }
+    }, [data] )
+    return <Layout>
+        <View
+
+            style={[commonStyle.unAuth_MainContainer]}>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={[commonStyle.flex_1]}>
+                    <Text style={[commonStyle.h2, commonStyle.fontBold, commonStyle.marginBottom_30, { paddingTop: 30 }]}>{props.route.params.phone_pincode} {props.route.params.mobile}</Text>
+                    <View style={{ flexDirection: 'row' }}>
+                        <View style={{ flex: 0.2, marginEnd: 10 }}>
+                            <Text style={[commonStyle.h6, commonStyle.label, { marginBottom: 5 }]}>{translate( 'pre_login.lbl_code' )}</Text>
+
+                            <Input maxLength={4} style={[{
+                                height: 48, borderRadius: 16, backgroundColor: ResColors.SmokeWhite, fontSize: 16, textAlign: 'center',
+                                color: ResColors.blackShade, justifyContent: "center", textAlignVertical: "center"
+                            }]}
+                                containerStyle={[commonStyle.input, { height: 48, backgroundColor: ResColors.SmokeWhite, }]}
+                                inputContainerStyle={{ borderColor: "transparent" }}
+                                textAlignVertical="center"
+                                keyboardType='phone-pad'
+                                value={phone_pincode}
+                                onChangeText={value => setphone_pincode( value )}
+                                placeholder={'+58'}
+                            />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <CustomInput labelText="pre_login.lbl_enter_phone_number" value={mobile} onChangeText={value => mobileUpdate( value )} keyboardType='numeric' placeholder='pre_login.lbl_enter_your_phone_number' />
+                        </View>
+                    </View>
+
+                    <TouchableHighlight onPress={() =>
+                    {
+                        Helper.HandleVibration();
+                        navigation.navigate( Routes.NAVIGATION_TO_CHANGEMOBILE, { mobile: '', phone_pincode: '', isnew: false } )
+                    }} underlayColor={ResColor.transparent}>
+                        <Text style={[commonStyle.h5, commonStyle.fontSemiBold, styles.change_num_Text]}>{translate( 'pre_login.lbl_change_mob_num_Q' )}</Text>
+                    </TouchableHighlight>
+                    <View style={[commonStyle.buttonViewStyles]}>
+                        <CustomButton title="pre_login.lbl_sendOTP" disabled={mobile == '' ? true : false}
+                            onPress={next}
+                            customButtonStyle={[mobile == '' ? commonStyle.btn_disabled : commonStyle.btn_primary]}
+                        />
+                    </View>
+                    <CustomPBar showProgress={loading} />
+                </View>
+            </TouchableWithoutFeedback>
+        </View>
+    </Layout>
+}
+
+const styles = StyleSheet.create( {
+    change_num_Text: { marginTop: 45, color: ResColor.Gray, textAlign: "center" },
+} )

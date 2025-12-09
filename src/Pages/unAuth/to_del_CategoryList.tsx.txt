@@ -1,0 +1,117 @@
+import {useNavigation} from '@react-navigation/native';
+import React, {useState} from 'react';
+import {Image, FlatList, StyleSheet, Text, View} from 'react-native';
+import {Layout} from '../../Components/Layout';
+import CustomHeader from '../../Components/CustomHeader';
+
+import {useQuery, gql} from '@apollo/client';
+import commonStyle from '../../../commonStyle';
+import clr from '../../Utils/Colors'
+
+
+const PRODUCT_LIST_BY_CATEGORY_ID = gql`
+  query {
+    products(
+      filter: {category_id: {eq: "2"}}
+      pageSize: 25
+      sort: {name: DESC}
+    ) {
+      items {
+        id
+        name
+        thumbnail {
+          url
+        }
+        price_range {
+          minimum_price {
+            regular_price {
+              value
+              currency
+            }
+          }
+        }
+        special_price
+      }
+      total_count
+    }
+  }
+`;
+
+export const CategoryList = () => {
+  const navigation = useNavigation();
+
+  const [] = useState('');
+
+  const {loading, error, data} = useQuery(PRODUCT_LIST_BY_CATEGORY_ID);
+
+  if (loading) {
+    return (
+      <Layout>
+        <Text>Loading...</Text>
+      </Layout>
+    );
+  }
+  if (error) {
+    return <Text>Error :#{error}</Text>;
+  }
+  var products = data.products.items;
+  console.log(products.page_info);
+  return (
+    <FlatList
+      contentContainerStyle={styles.list}
+      data={products}
+      renderItem={ProductCard}
+      keyExtractor={(item) => item.sku}
+      numColumns={2}
+      dataSource={products}
+      // renderRow={(rowData) => <Text style={styles.item}>{rowData}</Text>}
+      extraData={products}
+      ListHeaderComponent={CustomHeader}
+    />
+  );
+};
+
+export const ProductCard = (item) => {
+  // const item = product.item;
+  const price = item.special_price
+    ? item.special_price
+    : item.price_range.minimum_price.regular_price.value;
+  const currency = item.price_range.minimum_price.regular_price.currency;
+
+  // const price = 1234.56;
+  // const currency = "EUR";
+  // var NumberFormat = require('react-number-format');
+
+  return (
+    <View style={[commonStyle.padding_10]}>
+      <Image source={{uri: item.thumbnail.url}} style={styles.logo} />
+      <Text style={styles.baseText}>{item.name}</Text>
+      <Text>
+        {currency} {price}
+      </Text>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  baseText: {
+    fontWeight: 'bold',
+  },
+  innerText: {
+    color: clr.yellow,
+  },
+  logo: {
+    width: 200,
+    height: 200,
+  },
+  list: {
+    flexDirection: 'column',
+  },
+  item: {
+    backgroundColor: clr.red,
+    margin: 3,
+    width: 100,
+  },
+});
+
+export default CategoryList;

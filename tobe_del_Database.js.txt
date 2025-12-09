@@ -1,0 +1,186 @@
+/* eslint-disable prettier/prettier */
+import SQLite from 'react-native-sqlite-storage';
+
+SQLite.DEBUG(true);
+SQLite.enablePromise(true);
+
+const database_name = 'ivoooffline.db';
+const database_version = '1.0';
+const database_displayname = 'IVOO';
+const database_size = 200000;
+const PushNotifications = 'PushNotifications';
+export default class Database
+{
+
+    initDB()
+    {
+        let db;
+        return new Promise( ( resolve ) =>
+        {
+            console.log( 'Plugin integrity check ...' );
+            SQLite.echoTest()
+                .then( () =>
+                {
+                    console.log( 'Integrity check passed ...' );
+                    console.log( 'Opening database ...' );
+                    SQLite.openDatabase(
+                        database_name,
+                        database_version,
+                        database_displayname,
+                        database_size
+                    )
+                        .then( DB =>
+                        {
+                            db = DB;
+                            console.log( 'Database OPEN' );
+                            db.executeSql( `SELECT 1 FROM ${ PushNotifications } LIMIT 1` ).then( () =>
+                            {
+                                console.log( 'Database is ready ... executing query ...' );
+                            } ).catch( ( error ) =>
+                            {
+                                console.log( 'Received error: ', error );
+                                console.log( 'Database not yet ready ... populating data' );
+                                db.transaction( ( tx ) =>
+                                {
+                                    tx.executeSql( `CREATE TABLE IF NOT EXISTS ${ PushNotifications } (
+                                        push_id  INTEGER AUTOINCREMENT PRIMARY KEY NOT NULL,
+                                        usertoken,
+                                        pushobject,
+                                        received_at)` );
+                                } ).then( () =>
+                                {
+                                    console.log( 'Table created successfully' );
+                                } ).catch( error =>
+                                {
+                                    console.log( error );
+                                } );
+                            } );
+                            resolve( db );
+                        } )
+                        .catch( error =>
+                        {
+                            console.log( error );
+                        } );
+                } )
+                .catch( error =>
+                {
+                    console.log( 'echoTest failed - plugin not functional' );
+                    console.log(  error );
+                } );
+        } );
+    }
+
+    closeDatabase( db )
+    {
+        if ( db )
+        {
+            console.log( 'Closing DB' );
+            db.close()
+                .then( status =>
+                {
+                    console.log( 'Database CLOSED' );
+                } )
+                .catch( error =>
+                {
+                    this.errorCB( error );
+                } );
+        } else
+        {
+            console.log( 'Database was not OPENED' );
+        }
+    }
+
+    addProduct( pushobject,token )
+    {
+        return new Promise( ( resolve ) =>
+        {
+            this.initDB().then( ( db ) =>
+            {
+                db.transaction( ( tx ) =>
+                {
+                    const now = new Date();
+                    tx.executeSql( `INSERT INTO ${ PushNotifications } VALUES (?, ?, ?, ?)`, [id, token, JSON.stringify(pushobject), now.toISOString()] ).then( ( [tx, results] ) =>
+                    {
+                        resolve( results );
+                    } );
+                } ).then( ( result ) =>
+                {
+                    this.closeDatabase( db );
+                } ).catch( ( err ) =>
+                {
+                    console.log( err );
+                } );
+            } ).catch( ( err ) =>
+            {
+                console.log( err );
+            } );
+        } );
+    }
+
+    listNotifications( token )
+    {
+        return new Promise( ( resolve ) =>
+        {
+            const push = [];
+            this.initDB().then( ( db ) =>
+            {
+                db.transaction( ( tx ) =>
+                {
+                    tx.executeSql( `SELECT * FROM ${ PushNotifications } WHERE usertoken = ?`, [token] ).then( ( [tx, results] ) =>
+                    {
+                        console.log( 'Query completed' );
+                        var len = results.rows.length;
+                        for ( let i = 0; i < len; i++ )
+                        {
+                            let row = results.rows.item( i );
+                            console.log( `Prod ID: ${ row.prodId }, Prod Name: ${ row.prodName }` );
+                            const { push_id, usertoken, pushobject, received_at } = row;
+                            push.push( {
+                                push_id, usertoken, pushobject, received_at,
+                            } );
+                        }
+                        console.log( push );
+                        resolve( push );
+                    } );
+                } ).then( ( result ) =>
+                {
+                    this.closeDatabase( db );
+                } ).catch( ( err ) =>
+                {
+                    console.log( err );
+                } );
+            } ).catch( ( err ) =>
+            {
+                console.log( err );
+            } );
+        } );
+    }
+
+    deleteProduct( id )
+    {
+        return new Promise( ( resolve ) =>
+        {
+            this.initDB().then( ( db ) =>
+            {
+                db.transaction( ( tx ) =>
+                {
+                    tx.executeSql( `DELETE FROM ${ PushNotifications } WHERE prodId = ?`, [id] ).then( ( [tx, results] ) =>
+                    {
+                        console.log( results );
+                        resolve( results );
+                    } );
+                } ).then( ( result ) =>
+                {
+                    this.closeDatabase( db );
+                } ).catch( ( err ) =>
+                {
+                    console.log( err );
+                } );
+            } ).catch( ( err ) =>
+            {
+                console.log( err );
+            } );
+        } );
+    }
+}
+ 

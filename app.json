@@ -1,0 +1,22 @@
+
+{
+  "expo": {
+    "name": "ivoo",
+    "slug": "creditivoo", 
+    "ios": {
+      
+      "bundleIdentifier": "com.ivoo" 
+    },
+    "android": {
+       
+        "package": "com.ivoo"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "999a6554-2630-4394-a791-b244d4cdf2aa"
+      }
+    }
+  },
+  "name": "ivoo",
+  "displayName": "ivoo"
+}

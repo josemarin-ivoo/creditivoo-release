@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "jsx": "react-native",           // <- fixes ts(6142)
+    "allowJs": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "types": ["react", "react-native"],
+    "target": "es2017",            // or "es2018", "es2020"
+    "lib": ["es2017", "dom"],      // includes Promise and async/await
+    "module": "esnext",
+    "downlevelIteration": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@creditivo-components": ["Pages/Auth/Creditivoo/components", "Pages/Auth/Creditivoo/components/*"],
+      "@shared-constants": ["Pages/Auth/Creditivoo/shared/constants", "Pages/Auth/Creditivoo/shared/constants/*"],
+      "@font-size": ["./shared/theme/font-size"],
+      "@api": ["./services/api/index"],
+      "@fonts": ["./shared/theme/fonts"],
+      "@colors": ["./shared/theme/colors"],
+      "@theme/*": ["Pages/Auth/Creditivoo/shared/theme","Pages/Auth/Creditivoo/shared/theme/*"],
+      "@services/*": ["./services/*"],
+      "@screens/*": ["Pages/Auth/Creditivoo/screens", "Pages/Auth/Creditivoo/screens/*"],
+      "@views/*": ["Pages/Auth/Creditivoo/views/*"],
+      "@utils": ["./utils/"],
+      "@assets": ["./assets/"],
+      "@local-storage": ["./services/local-storage"],
+      // new
+      "@features/*": ["Pages/Auth/Creditivoo/app/features/*"],
+      "@components/*": ["Pages/Auth/Creditivoo/app/components/*"],
+      "@app-services/*": ["./app/services/*"],
+      "@creditivo-style": ["Pages/Auth/Creditivoo/styles", "Pages/Auth/Creditivoo/styles/*"],
+      
+    },
+  },
+  "include": ["App.tsx", "src", "svg.d.ts"]
+}

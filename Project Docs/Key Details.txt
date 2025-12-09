@@ -1,0 +1,5 @@
+Android keystore	
+
+\ivoo-userapp\Project Docs\keystorepathIVOO.keystore
+Key Alias: key0
+Key store password and Key password: Desarrollo19

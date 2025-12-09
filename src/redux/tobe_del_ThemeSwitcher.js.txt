@@ -1,0 +1,13 @@
+/* eslint-disable prettier/prettier */
+// define type
+import {SWITCH_THEME} from './actionTypes';
+
+// dispatch actions
+export const switchTheme = ( BaseTheme ) =>
+{
+  
+  return ( dispatch ) =>
+  {
+    dispatch( { type: SWITCH_THEME, payload: { theme: BaseTheme } } )
+  };
+};

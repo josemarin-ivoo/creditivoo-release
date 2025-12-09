@@ -1,0 +1,79 @@
+{
+  "project_info": {
+    "project_number": "393027277394",
+    "project_id": "ivoo-ac17a",
+    "storage_bucket": "ivoo-ac17a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:393027277394:android:2ba8840e7f8502c497858b",
+        "android_client_info": {
+          "package_name": "com.ivoo.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "393027277394-hm9kiq2uftmv29ahvd49639nbi6uj7ke.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ivoo.android",
+            "certificate_hash": "8d4a0ffff74284836afdc6f513e0a30909f1e9c6"
+          }
+        },
+        {
+          "client_id": "393027277394-pjn81rgplqni3t321pp53rknnuorbaq5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ivoo.android",
+            "certificate_hash": "0fba2ef523cb6d8bcccfdda6d197e63514012d02"
+          }
+        },
+        {
+          "client_id": "393027277394-rncde3o38kbhb9d5bcm593gu4aaaln4g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ivoo.android",
+            "certificate_hash": "0b05b773f78ac423165763439bdba3960085711c"
+          }
+        },
+        {
+          "client_id": "393027277394-usasdtgnekutoh0jtcqnb2rkreln5vmg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ivoo.android",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "393027277394-hdc7cccs461vcm84v497hae5md59ik2a.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCA7TAEkJVGibG6jrpSxFU91JrkLifzsGk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "393027277394-h3qsb0jdr2di7er3h07c9auq6lfmi6b5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "393027277394-d109vkqe7qr20tic265dkj7arukta0n5.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.siragon",
+                "app_store_id": "1479559802"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
