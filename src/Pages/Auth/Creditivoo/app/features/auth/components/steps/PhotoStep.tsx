@@ -2,7 +2,7 @@ import React from 'react';
 import {View, TouchableOpacity} from 'react-native';
 import {Text, Icon, useTheme} from '@ui-kitten/components';
 import {ActivityIndicator} from 'react-native';
-import ButtonK from '@shared-components/button/ButtonK';
+import ButtonK from '../../../../../shared/components/button/ButtonK';
 
 interface PhotoStepProps {
   title: string;

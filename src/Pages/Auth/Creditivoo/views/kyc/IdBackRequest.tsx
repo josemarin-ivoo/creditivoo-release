@@ -1,4 +1,4 @@
-import React, {useCallback} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Dimensions,
   Alert,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -20,11 +21,14 @@ import {launchCamera, CameraOptions} from 'react-native-image-picker';
 import {Button} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
+// import {uploadDocumentBack, getUploadStatus} from '../../services/kyc';
+import {uploadDocumentBack, getUploadStatus} from '../../services/kyc';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const IdBackRequest: React.FC = () => {
   const navigation = useNavigation();
+  const [isUploading, setIsUploading] = useState(false);
 
   const requestCameraPermission = useCallback(async () => {
     try {
@@ -130,10 +134,8 @@ const IdBackRequest: React.FC = () => {
 
       const uri = response.assets?.[0]?.uri;
       if (uri) {
-        // TODO: Procesar la foto capturada (guardar, subir, etc.)
-        console.log('Foto capturada:', uri);
-        // Navegar de vuelta a IdentityVerificator
-        navigation.goBack();
+        // Subir la imagen automáticamente
+        await handleUploadImage(uri);
       }
     } catch (error) {
       console.error('[IdBackRequest] Error al capturar foto:', error);
@@ -141,6 +143,30 @@ const IdBackRequest: React.FC = () => {
         'Error',
         'Error al procesar la imagen. Por favor, intenta de nuevo.',
       );
+    }
+  };
+
+  const handleUploadImage = async (imageUri: string) => {
+    setIsUploading(true);
+    try {
+      // Obtener kycId del estado antes de subir
+      const status = await getUploadStatus();
+      const kycId = status.kycId;
+
+      await uploadDocumentBack(imageUri, kycId);
+      Alert.alert('Éxito', 'Reverso del documento subido correctamente', [
+        {
+          text: 'OK',
+          onPress: () => {
+            navigation.goBack();
+          },
+        },
+      ]);
+    } catch (error: any) {
+      console.error('[IdBackRequest] Error al subir imagen:', error);
+      Alert.alert('Error', error.message || 'Error al subir la imagen');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -175,7 +201,13 @@ const IdBackRequest: React.FC = () => {
     </>
   );
 
-  const bottomAction = <Button onPress={handleTakePhoto} title="Tomar foto" />;
+  const bottomAction = (
+    <Button
+      onPress={handleTakePhoto}
+      title={isUploading ? 'Subiendo...' : 'Tomar foto'}
+      disabled={isUploading}
+    />
+  );
 
   return (
     <>
@@ -183,7 +215,14 @@ const IdBackRequest: React.FC = () => {
         contentPaddingTop={SCREEN_HEIGHT * 0.04}
         logo={logo}
         bottomAction={bottomAction}>
-        {content}
+        {isUploading ? (
+          <View style={styles.uploadingContainer}>
+            <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+            <Text style={styles.uploadingText}>Subiendo imagen...</Text>
+          </View>
+        ) : (
+          content
+        )}
       </RegisterLayout>
     </>
   );
@@ -240,6 +279,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: SCREEN_WIDTH * 0.75,
     alignSelf: 'center',
+  },
+  uploadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: SCREEN_HEIGHT * 0.4,
+  },
+  uploadingText: {
+    marginTop: SCREEN_WIDTH * 0.04,
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary,
   },
 });
 

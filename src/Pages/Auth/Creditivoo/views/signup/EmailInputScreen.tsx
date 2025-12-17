@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -9,38 +9,142 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {Button, Input, Checkbox} from '../../components';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import * as yup from 'yup';
+import {Button, Input, Checkbox, AlertModal} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
-import {IVOO_COLORS, IVOO_SPACING, IVOO_TYPOGRAPHY} from '../../styles';
+import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
+import {SCREENS} from '@shared-constants';
+import {sendEmailOTP} from '../../services';
+import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {setEmail as setEmailInStore} from '../../store-creditivoo';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
+// Yup validation schema for email
+const emailSchema = yup.object().shape({
+  email: yup
+    .string()
+    .required('El correo electrónico es obligatorio')
+    .email('Ingresa un correo electrónico válido'),
+  acceptPolicy: yup
+    .boolean()
+    .oneOf([true], 'Debes aceptar la política de fines comerciales'),
+});
+
 const EmailInputScreen: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useIvoDispatch();
   const [email, setEmail] = useState('');
   const [acceptPolicy, setAcceptPolicy] = useState(false);
+  const [isValid, setIsValid] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'error' | 'warning' | 'info'>(
+    'error',
+  );
 
-  const handleContinue = () => {
-    console.log('handleContinue called', {email, acceptPolicy});
-    if (!email.trim()) {
-      console.log('Email is empty');
-      // TODO: Show error message
-      return;
-    }
-    if (!acceptPolicy) {
-      console.log('Policy not accepted');
-      // TODO: Show error message
-      return;
-    }
-    // TODO: Send email verification code
-    console.log('Navigating to EmailOTPVerification with email:', email);
+  useEffect(() => {
+    const validateForm = async () => {
+      try {
+        await emailSchema.validate(
+          {
+            email: email.trim(),
+            acceptPolicy,
+          },
+          {abortEarly: false},
+        );
+        setIsValid(true);
+      } catch (err) {
+        setIsValid(false);
+      }
+    };
+
+    validateForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email, acceptPolicy]);
+
+  // Resetear el estado de carga cuando la pantalla recibe el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      setIsLoading(false);
+    }, []),
+  );
+
+  const handleContinue = async () => {
     try {
+      await emailSchema.validate(
+        {
+          email: email.trim(),
+          acceptPolicy,
+        },
+        {abortEarly: false},
+      );
+
+      setIsLoading(true);
+      
+      // Enviar OTP al correo electrónico
+      const trimmedEmail = email.trim();
+      const otpResponse = await sendEmailOTP(trimmedEmail);
+
+      // Si el email ya está verificado, significa que ya existe un usuario
+      if (otpResponse.isAlreadyVerified) {
+        setIsLoading(false);
+        setAlertTitle('Usuario existente');
+        setAlertMessage(
+          'Ya existe un usuario registrado con este correo electrónico. Por favor, inicia sesión.',
+        );
+        setAlertType('info');
+        setAlertVisible(true);
+        console.log('Email ya verificado - usuario existente');
+        return;
+      }
+
+      console.log('OTP enviado exitosamente a:', trimmedEmail);
+
+      // Guardar email en el store
+      dispatch(setEmailInStore(trimmedEmail));
+
+      // Navegar a la pantalla de verificación OTP
       (navigation as any).navigate('EmailOTPVerification', {
-        email: email.trim(),
+        email: trimmedEmail,
       });
-    } catch (error) {
-      console.error('Navigation error:', error);
+    } catch (err: any) {
+      setIsLoading(false);
+
+      // Si es error de validación, el botón debería estar deshabilitado
+      if (err.errors) {
+        console.log('Validation failed:', err);
+        return;
+      }
+
+      // Error de la API - el mensaje ya viene del backend (incluye cooldown si es 429)
+      const errorMessage =
+        err.message ||
+        'Error al enviar el código. Por favor, intenta de nuevo.';
+
+      // Título diferente para cooldown
+      const title =
+        errorMessage.includes('espera') ||
+        errorMessage.includes('cooldown') ||
+        errorMessage.includes('Cooldown')
+          ? 'Espera requerida'
+          : 'Error';
+
+      const type: 'error' | 'warning' =
+        errorMessage.includes('espera') ||
+        errorMessage.includes('cooldown') ||
+        errorMessage.includes('Cooldown')
+          ? 'warning'
+          : 'error';
+
+      setAlertTitle(title);
+      setAlertMessage(errorMessage);
+      setAlertType(type);
+      setAlertVisible(true);
+      console.error('Error al enviar OTP:', err);
     }
   };
 
@@ -101,7 +205,8 @@ const EmailInputScreen: React.FC = () => {
   const bottomAction = (
     <Button
       onPress={handleContinue}
-      title="Continuar"
+      title={isLoading ? 'Enviando...' : 'Continuar'}
+      disabled={!isValid || isLoading}
       style={styles.continueButton}
     />
   );
@@ -114,6 +219,13 @@ const EmailInputScreen: React.FC = () => {
         bottomAction={bottomAction}>
         {content}
       </RegisterLayout>
+      <AlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+      />
     </>
   );
 };

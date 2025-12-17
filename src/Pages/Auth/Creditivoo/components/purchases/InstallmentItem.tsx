@@ -1,0 +1,206 @@
+import React from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
+import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
+import Icon, {IconType} from 'react-native-dynamic-vector-icons';
+import GemIcon from '../../svgs/menus/gem.svg';
+
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+
+export interface Installment {
+  id: string;
+  date: string;
+  type: 'initial' | 'installment';
+  installmentNumber?: number;
+  amount: number;
+  status: 'approved' | 'pending';
+  gemsReward?: number; // Gems earned by paying in advance
+}
+
+interface InstallmentItemProps {
+  installment: Installment;
+  onPress?: () => void;
+}
+
+const InstallmentItem: React.FC<InstallmentItemProps> = ({
+  installment,
+  onPress,
+}) => {
+  const formatCurrency = (amount: number): string => {
+    return `$${amount.toFixed(2)}`;
+  };
+
+  const getInstallmentLabel = (): string => {
+    if (installment.type === 'initial') {
+      return 'Inicial';
+    }
+    return `Cuota ${installment.installmentNumber || ''}`;
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    const month = months[date.getMonth()];
+    return `${day} ${month}`;
+  };
+
+  const isApproved = installment.status === 'approved';
+
+  return (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+      disabled={!onPress}>
+      <View style={styles.leftSection}>
+        {isApproved ? (
+          <View style={styles.checkboxApproved}>
+            <Icon
+              name="checkmark"
+              type={IconType.Ionicons}
+              size={12}
+              color={IVOO_COLORS.white}
+            />
+          </View>
+        ) : (
+          <View style={styles.checkboxPending} />
+        )}
+        <View style={styles.textContainer}>
+          <Text style={styles.dateText}>{formatDate(installment.date)}</Text>
+          <Text style={styles.typeText}>{getInstallmentLabel()}</Text>
+        </View>
+      </View>
+
+      <View style={styles.middleSection}>
+        {isApproved ? (
+          <Text style={styles.approvedText}>Aprobado</Text>
+        ) : (
+          <View style={styles.gemsContainer}>
+            <Text style={styles.gemsText}>
+              Gana {installment.gemsReward || 0}
+            </Text>
+            <GemIcon width={SCREEN_WIDTH * 0.04} height={SCREEN_WIDTH * 0.04} />
+            <Text style={styles.advanceText}> por adelantar</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.rightSection}>
+        <Text style={styles.amountText}>
+          {formatCurrency(installment.amount)}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: IVOO_COLORS.white,
+    borderRadius: 12,
+    padding: SCREEN_WIDTH * 0.04,
+    marginBottom: SCREEN_WIDTH * 0.03,
+    marginHorizontal: SCREEN_WIDTH * 0.01,
+    borderWidth: 1,
+    borderColor: '#6E717C4F',
+  },
+  leftSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  checkboxApproved: {
+    width: SCREEN_WIDTH * 0.045,
+    height: SCREEN_WIDTH * 0.045,
+    borderRadius: SCREEN_WIDTH * 0.0225,
+    backgroundColor: IVOO_COLORS.success || '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SCREEN_WIDTH * 0.03,
+  },
+  checkboxPending: {
+    width: SCREEN_WIDTH * 0.045,
+    height: SCREEN_WIDTH * 0.045,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: IVOO_COLORS.primary,
+    marginRight: SCREEN_WIDTH * 0.03,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  dateText: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: '#676464',
+    marginBottom: 2,
+  },
+  typeText: {
+    fontSize: SCREEN_WIDTH * 0.035,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.textPrimary,
+  },
+  middleSection: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: SCREEN_WIDTH * 0.02,
+  },
+  approvedText: {
+    fontSize: SCREEN_WIDTH * 0.037,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.success || '#4CAF50',
+  },
+  gemsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  gemsText: {
+    fontSize: SCREEN_WIDTH * 0.037,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
+    marginRight: 4,
+  },
+  advanceText: {
+    fontSize: SCREEN_WIDTH * 0.033,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.grayMedium,
+  },
+  rightSection: {
+    alignItems: 'flex-end',
+  },
+  amountText: {
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: '#676464',
+  },
+});
+
+export default InstallmentItem;

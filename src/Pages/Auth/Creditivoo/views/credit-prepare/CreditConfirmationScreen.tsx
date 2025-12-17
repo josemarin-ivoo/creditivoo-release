@@ -6,13 +6,15 @@ import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 
+import {Routes} from '../../../../../Utils/NavigationRoutes';
+
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const CreditConfirmationScreen: React.FC = () => {
   const navigation = useNavigation();
 
   const handleContinue = () => {
-    (navigation as any).navigate(SCREENS.HOME);
+    (navigation as any).navigate(Routes.NAVIGATION_TABCREDITIVOO);
   };
 
   const logo = (

@@ -12,7 +12,7 @@ export const IVOO_COLORS = {
   // Neutral Colors
   white: '#FFFFFF',
   black: '#000000',
-  textWhite: '#FFF2F2',
+  textWhite: '#FFFFFF',
 
   // Status Colors
   success: '#0ADD73',

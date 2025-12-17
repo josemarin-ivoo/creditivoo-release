@@ -14,6 +14,7 @@ import {Button, Input, Checkbox} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_SPACING, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
+import { Routes } from 'Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -26,10 +27,10 @@ const RegisterScreen: React.FC = () => {
     console.log('handleContinue called', {
       phoneNumber,
       acceptTerms,
-      screen: SCREENS.OTP_VERIFICATION,
+      screen: Routes.NAVIGATION_OTP_VERIFICATION,
     });
 
-    (navigation as any).navigate(SCREENS.OTP_VERIFICATION, {
+    (navigation as any).navigate(Routes.NAVIGATION_OTP_VERIFICATION, {
       phoneNumber: phoneNumber.trim() || '',
     });
   };

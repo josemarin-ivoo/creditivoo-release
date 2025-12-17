@@ -9,9 +9,10 @@ import {
 } from 'react-native';
 import {Text, useTheme} from '@ui-kitten/components';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-import ButtonK from '@shared-components/button/ButtonK';
+import ButtonK from '../../../../../shared/components/button/ButtonK';
 import {useToast} from 'react-native-toast-notifications';
-import {createKycSession, checkKycStatus} from '@services/api/kyc';
+// import {createKycSession, checkKycStatus} from '@services/api/kyc';
+import {createKycSession, checkKycStatus} from '../../../../../services/api/kyc';
 import {WebView} from 'react-native-webview';
 import {useFocusEffect} from '@react-navigation/native';
 import {useCallback} from 'react';

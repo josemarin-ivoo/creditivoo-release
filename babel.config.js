@@ -12,6 +12,8 @@ module.exports = {
           "@shared-constants": "./src/Pages/Auth/Creditivoo/shared/constants",
           "@creditivo-components": "./src/Pages/Auth/Creditivoo/components",
           "@creditivo-style": "./src/Pages/Auth/Creditivoo/styles",
+          "@services": "./src/Pages/Auth/Creditivoo/services",
+          "@app-services": "./src/Pages/Auth/Creditivoo/app/services",
           //"@font-size": "./src/shared/theme/font-size",
           // "@api": "./src/services/api/index",
           // "@fonts": "./src/shared/theme/fonts",

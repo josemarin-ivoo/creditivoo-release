@@ -57,7 +57,7 @@ const TermScreen: React.FC = () => {
   const content = (
     <>
       <Text style={styles.title}>
-        Términos y Condiciones{'\n'}contrato con Creditivoo
+        Términos y Condiciones{'\n'}Financiamiento Creditivoo
       </Text>
 
       <ScrollView
@@ -68,34 +68,45 @@ const TermScreen: React.FC = () => {
         onScroll={handleScroll}
         scrollEventThrottle={16}>
         <Text style={styles.termsText}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-          minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-          aliquip ex ea commodo consequat. Duis aute irure dolor in
-          reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-          pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-          culpa qui officia deserunt mollit anim id est laborum.{'\n\n'}Sed ut
-          perspiciatis unde omnis iste natus error sit voluptatem accusantium
-          doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo
-          inventore veritatis et quasi architecto beatae vitae dicta sunt
-          explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut
-          odit aut fugit, sed quia consequuntur magni dolores eos qui ratione
-          voluptatem sequi nesciunt.{'\n\n'}Neque porro quisquam est, qui
-          dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed
-          quia non numquam eius modi tempora incidunt ut labore et dolore magnam
-          aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum
-          exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex
-          ea commodi consequatur?{'\n\n'}Quis autem vel eum iure reprehenderit
-          qui in ea voluptate velit esse quam nihil molestiae consequatur, vel
-          illum qui dolorem eum fugiat quo voluptas nulla pariatur? At vero eos
-          et accusamus et iusto odio dignissimos ducimus qui blanditiis
-          praesentium voluptatum deleniti atque corrupti quos dolores et quas
-          molestias excepturi sint occaecati cupiditate non provident.{'\n\n'}
-          Similique sunt in culpa qui officia deserunt mollitia animi, id est
-          laborum et dolorum fuga. Et harum quidem rerum facilis est et expedita
-          distinctio. Nam libero tempore, cum soluta nobis est eligendi optio
-          cumque nihil impedit quo minus id quod maxime placeat facere possimus,
-          omnis voluptas assumenda est, omnis dolor repellendus.
+          Las condiciones y términos de financiamiento de Creditivoo regulan el acceso y uso de 
+          los planes de financiamiento ofrecidos por las tiendas IVOO, permitiendo a los clientes 
+          adquirir productos mediante pagos en cuotas bajo condiciones previamente establecidas. 
+          Creditivoo es una plataforma tecnológica desarrollada por COMERCIALIZADORA 2014, C.A. 
+          (IVOO), que facilita la adquisición de productos tecnológicos y de consumo a través de 
+          una aplicación móvil disponible para sistemas IOS y Android, promoviendo el consumo 
+          responsable y planificado por parte de sus usuarios.{'\n\n'}La aceptación de las 
+          comunicaciones de Creditivoo es un requisito para el uso de la aplicación, 
+          autorizando al usuario a recibir notificaciones, mensajes y llamadas relacionados con 
+          recordatorios de pago, promociones y otras informaciones relevantes. Para hacer uso de 
+          Creditivoo App, los clientes deben ser personas naturales, mayores de edad, con cédula de 
+          identidad vigente y domicilio en Venezuela; el registro debe realizarse por la app o 
+          personalmente en tiendas habilitadas, presentando la documentación requerida y completando 
+          el proceso de validación y evaluación. El acceso a la línea de crédito está sujeto a la 
+          aprobación de Creditivoo, que podrá negar o diferir la asignación sin que esto genere 
+          derecho a reclamo por parte del usuario.{'\n\n'}En cuanto a garantías, cancelaciones, 
+          sustituciones y reembolsos, el documento establece que cualquier gestión relacionada 
+          con estos aspectos se realizará conforme a las políticas de la tienda habilitada y a la 
+          normativa vigente, debiendo el cliente notificar y registrar los pagos a través de la 
+          aplicación para su verificación. Las sanciones por incumplimiento, como el pago tardío 
+          de cuotas, incluyen penalidades económicas, específicamente una indemnización de cuatro 
+          dólares americanos o su equivalente en bolívares, según la tasa oficial del Banco 
+          Central de Venezuela, aplicable tras el vencimiento del periodo de gracia de 24 horas.
+          {'\n\n'}La protección de datos personales es prioritaria en Creditivoo, que solicita 
+          autorización expresa para el tratamiento de datos durante el registro y garantiza su 
+          uso exclusivo para fines relacionados con la aplicación y la evaluación crediticia. 
+          Los datos no serán compartidos con terceros salvo requerimiento legal, y los clientes 
+          pueden solicitar la modificación o eliminación de su información en cualquier momento. 
+          Solo el personal autorizado y proveedores esenciales tendrán acceso a los datos, 
+          implementando medidas de seguridad para prevenir pérdidas, usos indebidos o 
+          divulgaciones no autorizadas.{'\n\n'}El uso aceptable de la aplicación implica que cada 
+          cliente es responsable de su cuenta y no debe permitir el acceso a terceros, estando 
+          prohibido el uso fraudulento o contrario a la ley. La ley aplicable para la interpretación 
+          y cumplimiento de estos términos es la de la República Bolivariana de Venezuela, y cualquier 
+          controversia será resuelta conforme a esta jurisdicción. Creditivoo se reserva el derecho 
+          de modificar total o parcialmente los términos y condiciones, notificando a los usuarios a 
+          través de los medios disponibles, siendo la continuidad en el uso de la aplicación una 
+          aceptación tácita de los cambios.
+
         </Text>
       </ScrollView>
     </>
@@ -104,7 +115,7 @@ const TermScreen: React.FC = () => {
   const bottomAction = (
     <Button
       onPress={handleSignContract}
-      title={fromProfile ? 'Listo' : 'Firmar contrato'}
+      title={fromProfile ? 'Listo' : 'Acepto'}
       disabled={fromProfile ? false : !hasScrolledToBottom}
       style={{
         opacity: fromProfile ? 1 : hasScrolledToBottom ? 1 : 0.4,

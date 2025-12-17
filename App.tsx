@@ -19,7 +19,8 @@ import {navigate} from './src/Utils/NavigationRef';
 import {AppContextProvider} from './src/Pages/AppContext';
 import {Settings} from 'react-native-fbsdk-next';
 import {PERMISSIONS, RESULTS, request, check} from 'react-native-permissions';
-
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Colors from './src/Utils/Colors';
 import {
   PUSH_COUNTER_DATAAdd,
@@ -240,17 +241,25 @@ const App = () => {
         <Provider store={store}>
           <PersistGate loading={null} persistor={persistedStore}>
             <NotifactionContext.Provider value={fcmMessage}>
-              <AppContextProvider>
-                <Route />
-              </AppContextProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <AppContextProvider>
+                  {/* <Route /> */}
+                  <BottomSheetModalProvider>
+                    <Route />
+                  </BottomSheetModalProvider>
+                </AppContextProvider>
+              </GestureHandlerRootView>
+              
             </NotifactionContext.Provider>
           </PersistGate>
+
         </Provider>
       </ApolloProvider>
     );
   }
 
   return <ActivityIndicator size="large" />;
+  
 };
 
 export default App;

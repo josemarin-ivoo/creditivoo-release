@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,20 +8,54 @@ import {
   Image,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {useDispatch} from 'react-redux';
-import {AppDispatch} from 'store/store';
-import {logout} from 'store/slices/auth-slice';
+import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {logout, fetchMe} from '../../store-creditivoo/slices/auth-slice';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import CreditivooVerde from '../../svgs/CreditivooVerde';
-
+import {Routes} from '../../../../../Utils/NavigationRoutes';
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
+
+// Helper function to get display name
+const getDisplayName = (
+  name?: string,
+  lastname?: string,
+  email?: string,
+): string => {
+  if (name && lastname) {
+    return `${name} ${lastname}`;
+  }
+  if (name) {
+    return name;
+  }
+  if (email) {
+    return email;
+  }
+  return 'Usuario';
+};
 
 const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useIvoDispatch();
+  const {user} = useIvoSelector(state => state.creditivoo.auth);
+
+  // Fetch user data when component mounts
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        await dispatch(fetchMe()).unwrap();
+      } catch (error) {
+        console.error(
+          '[ProfileScreen] Error al cargar datos del usuario:',
+          error,
+        );
+      }
+    };
+
+    loadUserData();
+  }, [dispatch]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -30,13 +64,13 @@ const ProfileScreen: React.FC = () => {
   const handleMenuPress = (key: string) => {
     switch (key) {
       case 'terms':
-        (navigation as any).navigate(SCREENS.TERMS, {fromProfile: true});
+        (navigation as any).navigate(Routes.NAVIGATION_TERMS, {fromProfile: true});
         break;
       case 'help':
-        (navigation as any).navigate(SCREENS.HELP);
+        (navigation as any).navigate(Routes.NAVIGATION_HELP);
         break;
       case 'settings':
-        (navigation as any).navigate(SCREENS.SETTINGS);
+        (navigation as any).navigate(Routes.NAVIGATION_SETTINGS);
         break;
       case 'personalData':
         (navigation as any).navigate('PersonalInfoForm', {fromProfile: true});
@@ -46,41 +80,77 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    (navigation as any).navigate(SCREENS.HOME);
+  const handleLogout = async () => {
+    try {
+      // Despachar el logout que limpia el token y usuario del store y AuthStorage
+      await dispatch(logout()).unwrap();
+
+      // Redirigir a login después del logout
+      navigation.reset({
+        index: 0,
+        routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}],
+      });
+    } catch (error) {
+      console.error('[ProfileScreen] Error al cerrar sesión:', error);
+      // Aún así redirigir a login aunque haya error
+      navigation.reset({
+        index: 0,
+        routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}],
+      });
+    }
   };
+
+  // Get user data with fallbacks
+  const displayName = getDisplayName(user?.name, user?.lastname, user?.email);
+  const userEmail = user?.email || '';
+  const hasAvatarImage = false; // TODO: Add avatar image URL to User type when available
+  const isEmailVerified = user?.isEmailVerified || false;
 
   const headerContent = (
     <View style={styles.profileHeader}>
       {/* Avatar */}
       <View style={styles.avatarContainer}>
-        <Image
-          source={{
-            uri: 'https://i.pravatar.cc/200?img=12',
-          }}
-          style={styles.avatar}
-          resizeMode="cover"
-          onError={() => {
-            console.log('Error loading avatar image');
-          }}
-        />
+        {hasAvatarImage ? (
+          <Image
+            source={{
+              uri: '', // TODO: Add user.avatarUrl when available
+            }}
+            style={styles.avatar}
+            resizeMode="cover"
+            onError={() => {
+              console.log('Error loading avatar image');
+            }}
+          />
+        ) : (
+          <Image
+            // source={require('../../images/profile/ivitoo-profile.png')}
+            source={require('../../images/profile/ivitoo-profile.png')}
+            style={styles.avatarPlaceholder}
+            resizeMode="contain"
+          />
+        )}
       </View>
 
       {/* Nombre + verificado */}
       <View style={styles.nameRow}>
-        <Text style={styles.nameText}>Gabriela Pérez</Text>
+        <Text style={styles.nameText} numberOfLines={1}>
+          {displayName}
+        </Text>
         <Icon
-          name="checkmark-circle"
-          type={IconType.Ionicons}
-          size={18}
+          name="verified"
+          type={IconType.MaterialIcons}
+          size={20}
           color={IVOO_COLORS.primary}
           style={styles.verifiedIcon}
         />
       </View>
 
       {/* Email */}
-      <Text style={styles.emailText}>gabiperez@gmail.com</Text>
+      {userEmail && (
+        <Text style={styles.emailText} numberOfLines={1}>
+          {userEmail}
+        </Text>
+      )}
     </View>
   );
 
@@ -101,7 +171,7 @@ const ProfileScreen: React.FC = () => {
               <Icon
                 name="person-outline"
                 type={IconType.Ionicons}
-                size={22}
+                size={24}
                 color={IVOO_COLORS.primary}
                 style={styles.menuIcon}
               />
@@ -123,7 +193,7 @@ const ProfileScreen: React.FC = () => {
               <Icon
                 name="settings-outline"
                 type={IconType.Ionicons}
-                size={22}
+                size={24}
                 color={IVOO_COLORS.primary}
                 style={styles.menuIcon}
               />
@@ -145,7 +215,7 @@ const ProfileScreen: React.FC = () => {
               <Icon
                 name="headset-outline"
                 type={IconType.Ionicons}
-                size={22}
+                size={24}
                 color={IVOO_COLORS.primary}
                 style={styles.menuIcon}
               />
@@ -167,7 +237,7 @@ const ProfileScreen: React.FC = () => {
               <Icon
                 name="shield-checkmark-outline"
                 type={IconType.Ionicons}
-                size={22}
+                size={24}
                 color={IVOO_COLORS.primary}
                 style={styles.menuIcon}
               />
@@ -184,16 +254,13 @@ const ProfileScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Bottom section - fixed at bottom */}
         <View style={styles.bottomSection}>
-          {/* Cerrar sesión */}
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutText}>CERRAR SESIÓN</Text>
           </TouchableOpacity>
 
-          {/* Logo */}
           <View style={styles.logoContainer}>
-            <CreditivooVerde width={SCREEN_WIDTH * 0.5} height={28} />
+            <CreditivooVerde width={SCREEN_WIDTH * 0.9} />
           </View>
         </View>
       </View>
@@ -226,6 +293,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   avatar: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarPlaceholder: {
     width: '100%',
     height: '100%',
   },
@@ -263,7 +334,7 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: SCREEN_WIDTH * 0.04,
     borderBottomWidth: 1,
     borderBottomColor: '#ECECEC',
     justifyContent: 'space-between',
@@ -274,21 +345,21 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   menuIcon: {
-    marginRight: 12,
+    marginRight: SCREEN_WIDTH * 0.035,
   },
   menuText: {
-    fontSize: SCREEN_WIDTH * 0.042,
+    fontSize: SCREEN_WIDTH * 0.04,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.textPrimary,
     flexShrink: 1,
   },
   logoutButton: {
     alignItems: 'center',
-    marginBottom: SCREEN_WIDTH * 0.06,
+    marginBottom: SCREEN_WIDTH * 0.1,
     marginTop: 0,
   },
   logoutText: {
-    fontSize: SCREEN_WIDTH * 0.029,
+    fontSize: SCREEN_WIDTH * 0.03,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.primary,
@@ -297,7 +368,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: SCREEN_WIDTH * 0.05,
+    marginBottom: SCREEN_WIDTH * 0.1,
   },
 });
 

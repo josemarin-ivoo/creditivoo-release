@@ -11,7 +11,6 @@ import {
   IVOO_COLORS,
   IVOO_SPACING,
   IVOO_TEXT_STYLES,
-  getShadowStyle,
 } from '../styles';
 
 interface ButtonProps {
@@ -59,7 +58,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    ...getShadowStyle('button'),
   },
   buttonText: {
     fontSize: IVOO_TEXT_STYLES.buttonText.fontSize,

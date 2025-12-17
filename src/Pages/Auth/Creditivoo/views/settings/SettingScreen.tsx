@@ -11,7 +11,7 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-
+import {Routes} from '../../../../../Utils/NavigationRoutes';
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 interface SettingOption {
@@ -29,7 +29,7 @@ const SettingScreen: React.FC = () => {
   const handleOptionPress = (optionId: string) => {
     switch (optionId) {
       case 'security':
-        (navigation as any).navigate(SCREENS.SECURITY);
+        (navigation as any).navigate(Routes.NAVIGATION_SECURITY);
         break;
       default:
         console.log('Option pressed:', optionId);

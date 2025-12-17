@@ -5,10 +5,12 @@ import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import {useToast} from 'react-native-toast-notifications';
 import Config from 'react-native-config';
 import {useDispatch, useSelector} from 'react-redux';
-import {AppDispatch, RootState} from 'store/store';
-import {completeRegistration} from 'store/slices/auth-slice';
+// import {AppDispatch, RootState} from 'store/store';
+import {AppDispatch, RootState} from '../../../../../store/store';
+import {completeRegistration} from '../../../../../store/slices/auth-slice';
+// /store-creditivoo/slices/auth-slice';
 import {useNavigation} from '@react-navigation/native';
-import ButtonK from '@shared-components/button/ButtonK';
+import ButtonK from '../../../../../shared/components/button/ButtonK';
 
 interface RegistrationSuccessStepProps {
   formData: {

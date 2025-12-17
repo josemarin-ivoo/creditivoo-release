@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,12 +6,15 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {OtpInput} from 'react-native-otp-entry';
 import * as yup from 'yup';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
-import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
+import {IVOO_COLORS, IVOO_SPACING, IVOO_TYPOGRAPHY} from '../../styles';
+import {verifyEmailOTP, resendEmailOTP} from '../../services';
+import {AlertModal} from '../../components';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -26,42 +29,201 @@ const otpSchema = yup.object().shape({
     .matches(/^\d+$/, 'El código debe contener solo números'),
 });
 
+type EmailOTPVerificationRouteParams = {
+  email: string;
+};
+
+type EmailOTPVerificationRouteProp = RouteProp<
+  {EmailOTPVerification: EmailOTPVerificationRouteParams},
+  'EmailOTPVerification'
+>;
+
 const EmailOTPVerificationScreen: React.FC = () => {
   const navigation = useNavigation();
+  const route = useRoute<EmailOTPVerificationRouteProp>();
+  const email = route.params?.email || '';
+
+  const [otpCode, setOtpCode] = useState<string>('');
+  const [isValid, setIsValid] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
+  const [isResending, setIsResending] = useState<boolean>(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'error' | 'warning' | 'info'>(
+    'error',
+  );
+  const [countdown, setCountdown] = useState<number>(60); // 60 segundos iniciales
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleOtpChange = (code: string) => {
-    setError(null); // Clear error when user types
+  // Iniciar cuenta regresiva cuando la pantalla se monta
+  useEffect(() => {
+    // Iniciar cuenta regresiva
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          if (countdownRef.current) {
+            clearInterval(countdownRef.current);
+            countdownRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-    if (code.length === OTP_LENGTH) {
-      handleVerify(code);
-    }
-  };
-
-  const handleVerify = async (code: string) => {
-    try {
-      // Validate with yup
-      await otpSchema.validate({code});
-
-      // TODO: Verificar código OTP del correo con el backend
-      console.log('Verifying Email OTP:', code);
-
-      // Navigate to password screen after successful validation
-      (navigation as any).navigate('Password');
-    } catch (err: any) {
-      // Handle validation errors
-      if (err.errors && err.errors.length > 0) {
-        setError(err.errors[0]);
-      } else {
-        setError('Código inválido');
+    // Limpiar intervalo al desmontar
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
       }
-      console.error('OTP validation error:', err);
+    };
+  }, []);
+
+  const validateCode = async (code: string) => {
+    try {
+      await otpSchema.validate({code}, {abortEarly: false});
+      setIsValid(true);
+      setError(null);
+      return true;
+    } catch (err: any) {
+      setIsValid(false);
+      if (code.length === OTP_LENGTH) {
+        // Only show error if code is complete
+        if (err.errors && err.errors.length > 0) {
+          setError(err.errors[0]);
+        } else {
+          setError('Código inválido');
+        }
+      } else {
+        setError(null);
+      }
+      return false;
     }
   };
 
-  const handleResend = () => {
-    // TODO: Reenviar código OTP por correo
-    // The OtpInput component will handle clearing internally
+  const handleOtpChange = async (code: string) => {
+    setOtpCode(code);
+    await validateCode(code);
+  };
+
+  const handleVerify = async () => {
+    const isValidCode = await validateCode(otpCode);
+    if (!isValidCode || !email) {
+      return;
+    }
+
+    setIsVerifying(true);
+    setError(null);
+
+    try {
+      const response = await verifyEmailOTP(email, otpCode);
+
+      if (response.verified) {
+        if (response.isAlreadyVerified) {
+          console.log('Email ya estaba verificado previamente');
+        } else {
+          console.log('OTP verificado exitosamente');
+        }
+        // Si hay un token, podrías guardarlo aquí
+        if (response.token) {
+          // TODO: Guardar token de autenticación
+          console.log('Token recibido:', response.token);
+        }
+        // Navigate to password screen after successful validation
+        (navigation as any).navigate('Password');
+      } else {
+        setError(
+          'Código OTP inválido. Por favor, verifica e intenta de nuevo.',
+        );
+      }
+    } catch (err: any) {
+      const errorMessage =
+        err.message ||
+        'Error al verificar el código. Por favor, intenta de nuevo.';
+      setError(errorMessage);
+      setAlertTitle('Error');
+      setAlertMessage(errorMessage);
+      setAlertType('error');
+      setAlertVisible(true);
+      console.error('Error al verificar OTP:', err);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email) {
+      setAlertTitle('Error');
+      setAlertMessage('No se encontró el correo electrónico.');
+      setAlertType('error');
+      setAlertVisible(true);
+      return;
+    }
+
+    setIsResending(true);
+    setError(null);
+
+    try {
+      await resendEmailOTP(email);
+      setOtpCode('');
+      setIsValid(false);
+      setAlertTitle('Código reenviado');
+      setAlertMessage(
+        'Se ha enviado un nuevo código OTP a tu correo electrónico.',
+      );
+      setAlertType('info');
+      setAlertVisible(true);
+
+      // Reiniciar cuenta regresiva
+      setCountdown(60);
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            if (countdownRef.current) {
+              clearInterval(countdownRef.current);
+              countdownRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      console.log('OTP reenviado exitosamente a:', email);
+    } catch (err: any) {
+      const errorMessage =
+        err.message ||
+        'Error al reenviar el código. Por favor, intenta de nuevo.';
+
+      // Título diferente para cooldown
+      const title =
+        errorMessage.includes('espera') ||
+        errorMessage.includes('cooldown') ||
+        errorMessage.includes('Cooldown')
+          ? 'Espera requerida'
+          : 'Error';
+
+      const type: 'error' | 'warning' =
+        errorMessage.includes('espera') ||
+        errorMessage.includes('cooldown') ||
+        errorMessage.includes('Cooldown')
+          ? 'warning'
+          : 'error';
+
+      setAlertTitle(title);
+      setAlertMessage(errorMessage);
+      setAlertType(type);
+      setAlertVisible(true);
+      console.error('Error al reenviar OTP:', err);
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const logo = (
@@ -96,15 +258,49 @@ const EmailOTPVerificationScreen: React.FC = () => {
       </View>
 
       <View style={styles.resendContainer}>
-        <Text style={styles.resendQuestion}>¿No recibiste el código?</Text>
-        <TouchableOpacity onPress={handleResend}>
-          <Text style={styles.resendLink}>Reenviar código</Text>
+        {countdown === 0 && (
+          <Text style={styles.resendQuestion}>¿No recibiste el código?</Text>
+        )}
+        <TouchableOpacity
+          onPress={handleResend}
+          disabled={isResending || countdown > 0}
+          style={[
+            styles.resendButton,
+            (isResending || countdown > 0) && styles.resendButtonDisabled,
+          ]}>
+          {isResending ? (
+            <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
+          ) : countdown > 0 ? (
+            <Text style={[styles.resendLink, styles.resendLinkDisabled]}>
+              Reenviar código ({countdown}s)
+            </Text>
+          ) : (
+            <Text style={styles.resendLink}>Reenviar código</Text>
+          )}
         </TouchableOpacity>
       </View>
     </>
   );
 
-  const bottomAction = <View />;
+  const bottomAction = (
+    <TouchableOpacity
+      style={[styles.verifyButton, !isValid && styles.verifyButtonDisabled]}
+      onPress={handleVerify}
+      disabled={!isValid || isVerifying}
+      activeOpacity={0.8}>
+      {isVerifying ? (
+        <ActivityIndicator size="small" color={IVOO_COLORS.white} />
+      ) : (
+        <Text
+          style={[
+            styles.verifyButtonText,
+            !isValid && styles.verifyButtonTextDisabled,
+          ]}>
+          Verificar
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <>
@@ -114,6 +310,13 @@ const EmailOTPVerificationScreen: React.FC = () => {
         bottomAction={bottomAction}>
         {content}
       </RegisterLayout>
+      <AlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+      />
     </>
   );
 };
@@ -192,6 +395,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 8,
   },
+  resendButton: {
+    minHeight: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   resendLink: {
     fontSize: 16,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
@@ -202,12 +410,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
   },
+  resendLinkDisabled: {
+    color: IVOO_COLORS.grayMedium,
+    textDecorationLine: 'none',
+  },
+  resendButtonDisabled: {
+    opacity: 0.6,
+  },
   errorText: {
     fontSize: 12,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.error,
     textAlign: 'center',
     marginTop: 8,
+  },
+  verifyButton: {
+    backgroundColor: IVOO_COLORS.primary,
+    borderRadius: IVOO_SPACING.buttonBorderRadius,
+    paddingVertical: SCREEN_HEIGHT * 0.018,
+    paddingHorizontal: SCREEN_WIDTH * 0.1,
+    width: '90%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyButtonDisabled: {
+    backgroundColor: IVOO_COLORS.grayLight,
+    opacity: 0.6,
+  },
+  verifyButtonText: {
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.white,
+  },
+  verifyButtonTextDisabled: {
+    color: IVOO_COLORS.grayMedium,
   },
 });
 

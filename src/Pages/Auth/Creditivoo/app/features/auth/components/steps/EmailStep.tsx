@@ -1,10 +1,13 @@
 import React from 'react';
 import {Text} from '@ui-kitten/components';
 import {Controller, Control, FieldErrors, useWatch} from 'react-hook-form';
-import InputK from '@shared-components/input/InputK';
-import ButtonK from '@shared-components/button/ButtonK';
+// import InputK from '@shared-components/input/InputK';
+import InputK from '../../../../../shared/components/input/InputK';
+// import ButtonK from '@shared-components/button/ButtonK';
+import ButtonK from '../../../../../shared/components/button/ButtonK';
 import {SignUpFormData} from '../../hooks/useSignUpForm';
-import {validateEmail} from '@app-services/validations/emailValidation';
+// import {validateEmail} from '@app-services/validations/emailValidation';
+import {validateEmail} from '../../../../services/validations/emailValidation';
 
 interface EmailStepProps {
   control: Control<SignUpFormData>;
@@ -67,7 +70,7 @@ const EmailStep: React.FC<EmailStepProps> = ({
               if (trimmed !== value) {
                 onChange(trimmed);
               }
-              onBlur(e);
+              // onBlur(e);
             }}
             placeholder="Correo electrónico"
             status={errors.email ? 'danger' : 'basic'}

@@ -70,7 +70,7 @@ const CurvedHeaderLayout: React.FC<CurvedHeaderLayoutProps> = ({
           )}
 
           <BodyWrapper
-            {...(scroll ? {contentContainerStyle: styles.scrollContent} : {})}>
+            {...(scroll ? {contentContainerStyle: styles.scrollContent} : {style: styles.nonScrollContent})}>
             {children}
           </BodyWrapper>
         </View>
@@ -134,6 +134,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingBottom: SCREEN_HEIGHT * 0.03,
+  },
+  nonScrollContent: {
+    flex: 1,
   },
 });
 

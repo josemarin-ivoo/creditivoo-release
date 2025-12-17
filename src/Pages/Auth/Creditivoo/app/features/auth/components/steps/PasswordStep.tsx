@@ -1,8 +1,8 @@
 import React from 'react';
 import {Text} from '@ui-kitten/components';
 import {Controller, Control, FieldErrors, UseFormTrigger} from 'react-hook-form';
-import InputK from '@shared-components/input/InputK';
-import ButtonK from '@shared-components/button/ButtonK';
+import InputK from '../../../../../shared/components/input/InputK';
+import ButtonK from '../../../../../shared/components/button/ButtonK';
 import PasswordRequirements from '@components/password-requirements/PasswordRequirements';
 import {SignUpFormData} from '../../hooks/useSignUpForm';
 

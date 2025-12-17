@@ -92,7 +92,10 @@ export enum Routes {
   NAVIGATION_SETTINGS = 'Settings',
   NAVIGATION_SECURITY = 'Security',
   NAVIGATION_NOTIFICATIONS = 'Notification',
-
+  NAVIGATION_TABCREDITIVOO = 'MainTabs',
+  NAVIGATION_MYPURCHASES = 'MyPurchases',
+  NAVIGATION_GEMS = 'Gems',
+  NAVIGATION_PROFILE = 'Profile',
 
   // TAB
   //END JAMP 02-12-2025

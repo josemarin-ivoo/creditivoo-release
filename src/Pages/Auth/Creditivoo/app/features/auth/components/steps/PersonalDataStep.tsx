@@ -6,8 +6,8 @@ import {
   FieldErrors,
   UseFormTrigger,
 } from 'react-hook-form';
-import InputK from '@shared-components/input/InputK';
-import ButtonK from '@shared-components/button/ButtonK';
+import InputK from '../../../../../shared/components/input/InputK';
+import ButtonK from '../../../../../shared/components/button/ButtonK';
 import {SignUpFormData} from '../../hooks/useSignUpForm';
 
 interface PersonalDataStepProps {

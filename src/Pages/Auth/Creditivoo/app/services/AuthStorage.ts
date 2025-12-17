@@ -1,8 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import * as Keychain from 'react-native-keychain';
-import {User} from '@services/api/auth';
+// import {User} from '@ivoo/store/slices/auth-slice';
+import {User} from '../../store-creditivoo/slices/auth-slice';
 
 const TOKEN_KEY = 'userToken';
+const REFRESH_TOKEN_KEY = 'refreshToken';
 const USER_KEY = 'user';
 
 // Helper function to validate user data
@@ -42,13 +44,43 @@ export const AuthStorage = {
     }
   },
 
+  async saveRefreshToken(refreshToken: string): Promise<void> {
+    if (!refreshToken) {
+      throw new Error('Invalid refresh token provided');
+    }
+    try {
+      await EncryptedStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    } catch (error) {
+      console.error('Error saving refresh token:', error);
+      throw error;
+    }
+  },
+
+  async getRefreshToken(): Promise<string | null> {
+    try {
+      return await EncryptedStorage.getItem(REFRESH_TOKEN_KEY);
+    } catch (error) {
+      console.error('Error getting refresh token:', error);
+      return null;
+    }
+  },
+
+  async deleteRefreshToken(): Promise<void> {
+    try {
+      await EncryptedStorage.removeItem(REFRESH_TOKEN_KEY);
+    } catch (error) {
+      console.error('Error deleting refresh token:', error);
+      throw error;
+    }
+  },
+
   async saveUser(user: User): Promise<void> {
     if (!isValidUser(user)) {
       throw new Error('Invalid user data provided');
     }
     try {
       const userString = JSON.stringify(user);
-      await AsyncStorage.setItem(USER_KEY, userString);
+      await EncryptedStorage.setItem(USER_KEY, userString);
     } catch (error) {
       console.error('Error saving user:', error);
       throw error; // Propagate error to handle it in the calling code
@@ -57,8 +89,10 @@ export const AuthStorage = {
 
   async getUser(): Promise<User | null> {
     try {
-      const userString = await AsyncStorage.getItem(USER_KEY);
-      if (!userString) return null;
+      const userString = await EncryptedStorage.getItem(USER_KEY);
+      if (!userString) {
+        return null;
+      }
 
       const user = JSON.parse(userString);
       if (!isValidUser(user)) {
@@ -77,7 +111,7 @@ export const AuthStorage = {
 
   async deleteUser(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(USER_KEY);
+      await EncryptedStorage.removeItem(USER_KEY);
     } catch (error) {
       console.error('Error deleting user:', error);
       throw error; // Propagate error to handle it in the calling code
@@ -86,7 +120,11 @@ export const AuthStorage = {
 
   async clearAuthData(): Promise<void> {
     try {
-      await Promise.all([this.deleteToken(), this.deleteUser()]);
+      await Promise.all([
+        this.deleteToken(),
+        this.deleteRefreshToken(),
+        this.deleteUser(),
+      ]);
     } catch (error) {
       console.error('Error clearing auth data:', error);
       throw error; // Propagate error to handle it in the calling code

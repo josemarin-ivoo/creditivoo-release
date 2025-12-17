@@ -41,8 +41,8 @@ const HomeCreditCard: React.FC<HomeCreditCardProps> = ({
       {/* Text + Ivitoo */}
       <View style={styles.mainCardTopRow}>
         <View style={styles.mainCardTextContainer}>
-          <Text style={styles.mainCardTitle}>Solicita aquí tu línea de</Text>
-          <Text style={styles.mainCardTitleBold}>CreditIvoo disponible</Text>
+          <Text style={styles.mainCardTitle}>Solicita aquí tu línea</Text>
+          <Text style={styles.mainCardTitleBold}>Creditivoo disponible</Text>
         </View>
 
         <View style={styles.ivitooInCard}>

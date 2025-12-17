@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,11 +10,20 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {Button, Input} from '../../components';
+import {Button, Input, AlertModal} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-
+// import {useIvoDispatch, useIvoSelector} from '../../store-creditivoo/hooks';
+import {
+  registerUser,
+  setPassword as setPasswordInStore,
+  clearRegisterData,
+  updateAuth,
+} from '../../store-creditivoo';
+import {User} from '../../store-creditivoo/slices/auth-slice';
+// import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
+import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 interface PasswordRequirement {
@@ -24,8 +33,18 @@ interface PasswordRequirement {
 
 const PasswordScreen: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useIvoDispatch();
+  const {phoneNumber, email, isLoading, error} = useIvoSelector(
+    state => state.creditivoo.register,
+  );
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState<'error' | 'warning' | 'info'>(
+    'error',
+  );
 
   // Validate password requirements
   const requirements: PasswordRequirement[] = useMemo(() => {
@@ -58,15 +77,115 @@ const PasswordScreen: React.FC = () => {
     return requirements.every(req => req.isValid);
   }, [requirements]);
 
-  const handleContinue = () => {
+  // Mostrar error del store si existe
+  useEffect(() => {
+    if (error) {
+      const errorMessage =
+        typeof error === 'string'
+          ? error
+          : (error as any)?.message ||
+            (error as any)?.toString() ||
+            'Error desconocido';
+      setAlertTitle('Error');
+      setAlertMessage(errorMessage);
+      setAlertType('error');
+      setAlertVisible(true);
+    }
+  }, [error]);
+
+  const handleContinue = async () => {
     if (!isPasswordValid) {
-      // TODO: Show error message
+      setAlertTitle('Error');
+      setAlertMessage(
+        'Por favor, completa todos los requisitos de la contraseña.',
+      );
+      setAlertType('error');
+      setAlertVisible(true);
       return;
     }
-    // TODO: Save password and complete registration
-    console.log('Password set:', password);
-    // Navigate to registration success screen
-    (navigation as any).navigate('RegistrationSuccess');
+
+    
+
+    if (!phoneNumber || !email) {
+      setAlertTitle('Error');
+      setAlertMessage(
+        'Faltan datos del registro. Por favor, vuelve a empezar.',
+      );
+      setAlertType('error');
+      setAlertVisible(true);
+      return;
+    }
+
+    try {
+      // Guardar password en el store
+      dispatch(setPasswordInStore(password));
+
+      // Validar que todos los datos estén disponibles antes de enviar
+      console.log('[PasswordScreen] ===== PREPARANDO REGISTRO FINAL =====');
+      console.log('[PasswordScreen] Datos recopilados:');
+      console.log('[PasswordScreen] - Phone Number:', phoneNumber);
+      console.log('[PasswordScreen] - Email:', email);
+      console.log('[PasswordScreen] - Password:', '*** (oculto)');
+
+      // Registrar usuario con todos los datos (phoneNumber, email, password)
+      const result = await dispatch(
+        registerUser({
+          phoneNumber,
+          email,
+          password,
+        }),
+      ).unwrap();
+
+      console.log('[PasswordScreen] ===== REGISTRO COMPLETADO =====');
+      console.log('[PasswordScreen] Usuario registrado exitosamente:', result);
+
+      // Actualizar estado de autenticación con token y usuario
+      if (result.token && result.user) {
+        console.log('[PasswordScreen] Actualizando estado de autenticación');
+        const userData: User = {
+          id: result.user.id,
+          email: result.user.email,
+          phone: result.user.phone || '',
+          name: result.user.name || '',
+          lastname: result.user.lastname || '',
+          username: result.user.username || result.user.email,
+          document: result.user.document || '',
+          dob: result.user.dob || '',
+          role: result.user.role || 'user',
+          isEmailVerified: result.user.isEmailVerified || false,
+          kycVerifications: result.user.kycVerifications,
+        };
+        dispatch(
+          updateAuth({
+            token: result.token,
+            user: userData,
+          }),
+        );
+      } else {
+        console.warn(
+          '[PasswordScreen] No se recibió token o usuario en la respuesta',
+        );
+      }
+
+      // Limpiar datos del store
+      dispatch(clearRegisterData());
+
+      // Navigate to registration success screen
+      (navigation as any).navigate('RegistrationSuccess');
+    } catch (err: any) {
+      // Asegurarse de que el error sea un string
+      const errorMessage =
+        typeof err === 'string'
+          ? err
+          : err?.message ||
+            err?.toString() ||
+            'Error al registrar usuario. Por favor, intenta de nuevo.';
+      setAlertTitle('Error');
+      setAlertMessage(errorMessage);
+      setAlertType('error');
+      setAlertVisible(true);
+      console.error('Error al registrar usuario:', err);
+    }
   };
 
   const logo = (
@@ -147,7 +266,8 @@ const PasswordScreen: React.FC = () => {
   const bottomAction = (
     <Button
       onPress={handleContinue}
-      title="Continuar"
+      title={isLoading ? 'Registrando...' : 'Continuar'}
+      disabled={!isPasswordValid || isLoading}
       style={styles.continueButton}
     />
   );
@@ -160,6 +280,13 @@ const PasswordScreen: React.FC = () => {
         bottomAction={bottomAction}>
         {content}
       </RegisterLayout>
+      <AlertModal
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+      />
     </>
   );
 };

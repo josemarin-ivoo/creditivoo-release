@@ -14,6 +14,7 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import HomeCreditCard from './HomeCreditCard';
 import QuickActions from './QuickActions';
+import {Routes} from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -24,24 +25,37 @@ const HomeCreditIvoo: React.FC = () => {
     (navigation as any).navigate('IdentityVerificator');
   };
 
-  const handleQuickAction = (action: string) =>
-    console.log('Quick Action', action);
+  const handleQuickAction = (action: string) => {
+    switch (action) {
+      case 'compras':
+        // (navigation as any).navigate('MyPurchases');
+        (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
+        break;
+      case 'puntos':
+        // (navigation as any).navigate('Gems');
+        (navigation as any).navigate(Routes.NAVIGATION_GEMS);
+        break;
+      default:
+        console.log('Quick Action', action);
+        break;
+    }
+  };
 
   const handleProfilePress = () => {
     // Try to navigate to Profile tab first, if that doesn't work, use parent navigator
     try {
-      (navigation as any).navigate(SCREENS.PROFILE);
+      (navigation as any).navigate(Routes.NAVIGATION_PROFILE);
     } catch (error) {
       // If navigation fails, try using parent navigator
       const parent = (navigation as any).getParent();
       if (parent) {
-        parent.navigate(SCREENS.PROFILE);
+        parent.navigate(Routes.NAVIGATION_PROFILE);
       }
     }
   };
 
   const handleNotificationPress = () => {
-    (navigation as any).navigate(SCREENS.NOTIFICATIONS);
+    (navigation as any).navigate(Routes.NAVIGATION_NOTIFICATIONS);
   };
 
   return (
@@ -51,12 +65,11 @@ const HomeCreditIvoo: React.FC = () => {
         barStyle="light-content"
       />
 
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={handleProfilePress}
           style={styles.profileLink}>
-          <Text style={styles.profileLinkText}>Profile</Text>
+          <Text style={styles.profileLinkText}> </Text>
         </TouchableOpacity>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={styles.headerIcon}>
@@ -83,21 +96,17 @@ const HomeCreditIvoo: React.FC = () => {
         </View>
       </View>
 
-      {/* FLOATING CREDIT CARD */}
       <HomeCreditCard
         style={styles.mainCard}
         onRequestCredit={handleRequestCredit}
       />
 
-      {/* CONTENT BELOW CARD */}
       <View style={styles.actionsWrapper}>
         <QuickActions onActionPress={handleQuickAction} />
       </View>
     </SafeAreaView>
   );
 };
-
-/* -------------------- STYLES -------------------- */
 
 const styles = StyleSheet.create({
   safeArea: {

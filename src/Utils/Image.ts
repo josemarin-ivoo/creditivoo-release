@@ -42,9 +42,14 @@ export default {
   ic_search_white: require('../../assets/images/tab/ic_search_white.png'),
   
   ic_creditivodark: require('../../assets/images/tab/25px-white-stroke.png'),
-  // ic_creditivodark_a: require('../../assets/images/tab/creditivoodark-48px.png'),
-  // ic_creditivodark_b: require('../../assets/images/tab/creditivoodark-72px.png'),
-  ic_creditivo: require('../../assets/images/tab/creditivoo24px.png'),
+  ic_creditivodark_b: require('../../assets/images/tab/49px-white-stroke.png'),
+  ic_creditivodark_c: require('../../assets/images/tab/72px-logo.png'),
+  ic_creditivodark_green: require('../../assets/images/tab/creditivoo24px.png'),
+  ic_creditivodark_green_a: require('../../assets/images/tab/creditivoo48px.png'),
+  ic_creditivodark_green_b: require('../../assets/images/tab/creditivoo72px.png'),
+  ic_creditivo_green: require('../../assets/images/tab/25px-green-stroke.png'),
+  ic_creditivo_green_b: require('../../assets/images/tab/49px-green-stroke.png'),
+  ic_creditivo_green_c: require('../../assets/images/tab/73px-green-stroke.png'),
   // ic_creditivo_b: require('../../assets/images/tab/creditivoo-48px.png'),
   // ic_creditivo_c: require('../../assets/images/tab/creditivoo-72px.png'),
 

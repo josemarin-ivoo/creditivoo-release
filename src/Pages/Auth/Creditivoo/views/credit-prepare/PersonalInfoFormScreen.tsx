@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,54 +7,149 @@ import {
   Dimensions,
   Platform,
   KeyboardAvoidingView,
-  TouchableOpacity,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
-import DatePicker from 'react-native-date-picker';
-import {Button, Input} from '../../components';
+import {Button, Input, AlertModal} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
+import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {updateUserProfile, fetchMe} from '../../store-creditivoo/slices/auth-slice';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+
+// Helper function to convert ISO date string to DD/MM/YYYY
+const formatDateToDDMMYYYY = (
+  dateString: string | null | undefined,
+): string => {
+  if (!dateString) {
+    return '';
+  }
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return '';
+  }
+};
+
+// Helper function to parse DD/MM/YYYY to Date object (no longer used but kept for potential future use)
+// const parseDateFromDDMMYYYY = (dateString: string): Date | null => {
+//   if (!dateString || dateString.length !== 10) {
+//     return null;
+//   }
+//   try {
+//     const [day, month, year] = dateString.split('/');
+//     return new Date(
+//       parseInt(year, 10),
+//       parseInt(month, 10) - 1,
+//       parseInt(day, 10),
+//     );
+//   } catch {
+//     return null;
+//   }
+// };
+
+// Helper function to convert backend gender (male/female) to display format (Masculino/Femenino)
+const formatGenderForDisplay = (gender: string | null | undefined): string => {
+  if (!gender) {
+    return '';
+  }
+  const lowerGender = gender.toLowerCase();
+  if (lowerGender === 'male' || lowerGender === 'masculino') {
+    return 'Masculino';
+  }
+  if (lowerGender === 'female' || lowerGender === 'femenino') {
+    return 'Femenino';
+  }
+  return gender; // Return as is if not recognized
+};
 
 const PersonalInfoFormScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
+  const dispatch = useIvoDispatch();
+  const {user, isLoading} = useIvoSelector((state: any) => state.creditivoo.auth);
 
   // Verificar si viene del ProfileScreen
   const fromProfile = (route.params as any)?.fromProfile || false;
 
   const [formData, setFormData] = useState({
-    nombres: 'Gabriela',
-    apellidos: 'Perez',
-    fechaNacimiento: '08/10/1994',
-    direccion: 'Caracas',
-    genero: 'Femenino',
+    nombres: '',
+    apellidos: '',
+    fechaNacimiento: '',
+    direccion: '',
+    genero: '',
   });
 
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date(1994, 9, 8));
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
 
-  const handleDateConfirm = (date: Date) => {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    setFormData({
-      ...formData,
-      fechaNacimiento: `${day}/${month}/${year}`,
-    });
-    setSelectedDate(date);
-    setIsDatePickerOpen(false);
+  // Pre-fill form data from Redux store
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        // Si no viene del profile, obtener datos del endpoint /auth/me
+        if (!fromProfile) {
+          await dispatch(fetchMe()).unwrap();
+        }
+      } catch (error) {
+        console.error('[PersonalInfoFormScreen] Error al cargar datos:', error);
+      }
+    };
+
+    loadUserData();
+  }, [dispatch, fromProfile]);
+
+  // Pre-fill form data from Redux store
+  useEffect(() => {
+    if (user) {
+      const dobFormatted = formatDateToDDMMYYYY(user.dob || null);
+
+      setFormData({
+        nombres: user.name || '',
+        apellidos: user.lastname || '',
+        fechaNacimiento: dobFormatted,
+        direccion: user.address || '',
+        genero: formatGenderForDisplay(user.gender),
+      });
+    }
+  }, [user]);
+
+  const handleConfirm = async () => {
+    // Solo actualizar dirección, independientemente de si viene del profile o del flujo de KYC
+    try {
+      await dispatch(
+        updateUserProfile({
+          address: formData.direccion.trim() || undefined,
+        }),
+      ).unwrap();
+
+      if (fromProfile) {
+        // Volver atrás después de actualizar si viene del profile
+        navigation.goBack();
+      } else {
+        // Navegar a la pantalla de código de referidos si viene del flujo de KYC
+        (navigation as any).navigate('ReferralCodeForm');
+      }
+    } catch (error: any) {
+      const errorMessage =
+        error?.message ||
+        'Error al guardar los datos. Por favor, intenta de nuevo.';
+      setAlertMessage(errorMessage);
+      setAlertVisible(true);
+    }
   };
 
-  const handleConfirm = () => {
-    if (fromProfile) {
-      // Si viene del ProfileScreen, volver atrás
-      navigation.goBack();
-    } else {
-      // Navegar a la pantalla de código de referidos
-      (navigation as any).navigate('ReferralCodeForm');
-    }
+  // Validar que los campos requeridos estén llenos
+  const isFormValid = () => {
+    // Solo dirección es requerida, independientemente de si viene del profile o del flujo de KYC
+    return formData.direccion.trim() !== '';
   };
 
   const logo = (
@@ -83,49 +178,54 @@ const PersonalInfoFormScreen: React.FC = () => {
         {/* Nombres */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Nombres</Text>
-          <Input
-            value={formData.nombres}
-            onChangeText={text => setFormData({...formData, nombres: text})}
-            style={styles.input}
-            containerStyle={styles.inputContainer}
-          />
+          <View style={styles.disabledContainer}>
+            <Input
+              value={formData.nombres}
+              onChangeText={text => setFormData({...formData, nombres: text})}
+              placeholder="Ingresa tus nombres"
+              style={styles.input}
+              containerStyle={styles.inputContainer}
+              editable={false}
+            />
+          </View>
         </View>
 
         {/* Apellidos */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Apellidos</Text>
-          <Input
-            value={formData.apellidos}
-            onChangeText={text => setFormData({...formData, apellidos: text})}
-            style={styles.input}
-            containerStyle={styles.inputContainer}
-          />
+          <View style={styles.disabledContainer}>
+            <Input
+              value={formData.apellidos}
+              onChangeText={text => setFormData({...formData, apellidos: text})}
+              placeholder="Ingresa tus apellidos"
+              style={styles.input}
+              containerStyle={styles.inputContainer}
+              editable={false}
+            />
+          </View>
         </View>
 
         {/* Fecha de nacimiento */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Fecha de nacimiento</Text>
-          <TouchableOpacity
-            onPress={() => setIsDatePickerOpen(true)}
-            style={styles.dateInputContainer}>
+          <View style={[styles.dateInputContainer, styles.disabledContainer]}>
             <Input
               value={formData.fechaNacimiento}
               editable={false}
+              placeholder="DD/MM/YYYY"
               style={styles.input}
               containerStyle={styles.inputContainer}
             />
-            <View style={styles.calendarIcon}>
-              <Text style={styles.calendarIconText}>📅</Text>
-            </View>
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* Dirección */}
         <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Dirección</Text>
+          <Text style={styles.label}>Dirección *</Text>
           <Input
             value={formData.direccion}
             onChangeText={text => setFormData({...formData, direccion: text})}
+            placeholder="Ingresa tu dirección"
             style={styles.input}
             containerStyle={styles.inputContainer}
           />
@@ -134,31 +234,28 @@ const PersonalInfoFormScreen: React.FC = () => {
         {/* Género */}
         <View style={styles.fieldContainer}>
           <Text style={styles.label}>Género</Text>
-          <Input
-            value={formData.genero}
-            onChangeText={text => setFormData({...formData, genero: text})}
-            style={styles.input}
-            containerStyle={styles.inputContainer}
-          />
+          <View style={[styles.genderInputContainer, styles.disabledContainer]}>
+            <Input
+              value={formData.genero}
+              editable={false}
+              placeholder="Género"
+              style={styles.input}
+              containerStyle={styles.inputContainer}
+            />
+          </View>
         </View>
       </KeyboardAvoidingView>
-
-      <DatePicker
-        modal
-        open={isDatePickerOpen}
-        date={selectedDate}
-        mode="date"
-        onConfirm={handleDateConfirm}
-        onCancel={() => setIsDatePickerOpen(false)}
-        locale="es"
-        title="Seleccionar fecha de nacimiento"
-        confirmText="Confirmar"
-        cancelText="Cancelar"
-      />
     </>
   );
 
-  const bottomAction = <Button onPress={handleConfirm} title="Confirmar" />;
+  const bottomAction = (
+    <Button
+      onPress={handleConfirm}
+      title={isLoading ? 'Guardando...' : 'Confirmar'}
+      disabled={isLoading || !isFormValid()}
+      style={styles.confirmButton}
+    />
+  );
 
   return (
     <>
@@ -168,6 +265,16 @@ const PersonalInfoFormScreen: React.FC = () => {
         bottomAction={bottomAction}>
         {content}
       </RegisterLayout>
+
+      {/* Alert Modal */}
+      <AlertModal
+        visible={alertVisible}
+        title="Error"
+        message={alertMessage}
+        type="error"
+        onClose={() => setAlertVisible(false)}
+        buttonText="OK"
+      />
     </>
   );
 };
@@ -249,6 +356,78 @@ const styles = StyleSheet.create({
   },
   calendarIconText: {
     fontSize: SCREEN_WIDTH * 0.045,
+  },
+  genderInputContainer: {
+    width: '100%',
+    position: 'relative',
+  },
+  chevronIcon: {
+    position: 'absolute',
+    right: SCREEN_WIDTH * 0.04,
+    top: SCREEN_HEIGHT * 0.02,
+    zIndex: 1,
+  },
+  bottomSheetContent: {
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    paddingTop: SCREEN_HEIGHT * 0.02,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.02,
+    paddingBottom: SCREEN_HEIGHT * 0.015,
+    borderBottomWidth: 1,
+    borderBottomColor: IVOO_COLORS.grayLight,
+  },
+  modalTitle: {
+    fontSize: SCREEN_WIDTH * 0.045,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalBody: {
+    paddingVertical: SCREEN_HEIGHT * 0.01,
+  },
+  genderOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: SCREEN_HEIGHT * 0.02,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    marginBottom: SCREEN_HEIGHT * 0.01,
+    borderRadius: 8,
+    backgroundColor: IVOO_COLORS.grayLight,
+  },
+  genderOptionSelected: {
+    backgroundColor: IVOO_COLORS.primary + '15',
+    borderWidth: 1,
+    borderColor: IVOO_COLORS.primary,
+  },
+  genderOptionText: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textPrimary,
+  },
+  genderOptionTextSelected: {
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
+  },
+  confirmButton: {
+    shadowColor: 'transparent',
+    shadowOffset: {width: 0, height: 0},
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  disabledContainer: {
+    opacity: 0.6,
+    width: '100%',
   },
 });
 

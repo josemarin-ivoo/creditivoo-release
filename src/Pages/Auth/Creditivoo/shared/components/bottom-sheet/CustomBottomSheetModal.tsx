@@ -1,105 +1,129 @@
-import React, { useRef, useCallback, useEffect } from "react";
-import { StyleSheet } from "react-native";
+import React, {useRef, useCallback, useEffect, memo} from 'react';
+import {StyleSheet, Platform} from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetView,
-  //BottomSheetView,
-} from "@gorhom/bottom-sheet";
-import { vh } from "@freakycoder/react-native-helpers";
+} from '@gorhom/bottom-sheet';
+import {vh} from '@freakycoder/react-native-helpers';
 
-interface BottomSheetModalProps {
+interface CustomBottomSheetModalProps {
   isVisible: boolean;
   onClose: () => void;
   snapPoints?: (string | number)[];
+  scrollEnabled?: boolean;
   accessibilityLabel?: string;
-  bottomSheetScrollView?: boolean;
   children: React.ReactNode;
 }
 
-const CustomBottomSheetModal: React.FC<BottomSheetModalProps> = ({
+/**
+ * CustomBottomSheetModal
+ * Profesional wrapper for Gorhom BottomSheetModal
+ */
+const CustomBottomSheetModal: React.FC<CustomBottomSheetModalProps> = ({
   isVisible,
   onClose,
-  snapPoints,
+  snapPoints = ['50%'],
+  scrollEnabled = false,
   accessibilityLabel,
-  bottomSheetScrollView = false,
   children,
 }) => {
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const sheetRef = useRef<BottomSheetModal>(null);
 
+  /** Handles opening/closing without flickering */
   useEffect(() => {
     if (isVisible) {
-      bottomSheetRef.current?.present();
+      // Usar requestAnimationFrame para asegurar que el ref esté listo
+      // y el componente esté completamente montado
+      requestAnimationFrame(() => {
+        if (sheetRef.current) {
+          console.log('[CustomBottomSheetModal] Abriendo modal');
+          sheetRef.current.present();
+        } else {
+          console.warn('[CustomBottomSheetModal] Ref no está listo');
+          // Retry después de un pequeño delay
+          setTimeout(() => {
+            if (sheetRef.current) {
+              sheetRef.current.present();
+            }
+          }, 100);
+        }
+      });
     } else {
-      bottomSheetRef.current?.close();
+      console.log('[CustomBottomSheetModal] Cerrando modal');
+      sheetRef.current?.dismiss();
     }
   }, [isVisible]);
 
+  /** Detect when sheet is fully closed */
   const handleSheetChanges = useCallback(
     (index: number) => {
-      if (index === -1) {
-        onClose();
-      }
+      if (index === -1) onClose();
     },
-    [onClose]
+    [onClose],
   );
 
+  /** Smooth backdrop animation */
   const renderBackdrop = useCallback(
     (props: any) => (
       <BottomSheetBackdrop
+        {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
-        {...props}
+        opacity={0.5}
       />
     ),
-    []
+    [],
   );
 
+  /** Common props for both scroll & non-scroll content */
+  const sheetProps = {
+    ref: sheetRef,
+    snapPoints,
+    index: 0,
+    onChange: handleSheetChanges,
+    backdropComponent: renderBackdrop,
+    accessibilityLabel,
+    enablePanDownToClose: true,
+    handleIndicatorStyle: styles.handleHidden,
+    enableDynamicSizing: true,
+    maxDynamicContentSize: 90 * vh,
+    android_keyboardInputMode: 'adjustResize' as any,
+    keyboardBehavior: 'interactive' as const,
+    keyboardBlurBehavior: 'restore' as const,
+  };
+
   return (
-    <>
-      {bottomSheetScrollView ? (
-        <BottomSheetModal
-          ref={bottomSheetRef}
-          index={isVisible ? 0 : -1}
-          snapPoints={snapPoints}
-          onChange={handleSheetChanges}
-          enablePanDownToClose
-          backdropComponent={renderBackdrop}
-          accessibilityLabel={accessibilityLabel}
-          handleIndicatorStyle={{ display: "none" }}
-          enableDynamicSizing
-          maxDynamicContentSize={90 * vh}
-        >
-          <BottomSheetScrollView style={styles.contentContainer}>
-            {children}
-          </BottomSheetScrollView>
-        </BottomSheetModal>
+    <BottomSheetModal {...sheetProps}>
+      {scrollEnabled ? (
+        <BottomSheetScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          {children}
+        </BottomSheetScrollView>
       ) : (
-        <BottomSheetModal
-          ref={bottomSheetRef}
-          index={isVisible ? 0 : -1}
-          snapPoints={snapPoints}
-          onChange={handleSheetChanges}
-          enablePanDownToClose
-          backdropComponent={renderBackdrop}
-          accessibilityLabel={accessibilityLabel}
-          handleIndicatorStyle={{ display: "none" }}
-        >
-          <BottomSheetView style={styles.contentContainer}>
-            {children}
-          </BottomSheetView>
-        </BottomSheetModal>
+        <BottomSheetView style={styles.content}>{children}</BottomSheetView>
       )}
-    </>
+    </BottomSheetModal>
   );
 };
 
 const styles = StyleSheet.create({
-  contentContainer: {
+  content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+  },
+  handleHidden: {
+    display: 'none',
   },
 });
 
-export default CustomBottomSheetModal;
+export default memo(CustomBottomSheetModal);

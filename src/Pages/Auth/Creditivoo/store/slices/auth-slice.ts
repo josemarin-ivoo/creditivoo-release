@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction, createAsyncThunk} from '@reduxjs/toolkit';
-import {AuthStorage} from '@app-services/AuthStorage';
+import {AuthStorage} from '../../app/services/AuthStorage';
 import {
   fetchMe,
   authLogin as loginService,
@@ -11,9 +11,10 @@ import {
   CompleteRegistrationRequest,
   updateUser as updateUserService,
   UpdateUserRequest,
-} from '@services/api/auth';
-import {saveToken, saveUser} from '@services/storage/storageService';
-import {sendOTP, verifyOTP, resendOTP} from '@services/api/otp';
+} from '../../services/api/auth';
+// import {saveToken, saveUser} from '../../services/storage/storageService';
+import {saveToken, saveUser} from '../../services/storage/storageService';
+import {sendOTP, verifyOTP, resendOTP} from '../../services/api/otp';
 
 interface AuthState {
   token: string | null;
@@ -489,7 +490,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isLoggedIn = false;
         if (action.payload) {
-          state.error = action.payload.error;
+          state.error = (action.payload as any).error;
         } else {
           state.error =
             action.error.message || 'Fallo en el registro de usuario';
@@ -513,7 +514,7 @@ const authSlice = createSlice({
       .addCase(verifyOtpUser.rejected, (state, action) => {
         state.isLoading = false;
         if (action.payload) {
-          state.errorOtp = action.payload.error;
+          state.errorOtp = (action.payload as any).error;
         } else {
           state.errorOtp =
             action.error.message || 'Fallo en la verificación de OTP';

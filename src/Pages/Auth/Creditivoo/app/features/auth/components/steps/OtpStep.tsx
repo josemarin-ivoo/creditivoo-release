@@ -2,7 +2,7 @@ import React from 'react';
 import {View, TouchableOpacity, Text} from 'react-native';
 import {Text as KittenText, useTheme} from '@ui-kitten/components';
 import {OtpInput} from 'react-native-otp-entry';
-import ButtonK from '@shared-components/button/ButtonK';
+import ButtonK from '../../../../../shared/components/button/ButtonK';
 
 interface OtpStepProps {
   otp: string;

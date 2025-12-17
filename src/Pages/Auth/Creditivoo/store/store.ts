@@ -13,6 +13,7 @@ import deviceUnitReducer from './slices/deviceUnit-slice';
 import paymentMethodsReducer from './slices/payment-methods-slice';
 import termsAndConditionsReducer from './slices/termsAndConditions-slice';
 import tenantsReducer from './slices/tenants-slice';
+import registerReducer from '../store-creditivoo/slices/register-slice';
 
 export const store = configureStore({
   reducer: {
@@ -30,6 +31,7 @@ export const store = configureStore({
     paymentMethods: paymentMethodsReducer,
     termsAndConditions: termsAndConditionsReducer,
     tenants: tenantsReducer,
+    ivooRegister: registerReducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({

@@ -5,20 +5,34 @@ import {Button} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
-
+import {useIvoSelector} from '../../store/hooks';
+import {Routes} from '../../../../../Utils/NavigationRoutes';
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const RegistrationSuccessScreen: React.FC = () => {
   const navigation = useNavigation();
+  const {isLoggedIn} = useIvoSelector(state => state.creditivoo.auth);
 
   const handleContinue = () => {
-    // Simply navigate to Home
-    (navigation as any).navigate(SCREENS.HOME);
+    // Solo navegar a MainTabs si el usuario está autenticado
+    if (isLoggedIn) {
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'MainTabs' as never}],
+      });
+    } else {
+      // Si no está autenticado, redirigir a login
+      navigation.reset({
+        index: 0,
+        routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}],
+      });
+    }
   };
 
   const logo = (
     <Image
       source={require('../../images/creditivo-logo-full.png')}
+      // source={require('../../images/creditivo-logo-full.png')}
       style={styles.logo}
       resizeMode="contain"
     />

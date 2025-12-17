@@ -1,4 +1,4 @@
-import React, {useCallback, useState} from 'react';
+import React, {useCallback, useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,8 +10,10 @@ import {
   StatusBar,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
+  Modal,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {
   check,
   request,
@@ -22,6 +24,13 @@ import {
 import {Button} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
+import {
+  getUploadStatus,
+  verifyDocuments,
+  resetKyc,
+  UploadStatusResponse,
+} from '../../services/kyc';
+import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -30,6 +39,37 @@ const IdentityVerificator: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<
     'front' | 'back' | 'selfie' | null
   >(null);
+  const [uploadStatus, setUploadStatus] = useState<UploadStatusResponse | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  // Cargar estado de KYC al montar y cuando la pantalla recibe foco
+  const loadUploadStatus = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const status = await getUploadStatus();
+      setUploadStatus(status);
+    } catch (error: any) {
+      console.error('[IdentityVerificator] Error al cargar estado:', error);
+      Alert.alert('Error', error.message || 'Error al cargar el estado de KYC');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUploadStatus();
+  }, [loadUploadStatus]);
+
+  // Recargar estado cuando la pantalla recibe foco (después de volver de cámara)
+  useFocusEffect(
+    useCallback(() => {
+      loadUploadStatus();
+    }, [loadUploadStatus]),
+  );
 
   const requestCameraPermission = useCallback(async () => {
     try {
@@ -106,11 +146,34 @@ const IdentityVerificator: React.FC = () => {
   }, [navigation]);
 
   const handlePhotoItemPress = (type: 'front' | 'back' | 'selfie') => {
+    // Si ya está verificado, no permitir seleccionar nada
+    if (uploadStatus?.isVerified === true) {
+      return;
+    }
     // Solo marcar el item como seleccionado, no navegar
     setSelectedItem(type);
   };
 
   const handleContinue = async () => {
+    // Si ya está verificado, navegar directamente a PersonalInfoForm
+    if (uploadStatus?.isVerified === true) {
+      (navigation as any).navigate('PersonalInfoForm');
+      return;
+    }
+
+    // Si hay error (verificación fallida), ejecutar reset
+    if (shouldShowError()) {
+      await handleReset();
+      return;
+    }
+
+    // Si puede verificar, ejecutar verificación
+    if (uploadStatus?.canVerify && !uploadStatus?.isVerified) {
+      await handleVerify();
+      return;
+    }
+
+    // Si no hay item seleccionado, no hacer nada
     if (!selectedItem) {
       return;
     }
@@ -129,6 +192,165 @@ const IdentityVerificator: React.FC = () => {
       // Si no se otorga el permiso, deseleccionar el item
       setSelectedItem(null);
     }
+  };
+
+  const handleVerify = async () => {
+    if (!uploadStatus?.canVerify) {
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const kycId = uploadStatus?.kycId;
+      const result = await verifyDocuments(kycId);
+
+      // Siempre recargar el estado después de la verificación para obtener información actualizada
+      await loadUploadStatus();
+
+      if (result.isVerified && result.status === 'APPROVED') {
+        Alert.alert('Éxito', 'Tu identidad ha sido verificada exitosamente', [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navegar a PersonalInfoForm después de verificación exitosa
+              (navigation as any).navigate('PersonalInfoForm');
+            },
+          },
+        ]);
+      } else {
+        // Verificación fallida - el estado ya se recargó con la información de error
+        Alert.alert(
+          'Verificación fallida',
+          result.message ||
+            'La verificación no fue exitosa. Por favor, intenta de nuevo.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // El estado ya se recargó, solo cerrar el alert
+                // Los errores ya deberían estar visibles en rojo
+              },
+            },
+          ],
+        );
+      }
+    } catch (error: any) {
+      console.error('[IdentityVerificator] Error al verificar:', error);
+      // Recargar estado incluso si hay error para obtener información actualizada
+      await loadUploadStatus();
+      Alert.alert('Error', error.message || 'Error al verificar documentos');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleReset = async () => {
+    Alert.alert(
+      'Reintentar proceso',
+      '¿Estás seguro de que deseas reiniciar el proceso de verificación?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Reintentar',
+          onPress: async () => {
+            setIsResetting(true);
+            try {
+              console.log('[IdentityVerificator] Reseteando KYC...');
+              await resetKyc(false); // No eliminar archivos de S3
+              console.log('[IdentityVerificator] KYC reseteado exitosamente');
+              // Recargar estado después del reset
+              await loadUploadStatus();
+              Alert.alert(
+                'Éxito',
+                'El proceso ha sido reiniciado. Por favor, sube nuevamente tus documentos.',
+              );
+            } catch (error: any) {
+              console.error(
+                '[IdentityVerificator] Error al resetear KYC:',
+                error,
+              );
+              Alert.alert(
+                'Error',
+                error.message ||
+                  'Error al reiniciar el proceso de verificación',
+              );
+            } finally {
+              setIsResetting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  /**
+   * Determina si debe mostrarse el estado de error basado en la lógica de validación
+   * Mostrar error solo cuando:
+   * 1. Ya fue enviado a Didit (hasBeenSentToDidit === true)
+   * 2. No está verificado (isVerified === false)
+   * 3. La verificación realmente falló (DECLINED/REJECTED/FAILED)
+   */
+  const shouldShowError = (): boolean => {
+    if (!uploadStatus) {
+      return false;
+    }
+
+    const verificationResults = uploadStatus.verificationResults;
+
+    // 1. Debe haber sido enviado a Didit
+    if (!verificationResults?.hasBeenSentToDidit) {
+      return false; // No mostrar error si aún no fue enviado
+    }
+
+    // 2. No debe estar verificado
+    if (uploadStatus.isVerified === true) {
+      return false; // No mostrar error si está verificado
+    }
+
+    // 3. Verificar que realmente falló (no está pendiente)
+    const verificationStatus = uploadStatus.verificationStatus?.toUpperCase();
+    const isDeclined =
+      verificationStatus === 'DECLINED' ||
+      verificationStatus === 'REJECTED' ||
+      verificationStatus === 'FAILED';
+
+    // 4. Verificar resultados específicos de Didit
+    const idVerification = verificationResults.idVerification;
+    const faceMatch = verificationResults.faceMatch;
+
+    // Si tiene resultados completos de Didit, verificar esos
+    if (idVerification?.completed || faceMatch?.completed) {
+      const idStatus = idVerification?.status?.toUpperCase();
+      const faceStatus = faceMatch?.status?.toUpperCase();
+
+      // Error si ID verification falló
+      const idFailed = idVerification?.completed && idStatus === 'DECLINED';
+
+      // Error si Face Match falló (declined o score bajo)
+      const faceFailed =
+        faceMatch?.completed &&
+        (faceStatus === 'DECLINED' ||
+          (faceMatch.score !== null && faceMatch.score < 70));
+
+      // Mostrar error si alguna verificación falló
+      if (idFailed || faceFailed) {
+        return true;
+      }
+    }
+
+    // Si no hay resultados detallados pero el status general es DECLINED
+    if (isDeclined) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const isItemInError = () => {
+    return shouldShowError();
   };
 
   const getIllustrationSource = () => {
@@ -166,51 +388,168 @@ const IdentityVerificator: React.FC = () => {
         <TouchableOpacity
           style={[
             styles.photoItem,
-            selectedItem === 'front' && styles.photoItemActive,
+            selectedItem === 'front' &&
+              !uploadStatus?.isVerified &&
+              styles.photoItemActive,
+            uploadStatus?.steps['document-front'].completed &&
+              !isItemInError() &&
+              styles.photoItemCompleted,
+            isItemInError() && styles.photoItemError,
+            uploadStatus?.isVerified === true && styles.photoItemCompleted,
           ]}
           onPress={() => handlePhotoItemPress('front')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              styles.photoItemText,
-              selectedItem === 'front' && styles.photoItemTextActive,
-            ]}>
-            Frente de la cédula
-          </Text>
+          activeOpacity={0.7}
+          disabled={
+            uploadStatus?.isVerified === true ||
+            (uploadStatus?.steps['document-front'].completed &&
+              !isItemInError())
+          }>
+          <View style={styles.photoItemContent}>
+            <Text
+              style={[
+                styles.photoItemText,
+                selectedItem === 'front' &&
+                  !uploadStatus?.isVerified &&
+                  styles.photoItemTextActive,
+                uploadStatus?.steps['document-front'].completed &&
+                  !isItemInError() &&
+                  styles.photoItemTextCompleted,
+                isItemInError() && styles.photoItemTextError,
+                uploadStatus?.isVerified === true &&
+                  styles.photoItemTextCompleted,
+              ]}>
+              Frente de la cédula
+            </Text>
+            {((uploadStatus?.steps['document-front'].completed &&
+              !isItemInError()) ||
+              uploadStatus?.isVerified === true) && (
+              <Icon
+                name="checkmark-circle"
+                type={IconType.Ionicons}
+                size={24}
+                color={IVOO_COLORS.success || '#4CAF50'}
+              />
+            )}
+            {isItemInError() && (
+              <Icon
+                name="close-circle"
+                type={IconType.Ionicons}
+                size={24}
+                color="#F44336"
+              />
+            )}
+          </View>
         </TouchableOpacity>
 
         {/* Reverso de la cédula */}
         <TouchableOpacity
           style={[
             styles.photoItem,
-            selectedItem === 'back' && styles.photoItemActive,
+            selectedItem === 'back' &&
+              !uploadStatus?.isVerified &&
+              styles.photoItemActive,
+            uploadStatus?.steps['document-back'].completed &&
+              !isItemInError() &&
+              styles.photoItemCompleted,
+            isItemInError() && styles.photoItemError,
+            uploadStatus?.isVerified === true && styles.photoItemCompleted,
           ]}
           onPress={() => handlePhotoItemPress('back')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              styles.photoItemText,
-              selectedItem === 'back' && styles.photoItemTextActive,
-            ]}>
-            Reverso de la cédula
-          </Text>
+          activeOpacity={0.7}
+          disabled={
+            uploadStatus?.isVerified === true ||
+            (uploadStatus?.steps['document-back'].completed && !isItemInError())
+          }>
+          <View style={styles.photoItemContent}>
+            <Text
+              style={[
+                styles.photoItemText,
+                selectedItem === 'back' &&
+                  !uploadStatus?.isVerified &&
+                  styles.photoItemTextActive,
+                uploadStatus?.steps['document-back'].completed &&
+                  !isItemInError() &&
+                  styles.photoItemTextCompleted,
+                isItemInError() && styles.photoItemTextError,
+                uploadStatus?.isVerified === true &&
+                  styles.photoItemTextCompleted,
+              ]}>
+              Reverso de la cédula
+            </Text>
+            {((uploadStatus?.steps['document-back'].completed &&
+              !isItemInError()) ||
+              uploadStatus?.isVerified === true) && (
+              <Icon
+                name="checkmark-circle"
+                type={IconType.Ionicons}
+                size={24}
+                color={IVOO_COLORS.success || '#4CAF50'}
+              />
+            )}
+            {isItemInError() && (
+              <Icon
+                name="close-circle"
+                type={IconType.Ionicons}
+                size={24}
+                color="#F44336"
+              />
+            )}
+          </View>
         </TouchableOpacity>
 
         {/* Selfie */}
         <TouchableOpacity
           style={[
             styles.photoItem,
-            selectedItem === 'selfie' && styles.photoItemActive,
+            selectedItem === 'selfie' &&
+              !uploadStatus?.isVerified &&
+              styles.photoItemActive,
+            uploadStatus?.steps.selfie.completed &&
+              !isItemInError() &&
+              styles.photoItemCompleted,
+            isItemInError() && styles.photoItemError,
+            uploadStatus?.isVerified === true && styles.photoItemCompleted,
           ]}
           onPress={() => handlePhotoItemPress('selfie')}
-          activeOpacity={0.7}>
-          <Text
-            style={[
-              styles.photoItemText,
-              selectedItem === 'selfie' && styles.photoItemTextActive,
-            ]}>
-            Selfie
-          </Text>
+          activeOpacity={0.7}
+          disabled={
+            uploadStatus?.isVerified === true ||
+            (uploadStatus?.steps.selfie.completed && !isItemInError())
+          }>
+          <View style={styles.photoItemContent}>
+            <Text
+              style={[
+                styles.photoItemText,
+                selectedItem === 'selfie' &&
+                  !uploadStatus?.isVerified &&
+                  styles.photoItemTextActive,
+                uploadStatus?.steps.selfie.completed &&
+                  !isItemInError() &&
+                  styles.photoItemTextCompleted,
+                isItemInError() && styles.photoItemTextError,
+                uploadStatus?.isVerified === true &&
+                  styles.photoItemTextCompleted,
+              ]}>
+              Selfie
+            </Text>
+            {((uploadStatus?.steps.selfie.completed && !isItemInError()) ||
+              uploadStatus?.isVerified === true) && (
+              <Icon
+                name="checkmark-circle"
+                type={IconType.Ionicons}
+                size={24}
+                color={IVOO_COLORS.success || '#4CAF50'}
+              />
+            )}
+            {isItemInError() && (
+              <Icon
+                name="close-circle"
+                type={IconType.Ionicons}
+                size={24}
+                color="#F44336"
+              />
+            )}
+          </View>
         </TouchableOpacity>
       </KeyboardAvoidingView>
 
@@ -224,12 +563,48 @@ const IdentityVerificator: React.FC = () => {
     </>
   );
 
+  const getButtonTitle = () => {
+    // Si ya está verificado, mostrar continuar
+    if (uploadStatus?.isVerified === true) {
+      return 'Continuar';
+    }
+    // Si hay error (verificación fallida), mostrar botón de reintentar
+    if (shouldShowError()) {
+      return 'Reintentar proceso';
+    }
+    // Si puede verificar, mostrar botón de verificar
+    if (uploadStatus?.canVerify && !uploadStatus?.isVerified) {
+      return 'Verificar';
+    }
+    return 'Continuar';
+  };
+
+  const isButtonDisabled = () => {
+    // Si está reseteando, deshabilitar
+    if (isResetting) {
+      return true;
+    }
+    // Si ya está verificado, siempre habilitado para continuar
+    if (uploadStatus?.isVerified === true) {
+      return false;
+    }
+    // Si hay error, siempre habilitado para reintentar
+    if (shouldShowError()) {
+      return false;
+    }
+    // Si puede verificar, siempre habilitado para verificar
+    if (uploadStatus?.canVerify && !uploadStatus?.isVerified) {
+      return false;
+    }
+    return !selectedItem;
+  };
+
   const bottomAction = (
     <Button
       onPress={handleContinue}
-      title="Continuar"
-      style={styles.continueButton}
-      disabled={!selectedItem}
+      title={isResetting ? 'Reiniciando...' : getButtonTitle()}
+      style={StyleSheet.flatten([styles.continueButton])}
+      disabled={isButtonDisabled() || isLoading || isResetting}
     />
   );
 
@@ -240,8 +615,33 @@ const IdentityVerificator: React.FC = () => {
         contentPaddingTop={SCREEN_HEIGHT * 0.04}
         logo={logo}
         bottomAction={bottomAction}>
-        {content}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+          </View>
+        ) : (
+          content
+        )}
       </RegisterLayout>
+
+      {/* Modal de verificación */}
+      <Modal
+        visible={isVerifying}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}>
+        <View style={styles.verificationModal}>
+          <View style={styles.verificationModalContent}>
+            <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+            <Text style={styles.verificationModalText}>
+              Verificando documentos...
+            </Text>
+            <Text style={styles.verificationModalSubtext}>
+              Esto puede tardar entre 30 y 60 segundos
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 };
@@ -315,7 +715,79 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  continueButton: {},
+  continueButton: {
+    ...(Platform.OS === 'ios'
+      ? {
+          shadowColor: '#000000',
+          shadowOffset: {width: 0, height: 0},
+          shadowOpacity: 0,
+          shadowRadius: 0,
+        }
+      : {
+          elevation: 0,
+        }),
+  },
+  photoItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  photoItemCompleted: {
+    backgroundColor: '#E8F5E9',
+    borderColor: IVOO_COLORS.success || '#4CAF50',
+  },
+  photoItemTextCompleted: {
+    color: IVOO_COLORS.success || '#4CAF50',
+  },
+  photoItemError: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#F44336',
+  },
+  photoItemTextError: {
+    color: '#F44336',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: SCREEN_HEIGHT * 0.4,
+  },
+  loadingText: {
+    marginTop: SCREEN_WIDTH * 0.04,
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary,
+  },
+  verificationModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verificationModalContent: {
+    backgroundColor: IVOO_COLORS.white,
+    borderRadius: 12,
+    padding: SCREEN_WIDTH * 0.08,
+    alignItems: 'center',
+    width: SCREEN_WIDTH * 0.8,
+    maxWidth: 400,
+  },
+  verificationModalText: {
+    marginTop: SCREEN_WIDTH * 0.05,
+    fontSize: SCREEN_WIDTH * 0.048,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.textPrimary,
+    textAlign: 'center',
+  },
+  verificationModalSubtext: {
+    marginTop: SCREEN_WIDTH * 0.03,
+    fontSize: SCREEN_WIDTH * 0.037,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary,
+    textAlign: 'center',
+  },
 });
 
 export default IdentityVerificator;
