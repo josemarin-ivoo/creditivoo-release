@@ -96,7 +96,10 @@ export enum Routes {
   NAVIGATION_MYPURCHASES = 'MyPurchases',
   NAVIGATION_GEMS = 'Gems',
   NAVIGATION_PROFILE = 'Profile',
-
+  NAVIGATION_PLANGROUPSELECTION = 'PlanGroupSelection',
+  NAVIGATION_PLANSELECTION = 'PlanSelection',
+  NAVIGATION_QR_SCANNER = 'QRScanner',
+  NAVIGATION_PURCHASESCONFIRM = 'PurchaseConfirmation',
   // TAB
   //END JAMP 02-12-2025
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -25,12 +25,25 @@ export interface Installment {
 interface InstallmentItemProps {
   installment: Installment;
   onPress?: () => void;
+  onCheckboxPress?: (selected: boolean) => void;
+  isSelected?: boolean;
+  isDisabled?: boolean; // When true, the payment cannot be selected (future payments)
 }
 
 const InstallmentItem: React.FC<InstallmentItemProps> = ({
   installment,
   onPress,
+  onCheckboxPress,
+  isSelected = false,
+  isDisabled = false,
 }) => {
+  const [selected, setSelected] = useState(isSelected);
+
+  // Sync internal state with prop
+  useEffect(() => {
+    setSelected(isSelected);
+  }, [isSelected]);
+
   const formatCurrency = (amount: number): string => {
     return `$${amount.toFixed(2)}`;
   };
@@ -64,29 +77,57 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
   };
 
   const isApproved = installment.status === 'approved';
+  const isCheckboxSelected = selected || isApproved;
+  // Disabled if explicitly disabled and not approved (approved payments should not be grayed out)
+  const isDisabledState = isDisabled && !isApproved;
+
+  const handleCardPress = () => {
+    // If there's a custom onPress handler, call it first
+    if (onPress) {
+      onPress();
+    }
+
+    // Always handle checkbox press when card is tapped
+    if (isApproved || isDisabledState) {
+      // Don't allow selection of approved payments or disabled payments
+      return;
+    }
+    if (onCheckboxPress) {
+      // Let parent handle the selection logic
+      onCheckboxPress(!selected);
+    }
+  };
 
   return (
     <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.7}
-      disabled={!onPress}>
+      style={[styles.card, isDisabledState && styles.cardDisabled]}
+      onPress={handleCardPress}
+      activeOpacity={isDisabledState ? 1 : 0.7}
+      disabled={isDisabledState}>
       <View style={styles.leftSection}>
-        {isApproved ? (
-          <View style={styles.checkboxApproved}>
-            <Icon
-              name="checkmark"
-              type={IconType.Ionicons}
-              size={12}
-              color={IVOO_COLORS.white}
-            />
-          </View>
-        ) : (
-          <View style={styles.checkboxPending} />
-        )}
+        <View style={styles.checkboxContainer}>
+          {isCheckboxSelected ? (
+            <View style={styles.checkboxApproved}>
+              <Icon
+                name="checkmark"
+                type={IconType.Ionicons}
+                size={SCREEN_WIDTH * 0.04}
+                color={IVOO_COLORS.white}
+              />
+            </View>
+          ) : (
+            <View style={styles.checkboxPending} />
+          )}
+        </View>
         <View style={styles.textContainer}>
-          <Text style={styles.dateText}>{formatDate(installment.date)}</Text>
-          <Text style={styles.typeText}>{getInstallmentLabel()}</Text>
+          <Text
+            style={[styles.dateText, isDisabledState && styles.textDisabled]}>
+            {formatDate(installment.date)}
+          </Text>
+          <Text
+            style={[styles.typeText, isDisabledState && styles.textDisabled]}>
+            {getInstallmentLabel()}
+          </Text>
         </View>
       </View>
 
@@ -95,17 +136,30 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
           <Text style={styles.approvedText}>Aprobado</Text>
         ) : (
           <View style={styles.gemsContainer}>
-            <Text style={styles.gemsText}>
+            <Text
+              style={[styles.gemsText, isDisabledState && styles.textDisabled]}>
               Gana {installment.gemsReward || 0}
             </Text>
-            <GemIcon width={SCREEN_WIDTH * 0.04} height={SCREEN_WIDTH * 0.04} />
-            <Text style={styles.advanceText}> por adelantar</Text>
+            <GemIcon
+              width={SCREEN_WIDTH * 0.04}
+              height={SCREEN_WIDTH * 0.04}
+              opacity={isDisabledState ? 0.7 : 1}
+            />
+            <Text
+              style={[
+                styles.advanceText,
+                isDisabledState && styles.textDisabled,
+              ]}>
+              {' '}
+              por adelantar
+            </Text>
           </View>
         )}
       </View>
 
       <View style={styles.rightSection}>
-        <Text style={styles.amountText}>
+        <Text
+          style={[styles.amountText, isDisabledState && styles.textDisabled]}>
           {formatCurrency(installment.amount)}
         </Text>
       </View>
@@ -125,27 +179,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#6E717C4F',
   },
+  cardDisabled: {
+    opacity: 0.85,
+  },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  checkboxContainer: {
+    marginRight: SCREEN_WIDTH * 0.03,
+  },
   checkboxApproved: {
-    width: SCREEN_WIDTH * 0.045,
-    height: SCREEN_WIDTH * 0.045,
-    borderRadius: SCREEN_WIDTH * 0.0225,
+    width: SCREEN_WIDTH * 0.065,
+    height: SCREEN_WIDTH * 0.065,
+    borderRadius: SCREEN_WIDTH * 0.0325,
     backgroundColor: IVOO_COLORS.success || '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: SCREEN_WIDTH * 0.03,
   },
   checkboxPending: {
-    width: SCREEN_WIDTH * 0.045,
-    height: SCREEN_WIDTH * 0.045,
-    borderRadius: 4,
+    width: SCREEN_WIDTH * 0.065,
+    height: SCREEN_WIDTH * 0.065,
+    borderRadius: SCREEN_WIDTH * 0.0325,
     borderWidth: 2,
     borderColor: IVOO_COLORS.primary,
-    marginRight: SCREEN_WIDTH * 0.03,
   },
   textContainer: {
     flex: 1,
@@ -200,6 +258,9 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: '#676464',
+  },
+  textDisabled: {
+    opacity: 0.7,
   },
 });
 

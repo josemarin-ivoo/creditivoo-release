@@ -88,7 +88,8 @@ const SecurityScreen: React.FC = () => {
 
     if (value) {
       try {
-        const {available} = await rnBiometrics.isSensorAvailable();
+        const {available, biometryType} =
+          await rnBiometrics.isSensorAvailable();
 
         if (!available) {
           Alert.alert(
@@ -98,37 +99,21 @@ const SecurityScreen: React.FC = () => {
           return;
         }
 
-        const {keysExist} = await rnBiometrics.biometricKeysExist();
-
-        if (!keysExist) {
-          Alert.alert(
-            'Biometría no configurada',
-            'Debes registrar una huella o FaceID en tu dispositivo para activar esta función.',
-          );
-          return;
-        }
-
-        const result = await rnBiometrics.simplePrompt({
-          promptMessage: 'Confirma tu identidad',
+        // Log para debug
+        console.log('[Security] Tipo de biometría detectado:', {
+          biometryType,
+          optionId,
+          available,
         });
 
-        if (!result.success) {
-          console.log(
-            '[Security] Autenticación fallida, no se activa la biometría.',
-          );
-          return;
-        }
+        // La librería react-native-biometrics usa automáticamente el método disponible
+        // No podemos forzar Face ID vs Touch ID, la librería decide según el dispositivo
+        // Solo logueamos para debug
+        console.log(
+          `[Security] Tipo de biometría disponible: ${biometryType}, Opción seleccionada: ${optionId}`,
+        );
 
-        if (optionId === 'faceId') {
-          setFaceIdEnabled(true);
-          await saveSecuritySetting('enableFaceIdCheck', true);
-        } else if (optionId === 'biometricId') {
-          setBiometricIdEnabled(true);
-          await saveSecuritySetting('enableBiometricCheck', true);
-        }
-
-        console.log('[Security] Biometría activada exitosamente.');
-        return;
+        await proceedWithBiometricAuth(rnBiometrics, optionId);
       } catch (error) {
         console.error('[Security] Error activando biometría:', error);
         return;
@@ -149,6 +134,67 @@ const SecurityScreen: React.FC = () => {
       } catch (error) {
         console.error('[Security] Error desactivando biometría:', error);
       }
+    }
+  };
+
+  const proceedWithBiometricAuth = async (
+    rnBiometrics: ReactNativeBiometrics,
+    optionId: string,
+  ) => {
+    try {
+      // Verificar si existen las claves criptográficas, si no, crearlas
+      const {keysExist} = await rnBiometrics.biometricKeysExist();
+
+      if (!keysExist) {
+        try {
+          // Crear las claves criptográficas automáticamente
+          const {publicKey} = await rnBiometrics.createKeys();
+          console.log('[Security] Claves criptográficas creadas:', publicKey);
+        } catch (createError) {
+          console.error(
+            '[Security] Error al crear claves criptográficas:',
+            createError,
+          );
+          Alert.alert(
+            'Error',
+            'No se pudieron crear las claves de seguridad. Por favor, intenta nuevamente.',
+          );
+          return;
+        }
+      }
+
+      // Personalizar el mensaje según la opción seleccionada
+      const promptMessage =
+        optionId === 'faceId'
+          ? 'Confirma tu identidad con Face ID'
+          : 'Confirma tu identidad con tu huella';
+
+      const result = await rnBiometrics.simplePrompt({
+        promptMessage,
+      });
+
+      if (!result.success) {
+        console.log(
+          '[Security] Autenticación fallida, no se activa la biometría.',
+        );
+        return;
+      }
+
+      if (optionId === 'faceId') {
+        setFaceIdEnabled(true);
+        await saveSecuritySetting('enableFaceIdCheck', true);
+      } else if (optionId === 'biometricId') {
+        setBiometricIdEnabled(true);
+        await saveSecuritySetting('enableBiometricCheck', true);
+      }
+
+      console.log('[Security] Biometría activada exitosamente.');
+    } catch (error) {
+      console.error('[Security] Error en proceedWithBiometricAuth:', error);
+      Alert.alert(
+        'Error',
+        'Ocurrió un error al activar la biometría. Por favor, intenta nuevamente.',
+      );
     }
   };
 

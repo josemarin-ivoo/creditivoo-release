@@ -7,3 +7,5 @@ export {default as api, IVOO_API_URL} from './api';
 export * from './otpVerification';
 export * from './auth';
 export * from './kyc';
+export * from './credit';
+export * from './plan';

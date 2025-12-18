@@ -9,13 +9,16 @@ import {
 } from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-import {SCREENS} from '../shared-constants';
-import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '@creditivo-style';
+import {SCREENS} from '@shared-constants';
+import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../styles';
 
 // Screens
 import HomeCreditIvoo from '../views/home/HomeCreditIvoo';
 import ProfileScreen from '../views/profile/ProfileScreen';
 import QrScanner from '../views/scanner/QrScanner';
+import HelpScreen from '../views/help/HelpScreen';
+
+import { Routes } from '../../../../Utils/NavigationRoutes';
 
 const Tab = createBottomTabNavigator();
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -47,7 +50,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
         };
 
         // Render different UI for each tab
-        if (route.name === SCREENS.HOME) {
+        if (route.name === Routes.NAVIGATION_CREDITIVOO_HOME) {
           return (
             <TouchableOpacity
               key={route.key}
@@ -78,7 +81,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
           );
         }
 
-        if (route.name === SCREENS.QR_SCANNER) {
+        if (route.name === Routes.NAVIGATION_QR_SCANNER) {
           return (
             <TouchableOpacity
               key={route.key}
@@ -106,7 +109,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
           );
         }
 
-        if (route.name === SCREENS.PROFILE) {
+        if (route.name === Routes.NAVIGATION_PROFILE) {
           return (
             <TouchableOpacity
               key={route.key}
@@ -143,14 +146,15 @@ const renderTabBar = (props: any) => <CustomTabBar {...props} />;
 const MainTabs = () => {
   return (
     <Tab.Navigator
-      id="tab-home-creditivoo"
+    id="id_tabCreditivoo"
       tabBar={renderTabBar}
       screenOptions={{
         headerShown: false,
       }}>
-      <Tab.Screen name={SCREENS.HOME} component={HomeCreditIvoo} />
-      <Tab.Screen name={SCREENS.QR_SCANNER} component={QrScanner} />
-      <Tab.Screen name={SCREENS.PROFILE} component={ProfileScreen} />
+      <Tab.Screen name={Routes.NAVIGATION_CREDITIVOO_HOME} component={HomeCreditIvoo} />
+      <Tab.Screen name={Routes.NAVIGATION_QR_SCANNER} component={QrScanner} />
+      <Tab.Screen name={Routes.NAVIGATION_HELP} component={HelpScreen} />
+      <Tab.Screen name={Routes.NAVIGATION_PROFILE} component={ProfileScreen} />
     </Tab.Navigator>
   );
 };

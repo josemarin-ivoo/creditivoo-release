@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Text,
+  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
@@ -14,12 +16,36 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import HomeCreditCard from './HomeCreditCard';
 import QuickActions from './QuickActions';
-import {Routes} from '../../../../../Utils/NavigationRoutes';
+import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {fetchMe} from '../../store-creditivoo/slices/auth-slice';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const HomeCreditIvoo: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useIvoDispatch();
+  const {user} = useIvoSelector(state => state.creditivoo.auth);
+  const {hasPurchasePendingInvoice, hasPurchaseInProgress} = useIvoSelector(
+    state => state.creditivoo.purchase,
+  );
+  const [refreshing, setRefreshing] = useState(false);
+
+  const hasCredit = !!user?.hasActiveCredit && (user.creditAvailable || 0) > 0;
+
+  const onRefresh = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      await dispatch(fetchMe()).unwrap();
+      console.log('[HomeCreditIvoo] Información del usuario refrescada');
+    } catch (error: any) {
+      console.error(
+        '[HomeCreditIvoo] Error al refrescar información del usuario:',
+        error,
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [dispatch]);
 
   const handleRequestCredit = () => {
     (navigation as any).navigate('IdentityVerificator');
@@ -28,12 +54,10 @@ const HomeCreditIvoo: React.FC = () => {
   const handleQuickAction = (action: string) => {
     switch (action) {
       case 'compras':
-        // (navigation as any).navigate('MyPurchases');
-        (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
+        (navigation as any).navigate('MyPurchases');
         break;
       case 'puntos':
-        // (navigation as any).navigate('Gems');
-        (navigation as any).navigate(Routes.NAVIGATION_GEMS);
+        (navigation as any).navigate('Gems');
         break;
       default:
         console.log('Quick Action', action);
@@ -44,18 +68,18 @@ const HomeCreditIvoo: React.FC = () => {
   const handleProfilePress = () => {
     // Try to navigate to Profile tab first, if that doesn't work, use parent navigator
     try {
-      (navigation as any).navigate(Routes.NAVIGATION_PROFILE);
+      (navigation as any).navigate(SCREENS.PROFILE);
     } catch (error) {
       // If navigation fails, try using parent navigator
       const parent = (navigation as any).getParent();
       if (parent) {
-        parent.navigate(Routes.NAVIGATION_PROFILE);
+        parent.navigate(SCREENS.PROFILE);
       }
     }
   };
 
   const handleNotificationPress = () => {
-    (navigation as any).navigate(Routes.NAVIGATION_NOTIFICATIONS);
+    (navigation as any).navigate(SCREENS.NOTIFICATIONS);
   };
 
   return (
@@ -72,14 +96,6 @@ const HomeCreditIvoo: React.FC = () => {
           <Text style={styles.profileLinkText}> </Text>
         </TouchableOpacity>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Icon
-              name="eye-off"
-              type={IconType.Feather}
-              size={20}
-              color="white"
-            />
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.headerIcon}
             onPress={handleNotificationPress}>
@@ -101,9 +117,34 @@ const HomeCreditIvoo: React.FC = () => {
         onRequestCredit={handleRequestCredit}
       />
 
-      <View style={styles.actionsWrapper}>
-        <QuickActions onActionPress={handleQuickAction} />
-      </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        bounces={true}
+        alwaysBounceVertical={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[IVOO_COLORS.primary]}
+            tintColor={IVOO_COLORS.primary}
+            progressViewOffset={SCREEN_HEIGHT * 0.055}
+          />
+        }
+        showsVerticalScrollIndicator={false}>
+        <View style={styles.actionsWrapper}>
+          <QuickActions onActionPress={handleQuickAction} />
+        </View>
+        {/* <View style={styles.debugContainer}>
+          <Text style={styles.debugLabel}>
+            hasPurchasePendingInvoice:{' '}
+            {hasPurchasePendingInvoice ? 'true' : 'false'}
+          </Text>
+          <Text style={styles.debugLabel}>
+            hasPurchaseInProgress: {hasPurchaseInProgress ? 'true' : 'false'}
+          </Text>
+        </View> */}
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -112,6 +153,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: IVOO_COLORS.white,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
 
   header: {
@@ -151,7 +198,7 @@ const styles = StyleSheet.create({
   actionsWrapper: {
     flex: 1,
     justifyContent: 'flex-start',
-    marginTop: SCREEN_HEIGHT * 0.28,
+    marginTop: SCREEN_HEIGHT * 0.2,
     paddingHorizontal: SCREEN_WIDTH * 0.05,
     paddingBottom: SCREEN_WIDTH * 0.18,
     alignItems: 'center',
@@ -197,6 +244,22 @@ const styles = StyleSheet.create({
     height: SCREEN_WIDTH * 0.013,
     borderRadius: SCREEN_WIDTH * 0.0065,
     backgroundColor: '#C4C4C4',
+  },
+  debugContainer: {
+    color: 'black',
+    backgroundColor: 'red',
+    padding: SCREEN_WIDTH * 0.04,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    borderStyle: 'dashed',
+  },
+  debugLabel: {
+    fontSize: SCREEN_WIDTH * 0.032,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    textAlign: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.01,
   },
 });
 

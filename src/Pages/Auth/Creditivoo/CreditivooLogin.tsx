@@ -1,10 +1,9 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
   StatusBar,
   Text,
-  TextInput,
   TouchableOpacity,
   Image,
   ScrollView,
@@ -12,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
@@ -28,8 +26,8 @@ import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
 import {login} from './store-creditivoo/slices/auth-slice';
 import CustomBottomSheetModal from './shared/components/bottom-sheet/CustomBottomSheetModal';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-// import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import {Routes} from '../../../Utils/NavigationRoutes';
+import ReactNativeBiometrics from 'react-native-biometrics';
+import {AuthStorage} from './app/services/AuthStorage';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -38,6 +36,27 @@ const LoginScreen: React.FC = () => {
   const dispatch = useIvoDispatch();
   const {isLoggedIn, isLoading} = useIvoSelector(state => state.creditivoo.auth);
 
+  // Verificar si hay credenciales guardadas para login biométrico
+  useEffect(() => {
+    const checkBiometricAvailability = async () => {
+      try {
+        // Solo verificamos si hay credenciales guardadas
+        // No necesitamos verificar el usuario porque puede haber cerrado sesión
+        const credentials = await AuthStorage.getCredentials();
+        const rnBiometrics = new ReactNativeBiometrics();
+        const {available} = await rnBiometrics.isSensorAvailable();
+
+        // Mostrar botón si hay credenciales y biometría disponible
+        setHasBiometricEnabled(credentials !== null && available);
+      } catch (error) {
+        console.error('[LoginScreen] Error checking biometric:', error);
+        setHasBiometricEnabled(false);
+      }
+    };
+
+    checkBiometricAvailability();
+  }, []);
+
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,6 +64,8 @@ const LoginScreen: React.FC = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [focusedInputs, setFocusedInputs] = useState<Set<string>>(new Set());
+  const [hasBiometricEnabled, setHasBiometricEnabled] = useState(false);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
   const handleContinue = () => {
     // Si ya está autenticado, navegar directamente
@@ -88,6 +109,31 @@ const LoginScreen: React.FC = () => {
     } catch (err: any) {
       const errorMessage =
         err?.message || 'Error al iniciar sesión. Por favor, intenta de nuevo.';
+
+      // Detectar errores que indican que el usuario fue eliminado de la BD
+      const isUserDeletedError =
+        err?.response?.status === 401 ||
+        errorMessage.includes('No hay refresh token disponible') ||
+        errorMessage.includes('Credenciales inválidas') ||
+        errorMessage.includes('Unauthorized') ||
+        err?.response?.status === 404;
+
+      if (isUserDeletedError) {
+        // Limpiar credenciales y ocultar botón de biometría
+        try {
+          await AuthStorage.deleteCredentials();
+          setHasBiometricEnabled(false);
+          console.log(
+            '[LoginScreen] Credenciales eliminadas debido a error de autenticación',
+          );
+        } catch (clearError) {
+          console.error(
+            '[LoginScreen] Error al limpiar credenciales:',
+            clearError,
+          );
+        }
+      }
+
       setAlertMessage(errorMessage);
       setAlertVisible(true);
     }
@@ -101,7 +147,109 @@ const LoginScreen: React.FC = () => {
   };
 
   const handleRegister = () => {
-    (navigation as any).navigate(Routes.NAVIGATION_REGISTER);
+    (navigation as any).navigate(SCREENS.REGISTER);
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      setIsBiometricLoading(true);
+      const rnBiometrics = new ReactNativeBiometrics();
+
+      // Verificar si la biometría está disponible
+      const {available} = await rnBiometrics.isSensorAvailable();
+      if (!available) {
+        setAlertMessage('La biometría no está disponible en este dispositivo.');
+        setAlertVisible(true);
+        setIsBiometricLoading(false);
+        return;
+      }
+
+      // Verificar si existen las claves criptográficas
+      const {keysExist} = await rnBiometrics.biometricKeysExist();
+      if (!keysExist) {
+        try {
+          await rnBiometrics.createKeys();
+        } catch (createError) {
+          console.error('[LoginScreen] Error creating keys:', createError);
+          setAlertMessage(
+            'No se pudieron crear las claves de seguridad. Por favor, inicia sesión manualmente.',
+          );
+          setAlertVisible(true);
+          setIsBiometricLoading(false);
+          return;
+        }
+      }
+
+      // Solicitar autenticación biométrica
+      const result = await rnBiometrics.simplePrompt({
+        promptMessage: 'Confirma tu identidad para iniciar sesión',
+      });
+
+      if (!result.success) {
+        console.log('[LoginScreen] Autenticación biométrica cancelada');
+        setIsBiometricLoading(false);
+        return;
+      }
+
+      // Obtener credenciales guardadas
+      const credentials = await AuthStorage.getCredentials();
+      if (!credentials) {
+        setAlertMessage(
+          'No se encontraron credenciales guardadas. Por favor, inicia sesión manualmente.',
+        );
+        setAlertVisible(true);
+        setIsBiometricLoading(false);
+        return;
+      }
+
+      // Hacer login con las credenciales guardadas
+      const loginResult = await dispatch(
+        login({email: credentials.email, password: credentials.password}),
+      ).unwrap();
+
+      if (loginResult.token && loginResult.user) {
+        // Login exitoso
+        setShowLoginModal(false);
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'MainTabs' as never}],
+        });
+      }
+    } catch (err: any) {
+      console.error('[LoginScreen] Error en login biométrico:', err);
+      const errorMessage =
+        err?.message ||
+        'Error al iniciar sesión con biometría. Por favor, intenta de nuevo.';
+
+      // Detectar errores que indican que el usuario fue eliminado de la BD
+      const isUserDeletedError =
+        err?.response?.status === 401 ||
+        errorMessage.includes('No hay refresh token disponible') ||
+        errorMessage.includes('Credenciales inválidas') ||
+        errorMessage.includes('Unauthorized') ||
+        err?.response?.status === 404;
+
+      if (isUserDeletedError) {
+        // Limpiar credenciales y ocultar botón de biometría
+        try {
+          await AuthStorage.deleteCredentials();
+          setHasBiometricEnabled(false);
+          console.log(
+            '[LoginScreen] Credenciales eliminadas debido a error de autenticación biométrica',
+          );
+        } catch (clearError) {
+          console.error(
+            '[LoginScreen] Error al limpiar credenciales:',
+            clearError,
+          );
+        }
+      }
+
+      setAlertMessage(errorMessage);
+      setAlertVisible(true);
+    } finally {
+      setIsBiometricLoading(false);
+    }
   };
 
   return (
@@ -139,6 +287,35 @@ const LoginScreen: React.FC = () => {
           title="Continuar"
           style={styles.continueButton}
         />
+
+        {/* Biometric Login Button */}
+        {hasBiometricEnabled && (
+          <TouchableOpacity
+            onPress={handleBiometricLogin}
+            style={styles.biometricButton}
+            disabled={isBiometricLoading || isLoading}
+            activeOpacity={0.7}>
+            {isBiometricLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={IVOO_COLORS.primary}
+                style={styles.biometricLoader}
+              />
+            ) : (
+              <Icon
+                name="fingerprint"
+                type={IconType.MaterialIcons}
+                size={SCREEN_WIDTH * 0.08}
+                color={IVOO_COLORS.primary}
+              />
+            )}
+            <Text style={styles.biometricText}>
+              {isBiometricLoading
+                ? 'Autenticando...'
+                : 'Iniciar sesión con biometría'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Register Link */}
         <TouchableOpacity onPress={handleRegister} style={styles.registerLink}>
@@ -414,6 +591,28 @@ const styles = StyleSheet.create({
   },
   loginButtonLoading: {
     opacity: 0.8,
+  },
+  biometricButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SCREEN_HEIGHT * 0.02,
+    width: IVOO_SPACING.buttonWidth,
+    height: 45,
+    borderRadius: IVOO_SPACING.buttonBorderRadius,
+    borderWidth: 1,
+    borderColor: IVOO_COLORS.primary,
+    backgroundColor: 'transparent',
+  },
+  biometricLoader: {
+    marginRight: SCREEN_WIDTH * 0.02,
+  },
+  biometricText: {
+    marginLeft: SCREEN_WIDTH * 0.03,
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
   },
 });
 

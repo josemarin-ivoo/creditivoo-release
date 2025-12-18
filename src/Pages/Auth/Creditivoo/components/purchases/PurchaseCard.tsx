@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: IVOO_COLORS.white,
     borderRadius: 12,
-    padding: SCREEN_WIDTH * 0.04,
+    padding: SCREEN_WIDTH * 0.03,
     marginBottom: SCREEN_WIDTH * 0.04,
     marginHorizontal: SCREEN_WIDTH * 0.01,
     elevation: 3,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: SCREEN_WIDTH * 0.025,
+    marginBottom: SCREEN_WIDTH * 0.015,
   },
   cardLeft: {
     flex: 1,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.textPrimary,
-    marginBottom: SCREEN_WIDTH * 0.015,
+    marginBottom: SCREEN_WIDTH * 0.01,
   },
   date: {
     fontSize: SCREEN_WIDTH * 0.035,
@@ -172,15 +172,15 @@ const styles = StyleSheet.create({
     marginRight: SCREEN_WIDTH * 0.04,
   },
   detailsButton: {
-    paddingVertical: SCREEN_WIDTH * 0.01,
-    paddingHorizontal: SCREEN_WIDTH * 0.03,
+    paddingVertical: SCREEN_WIDTH * 0.008,
+    paddingHorizontal: SCREEN_WIDTH * 0.025,
     borderWidth: 1,
     borderColor: IVOO_COLORS.primary,
     borderRadius: 8,
   },
   payButton: {
-    paddingVertical: SCREEN_WIDTH * 0.01,
-    paddingHorizontal: SCREEN_WIDTH * 0.03,
+    paddingVertical: SCREEN_WIDTH * 0.008,
+    paddingHorizontal: SCREEN_WIDTH * 0.025,
     backgroundColor: IVOO_COLORS.primary,
     borderRadius: 8,
     elevation: 2,

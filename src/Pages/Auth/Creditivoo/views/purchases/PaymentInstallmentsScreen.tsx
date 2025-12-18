@@ -1,22 +1,28 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState, useCallback} from 'react';
 import {
   View,
   StyleSheet,
   Text,
   Dimensions,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {InstallmentItem, Installment} from '../../components/purchases';
-import {Purchase} from '../../components/purchases';
+import {
+  PurchaseResponse,
+  Payment,
+  PaymentStatus,
+  getPurchaseById,
+} from '../../services/purchases';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 type RouteParams = {
   PaymentInstallments: {
-    purchase: Purchase;
+    purchase: PurchaseResponse | any; // Accept both PurchaseResponse and legacy Purchase
   };
 };
 
@@ -25,72 +31,174 @@ type PaymentInstallmentsRouteProp = RouteProp<
   'PaymentInstallments'
 >;
 
-// Mock data - Replace with actual API call
-const generateMockInstallments = (purchase: Purchase): Installment[] => {
-  // This is mock data based on the image
-  // In production, this should come from the API
-  const installments: Installment[] = [
-    {
-      id: '1',
-      date: '2024-10-24',
-      type: 'initial',
-      amount: 47.2,
-      status: 'approved',
-    },
-    {
-      id: '2',
-      date: '2024-11-07',
-      type: 'installment',
-      installmentNumber: 1,
-      amount: 23.6,
-      status: 'approved',
-    },
-    {
-      id: '3',
-      date: '2024-11-21',
-      type: 'installment',
-      installmentNumber: 2,
-      amount: 23.6,
-      status: 'approved',
-    },
-    {
-      id: '4',
-      date: '2024-12-05',
-      type: 'installment',
-      installmentNumber: 3,
-      amount: 23.6,
-      status: 'pending',
-      gemsReward: 47,
-    },
-    {
-      id: '5',
-      date: '2024-12-20',
-      type: 'installment',
-      installmentNumber: 4,
-      amount: 23.6,
-      status: 'pending',
-      gemsReward: 47,
-    },
-  ];
+// Helper function to map Payment from API to Installment format
+const mapPaymentToInstallment = (
+  payment: Payment,
+  index: number,
+  allPayments: Payment[],
+): Installment => {
+  // Determine if it's approved (COMPLETED) or pending
+  // COMPLETED = approved, all others = pending
+  const isApproved = payment.status === PaymentStatus.COMPLETED;
+  const isPending =
+    payment.status === PaymentStatus.PENDING ||
+    payment.status === PaymentStatus.SCHEDULED ||
+    payment.status === PaymentStatus.PENDING_CONFIRMATION ||
+    payment.status === PaymentStatus.PASS_DUE ||
+    payment.status === PaymentStatus.FAILED;
 
-  // If purchase is completed, mark all as approved
-  if (purchase.status === 'completed') {
-    return installments.map(inst => ({
-      ...inst,
-      status: 'approved' as const,
-    }));
+  // Calculate installment number (exclude initial payment)
+  let installmentNumber: number | undefined;
+  if (!payment.isInitialPayment) {
+    // Count how many non-initial payments come before this one
+    const nonInitialPaymentsBefore = allPayments
+      .slice(0, index)
+      .filter(p => !p.isInitialPayment).length;
+    installmentNumber = nonInitialPaymentsBefore + 1;
   }
 
-  return installments;
+  return {
+    id: payment.id.toString(),
+    date: payment.paymentDate,
+    type: payment.isInitialPayment ? 'initial' : 'installment',
+    installmentNumber,
+    amount: parseFloat(payment.amount),
+    status: isApproved ? 'approved' : 'pending',
+    gemsReward: isPending ? 47 : undefined, // TODO: Get actual gems reward from API if available
+  };
 };
 
 const PaymentInstallmentsScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<PaymentInstallmentsRouteProp>();
-  const {purchase} = route.params;
+  const initialPurchase = route.params.purchase;
+  const [purchase, setPurchase] = useState<PurchaseResponse | any>(
+    initialPurchase,
+  );
+  const [selectedPayments, setSelectedPayments] = useState<Set<string>>(
+    new Set(),
+  );
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [installments] = useState<Installment[]>(() =>
-    generateMockInstallments(purchase),
+  // Get purchase ID from route params
+  const purchaseId = useMemo(() => {
+    if (purchase && typeof purchase === 'object' && 'id' in purchase) {
+      return typeof purchase.id === 'string'
+        ? parseInt(purchase.id, 10)
+        : purchase.id;
+    }
+    return null;
+  }, [purchase]);
+
+  // Map payments from API to Installment format
+  const installments = useMemo<Installment[]>(() => {
+    // Check if purchase has payments array (PurchaseResponse from API)
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'payments' in purchase &&
+      Array.isArray(purchase.payments)
+    ) {
+      const payments = purchase.payments as Payment[];
+      console.log('[PaymentInstallmentsScreen] Payments recibidos:', payments);
+
+      // Sort payments by paymentDate to ensure correct order
+      const sortedPayments = [...payments].sort(
+        (a, b) =>
+          new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime(),
+      );
+
+      return sortedPayments.map((payment, index) =>
+        mapPaymentToInstallment(payment, index, sortedPayments),
+      );
+    }
+
+    // Fallback: return empty array if no payments
+    console.warn(
+      '[PaymentInstallmentsScreen] No se encontraron payments en la compra',
+    );
+    return [];
+  }, [purchase]);
+
+  // Refresh purchase data
+  const onRefresh = useCallback(async () => {
+    if (!purchaseId) {
+      setRefreshing(false);
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+      console.log(
+        '[PaymentInstallmentsScreen] Refrescando datos de compra:',
+        purchaseId,
+      );
+      const refreshedPurchase = await getPurchaseById(purchaseId);
+      setPurchase(refreshedPurchase);
+      console.log(
+        '[PaymentInstallmentsScreen] Datos de compra refrescados exitosamente',
+      );
+    } catch (error: any) {
+      console.error(
+        '[PaymentInstallmentsScreen] Error al refrescar datos de compra:',
+        error,
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [purchaseId]);
+
+  // Handle checkbox press with sequential selection logic
+  const handleCheckboxPress = useCallback(
+    (installmentId: string, installmentIndex: number) => {
+      const installment = installments[installmentIndex];
+      if (!installment) {
+        return;
+      }
+
+      // If already approved, cannot be toggled
+      if (installment.status === 'approved') {
+        return;
+      }
+
+      // Check if already selected
+      const isCurrentlySelected = selectedPayments.has(installmentId);
+
+      if (isCurrentlySelected) {
+        // Deselect this payment and all subsequent ones
+        const newSelected = new Set<string>();
+        installments.forEach((inst, idx) => {
+          if (idx < installmentIndex && selectedPayments.has(inst.id)) {
+            newSelected.add(inst.id);
+          }
+        });
+        setSelectedPayments(newSelected);
+      } else {
+        // Check if all previous payments are selected (sequential validation)
+        let canSelect = true;
+        for (let i = 0; i < installmentIndex; i++) {
+          const prevInstallment = installments[i];
+          const isPrevApproved = prevInstallment.status === 'approved';
+          const isPrevSelected = selectedPayments.has(prevInstallment.id);
+          if (!isPrevApproved && !isPrevSelected) {
+            canSelect = false;
+            break;
+          }
+        }
+
+        if (canSelect) {
+          // Select this payment
+          const newSelected = new Set(selectedPayments);
+          newSelected.add(installmentId);
+          setSelectedPayments(newSelected);
+        } else {
+          console.log(
+            '[PaymentInstallmentsScreen] No se puede seleccionar: deben seleccionarse los pagos anteriores primero',
+          );
+        }
+      }
+    },
+    [installments, selectedPayments],
   );
 
   const handleBackPress = () => {
@@ -108,12 +216,34 @@ const PaymentInstallmentsScreen: React.FC = () => {
   };
 
   const getPlanName = (): string => {
-    // This should come from the purchase data
-    return 'PLAN BÁSICO';
+    // Get plan name from financingType
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'financingType' in purchase &&
+      purchase.financingType
+    ) {
+      return purchase.financingType.name || 'Plan';
+    }
+    return 'Plan';
   };
 
   const getPlanDescription = (): string => {
-    const totalCount = installments.length - 1; // Excluding initial
+    // Get description from financingType
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'financingType' in purchase &&
+      purchase.financingType
+    ) {
+      const financingType = purchase.financingType;
+      const daysBetweenPayments = financingType.daysBetweenPayments || 14;
+      const totalCount = installments.length - 1; // Excluding initial
+      return `Inicial + ${totalCount} cuotas cada ${daysBetweenPayments} días`;
+    }
+
+    // Fallback
+    const totalCount = installments.length - 1;
     return `Inicial + ${totalCount} cuotas cada 14 días`;
   };
 
@@ -122,7 +252,15 @@ const PaymentInstallmentsScreen: React.FC = () => {
       title="Pagar cuotas"
       showBackButton={true}
       onBackPress={handleBackPress}
-      scroll={true}>
+      scroll={true}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[IVOO_COLORS.primary]}
+          tintColor={IVOO_COLORS.primary}
+        />
+      }>
       <View style={styles.container}>
         {/* Plan Details Card */}
         <View style={styles.planCard}>
@@ -132,9 +270,33 @@ const PaymentInstallmentsScreen: React.FC = () => {
 
         {/* Installments List */}
         <View style={styles.installmentsContainer}>
-          {installments.map(item => (
-            <InstallmentItem key={item.id} installment={item} />
-          ))}
+          {installments.map((item, index) => {
+            const isSelected = selectedPayments.has(item.id);
+            // Check if previous payments are selected (for sequential validation)
+            const canSelect =
+              index === 0 ||
+              installments
+                .slice(0, index)
+                .every(
+                  prevInst =>
+                    prevInst.status === 'approved' ||
+                    selectedPayments.has(prevInst.id),
+                );
+
+            return (
+              <InstallmentItem
+                key={item.id}
+                installment={item}
+                isSelected={isSelected}
+                isDisabled={!canSelect && !isSelected}
+                onCheckboxPress={() => {
+                  if (canSelect || isSelected) {
+                    handleCheckboxPress(item.id, index);
+                  }
+                }}
+              />
+            );
+          })}
 
           {/* Action Buttons */}
           <View style={styles.buttonsContainer}>

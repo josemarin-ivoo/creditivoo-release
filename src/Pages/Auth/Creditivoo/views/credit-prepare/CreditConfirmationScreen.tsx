@@ -5,16 +5,45 @@ import {Button} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
+import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {fetchMe} from '../../store-creditivoo/slices/auth-slice';
 
-import {Routes} from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const CreditConfirmationScreen: React.FC = () => {
   const navigation = useNavigation();
+  const dispatch = useIvoDispatch();
+  const {isLoggedIn} = useIvoSelector(state => state.creditivoo.auth);
+  const {data: creditData} = useIvoSelector(state => state.creditivoo.credit);
 
-  const handleContinue = () => {
-    (navigation as any).navigate(Routes.NAVIGATION_TABCREDITIVOO);
+  const assignedAmount = creditData?.creditAssigned ?? 0;
+  const formattedAmount = `USD $${assignedAmount}`;
+
+  const handleContinue = async () => {
+    // Actualizar la información del usuario (hasActiveCredit, creditLimit, etc.)
+    try {
+      await dispatch(fetchMe()).unwrap();
+    } catch (error) {
+      console.error(
+        '[CreditConfirmationScreen] Error al refrescar datos del usuario:',
+        error,
+      );
+    }
+
+    // Solo navegar a MainTabs si el usuario está autenticado
+    if (isLoggedIn) {
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'MainTabs' as never}],
+      });
+    } else {
+      // Si no está autenticado, redirigir a login
+      navigation.reset({
+        index: 0,
+        routes: [{name: SCREENS.LOGIN as never}],
+      });
+    }
   };
 
   const logo = (
@@ -30,11 +59,11 @@ const CreditConfirmationScreen: React.FC = () => {
       <Text style={styles.title}>¡Felicidades!</Text>
 
       <Text style={styles.subtitle}>
-        te presentamos tu línea de crédito aprobada por:
+        te presentamos tu línea de compra aprobada por:
       </Text>
 
       <View style={styles.amountContainer}>
-        <Text style={styles.amountText}>USD $800</Text>
+        <Text style={styles.amountText}>{formattedAmount}</Text>
       </View>
 
       <View style={styles.illustrationContainer}>

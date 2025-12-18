@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,11 +6,19 @@ import {
   Dimensions,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {PurchaseCard, Purchase} from '../../components/purchases';
+import {useIvoSelector} from '../../../../../redux/useIvo'; // cambiar useIvo
+import {
+  getPurchasesByUserId,
+  getPurchaseById,
+  PurchaseResponse,
+} from '../../services/purchases';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -50,71 +58,172 @@ const formatDate = (dateString: string): string => {
   return `${dayName} ${day} de ${month}`;
 };
 
-// Mock data - Replace with actual API call
-const mockPurchases: Purchase[] = [
-  {
-    id: '1',
-    storeName: 'IVOO Plaza Venezuela',
-    date: '2024-10-05',
-    amount: 144.68,
-    status: 'completed',
-    formattedDate: formatDate('2024-10-05'),
-  },
-  {
-    id: '2',
-    storeName: 'IVOO Sambil Candelaria',
-    date: '2024-08-21',
-    amount: 30.6,
-    status: 'completed',
-    formattedDate: formatDate('2024-08-21'),
-  },
-  {
-    id: '3',
-    storeName: 'IVOO Multiplaza',
-    date: '2024-11-15',
-    amount: 250.0,
-    status: 'pending',
-    formattedDate: formatDate('2024-11-15'),
-  },
-  {
-    id: '4',
-    storeName: 'IVOO Galerías',
-    date: '2024-09-10',
-    amount: 89.5,
-    status: 'cancelled',
-    formattedDate: formatDate('2024-09-10'),
-  },
-];
+// Helper function to map API response to component Purchase format
+const mapPurchaseResponseToPurchase = (
+  purchaseResponse: PurchaseResponse,
+): Purchase => {
+  // Mapear status del API al formato del componente
+  let status: 'pending' | 'completed' | 'cancelled' = 'pending';
+  if (purchaseResponse.status === 'COMPLETED') {
+    status = 'completed';
+  } else if (purchaseResponse.status === 'CANCELLED') {
+    status = 'cancelled';
+  } else {
+    status = 'pending';
+  }
+
+  // Obtener nombre de la tienda desde branch, store, o device
+  const storeName = purchaseResponse.tenant?.name || 'IVOO';
+
+  // Convertir totalAmount de string a number
+  const amount = parseFloat(purchaseResponse.totalAmount || '0');
+
+  return {
+    id: purchaseResponse.id.toString(),
+    storeName,
+    date: purchaseResponse.createdAt,
+    amount,
+    status,
+    formattedDate: formatDate(purchaseResponse.createdAt),
+  };
+};
 
 const MyPurchasesScreen: React.FC = () => {
   const navigation = useNavigation();
-  const [selectedTab, setSelectedTab] = useState<PurchaseStatus>('completed');
+  const {user} = useIvoSelector(state => state.creditivoo.auth);
+  const [selectedTab, setSelectedTab] = useState<PurchaseStatus>('pending');
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchPurchases = useCallback(
+    async (showLoading = true) => {
+      if (!user?.id) {
+        setError('Usuario no encontrado');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        if (showLoading) {
+          setIsLoading(true);
+        }
+        setError(null);
+        console.log(
+          '[MyPurchasesScreen] Obteniendo compras del usuario:',
+          user.id,
+        );
+
+        const purchasesData = await getPurchasesByUserId(user.id);
+        console.log('[MyPurchasesScreen] Compras obtenidas:', purchasesData);
+
+        // Mapear las compras del API al formato del componente
+        const mappedPurchases = purchasesData.map(
+          mapPurchaseResponseToPurchase,
+        );
+        setPurchases(mappedPurchases);
+      } catch (err: any) {
+        console.error('[MyPurchasesScreen] Error al obtener compras:', err);
+        setError(err.message || 'Error al cargar las compras');
+      } finally {
+        if (showLoading) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [user?.id],
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPurchases(false);
+    setRefreshing(false);
+  }, [fetchPurchases]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPurchases();
+    }, [fetchPurchases]),
+  );
 
   const handleBackPress = () => {
     navigation.goBack();
   };
 
-  const handlePurchasePress = (purchase: Purchase) => {
-    // Navigate to payment installments screen
-    navigation.navigate(
-      'PaymentInstallments' as never,
-      {
+  const handlePurchasePress = async (purchase: Purchase) => {
+    try {
+      console.log(
+        '[MyPurchasesScreen] Obteniendo detalles de compra:',
+        purchase.id,
+      );
+      const purchaseId = parseInt(purchase.id, 10);
+      const purchaseDetails: PurchaseResponse = await getPurchaseById(
+        purchaseId,
+      );
+
+      console.log(
+        '[MyPurchasesScreen] Detalles de compra obtenidos:',
+        purchaseDetails,
+      );
+      console.log(
+        '[MyPurchasesScreen] Payments en la respuesta:',
+        purchaseDetails.payments,
+      );
+
+      // Navigate to payment installments screen with full purchase data
+      (navigation as any).navigate('PaymentInstallments', {
+        purchase: purchaseDetails,
+      });
+    } catch (err: any) {
+      console.error(
+        '[MyPurchasesScreen] Error al obtener detalles de compra:',
+        err,
+      );
+      // Fallback: navigate with basic purchase data
+      (navigation as any).navigate('PaymentInstallments', {
         purchase,
-      } as never,
-    );
+      });
+    }
   };
 
-  const handlePayPress = (purchase: Purchase) => {
-    // Navigate to payment installments screen
-    navigation.navigate(
-      'PaymentInstallments' as never,
-      {
+  const handlePayPress = async (purchase: Purchase) => {
+    try {
+      console.log(
+        '[MyPurchasesScreen] Obteniendo detalles de compra para pagar:',
+        purchase.id,
+      );
+      const purchaseId = parseInt(purchase.id, 10);
+      const purchaseDetails: PurchaseResponse = await getPurchaseById(
+        purchaseId,
+      );
+
+      console.log(
+        '[MyPurchasesScreen] Detalles de compra obtenidos:',
+        purchaseDetails,
+      );
+      console.log(
+        '[MyPurchasesScreen] Payments en la respuesta:',
+        purchaseDetails.payments,
+      );
+
+      // Navigate to payment installments screen with full purchase data
+      (navigation as any).navigate('PaymentInstallments', {
+        purchase: purchaseDetails,
+      });
+    } catch (err: any) {
+      console.error(
+        '[MyPurchasesScreen] Error al obtener detalles de compra:',
+        err,
+      );
+      // Fallback: navigate with basic purchase data
+      (navigation as any).navigate('PaymentInstallments', {
         purchase,
-      } as never,
-    );
+      });
+    }
   };
 
-  const filteredPurchases = mockPurchases.filter(
+  const filteredPurchases = purchases.filter(
     purchase => purchase.status === selectedTab,
   );
 
@@ -168,15 +277,34 @@ const MyPurchasesScreen: React.FC = () => {
       </View>
 
       {/* Purchases List */}
-      <FlatList
-        data={filteredPurchases}
-        renderItem={renderPurchaseCard}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        style={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyState}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+          <Text style={styles.loadingText}>Cargando compras...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredPurchases}
+          renderItem={renderPurchaseCard}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          style={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyState}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[IVOO_COLORS.primary]}
+              tintColor={IVOO_COLORS.primary}
+            />
+          }
+        />
+      )}
     </CurvedHeaderLayout>
   );
 };
@@ -225,6 +353,32 @@ const styles = StyleSheet.create({
     fontSize: SCREEN_WIDTH * 0.04,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.grayMedium,
+    textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SCREEN_HEIGHT * 0.1,
+  },
+  loadingText: {
+    marginTop: SCREEN_HEIGHT * 0.02,
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary || '#6E717C',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SCREEN_HEIGHT * 0.1,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  errorText: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: '#E74C3C',
     textAlign: 'center',
   },
 });

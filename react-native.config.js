@@ -7,7 +7,8 @@ module.exports = {
         },
     },
     assets: [
-        './node_modules/react-native-dynamic-vector-icons/assets/fonts',
+        // './node_modules/react-native-dynamic-vector-icons/assets/fonts',
+         './src/Pages/Auth/Creditivoo/app/assets/fonts',
         // Si usas otra librería de iconos, también la pones aquí, ejemplo:
         // './node_modules/react-native-vector-icons/Fonts', 
     ],

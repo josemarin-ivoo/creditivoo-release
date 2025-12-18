@@ -8,14 +8,16 @@ import {
   Image,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {useIvoDispatch, useIvoSelector} from '../../../../../redux/useIvo'; // cambiar por useIvo
 import {logout, fetchMe} from '../../store-creditivoo/slices/auth-slice';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import CreditivooVerde from '../../svgs/CreditivooVerde';
-import {Routes} from '../../../../../Utils/NavigationRoutes';
+import { IvitooAdvisor } from '../../components';
+import { Routes } from '../../../../../Utils/NavigationRoutes'
+
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 // Helper function to get display name
@@ -88,14 +90,14 @@ const ProfileScreen: React.FC = () => {
       // Redirigir a login después del logout
       navigation.reset({
         index: 0,
-        routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}],
+        routes: [{name: SCREENS.LOGIN as never}],
       });
     } catch (error) {
       console.error('[ProfileScreen] Error al cerrar sesión:', error);
       // Aún así redirigir a login aunque haya error
       navigation.reset({
         index: 0,
-        routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}],
+        routes: [{name: SCREENS.LOGIN as never}],
       });
     }
   };
@@ -123,7 +125,6 @@ const ProfileScreen: React.FC = () => {
           />
         ) : (
           <Image
-            // source={require('../../images/profile/ivitoo-profile.png')}
             source={require('../../images/profile/ivitoo-profile.png')}
             style={styles.avatarPlaceholder}
             resizeMode="contain"
@@ -169,7 +170,7 @@ const ProfileScreen: React.FC = () => {
             onPress={() => handleMenuPress('personalData')}>
             <View style={styles.menuLeft}>
               <Icon
-                name="person-outline"
+                name="person"
                 type={IconType.Ionicons}
                 size={24}
                 color={IVOO_COLORS.primary}
@@ -178,7 +179,7 @@ const ProfileScreen: React.FC = () => {
               <Text style={styles.menuText}>Datos personales</Text>
             </View>
             <Icon
-              name="chevron-forward"
+              name="arrow-forward"
               type={IconType.Ionicons}
               size={20}
               color={IVOO_COLORS.grayLight}

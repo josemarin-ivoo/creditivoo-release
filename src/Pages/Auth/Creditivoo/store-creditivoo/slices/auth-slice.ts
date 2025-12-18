@@ -10,6 +10,8 @@ import {
   ChangePasswordRequest,
   refreshToken,
 } from '../../services/auth';
+import {RevisionResponse} from '../../services/credit';
+import {setPurchases} from '../purchase-slice';
 
 // User type based on what's returned from /auth/me
 export interface User {
@@ -143,7 +145,7 @@ export const updateAuth = createAsyncThunk(
 // Async thunk to login
 export const login = createAsyncThunk(
   'auth/login',
-  async (data: LoginRequest, {rejectWithValue}) => {
+  async (data: LoginRequest, {rejectWithValue, dispatch}) => {
     try {
       console.log('[IvoAuthSlice] Iniciando login');
       const response = await loginUser(data);
@@ -198,10 +200,53 @@ export const login = createAsyncThunk(
       };
       await AuthStorage.saveUser(userData as any);
 
+      // Guardar credenciales si el usuario tiene biometría habilitada
+      if (
+        userData.enableFaceIdCheck === true ||
+        userData.enableBiometricCheck === true
+      ) {
+        try {
+          await AuthStorage.saveCredentials(data.email, data.password);
+          console.log(
+            '[IvoAuthSlice] Credenciales guardadas para login biométrico',
+          );
+        } catch (credError) {
+          console.warn(
+            '[IvoAuthSlice] Error al guardar credenciales:',
+            credError,
+          );
+          // No fallar el login si no se pueden guardar las credenciales
+        }
+      }
+
+      // Extraer purchases y hasPurchasePendingInvoice de la respuesta
+      const purchases: RevisionResponse[] =
+        (response as any).purchases || (response.user as any)?.purchases || [];
+      const hasPurchasePendingInvoice: boolean =
+        (response as any).hasPurchasePendingInvoice ||
+        (response.user as any)?.hasPurchasePendingInvoice ||
+        false;
+      const hasPurchaseInProgress: boolean =
+        (response as any).hasPurchaseInProgress ||
+        (response.user as any)?.hasPurchaseInProgress ||
+        false;
+
+      // Setear purchases en el purchase slice
+      dispatch(
+        setPurchases({
+          purchases,
+          hasPurchasePendingInvoice,
+          hasPurchaseInProgress,
+        }),
+      );
+
       return {
         token: response.token,
         refreshToken: response.refreshToken,
         user: userData,
+        purchases,
+        hasPurchasePendingInvoice,
+        hasPurchaseInProgress,
       };
     } catch (error: any) {
       console.error('[IvoAuthSlice] ===== ERROR EN LOGIN =====');
@@ -223,15 +268,23 @@ export const login = createAsyncThunk(
 );
 
 // Async thunk to logout
-export const logout = createAsyncThunk('auth/logout', async () => {
+export const logout = createAsyncThunk('auth/logout', async (_, {dispatch}) => {
   await AuthStorage.clearAuthData();
+  // Limpiar purchases al hacer logout
+  dispatch(
+    setPurchases({
+      purchases: [],
+      hasPurchasePendingInvoice: false,
+      hasPurchaseInProgress: false,
+    }),
+  );
   return;
 });
 
 // Async thunk to fetch current user info
 export const fetchMe = createAsyncThunk(
   'auth/fetchMe',
-  async (_, {rejectWithValue}) => {
+  async (_, {rejectWithValue, dispatch}) => {
     try {
       console.log('[IvoAuthSlice] Obteniendo información del usuario');
       const response = await getMe();
@@ -268,7 +321,33 @@ export const fetchMe = createAsyncThunk(
       };
       await AuthStorage.saveUser(userData as any);
 
-      return {user: userData};
+      // Extraer purchases y hasPurchasePendingInvoice de la respuesta
+      const purchases: RevisionResponse[] =
+        (response as any).purchases || (response.user as any)?.purchases || [];
+      const hasPurchasePendingInvoice: boolean =
+        (response as any).hasPurchasePendingInvoice ||
+        (response.user as any)?.hasPurchasePendingInvoice ||
+        false;
+      const hasPurchaseInProgress: boolean =
+        (response as any).hasPurchaseInProgress ||
+        (response.user as any)?.hasPurchaseInProgress ||
+        false;
+
+      // Setear purchases en el purchase slice
+      dispatch(
+        setPurchases({
+          purchases,
+          hasPurchasePendingInvoice,
+          hasPurchaseInProgress,
+        }),
+      );
+
+      return {
+        user: userData,
+        purchases,
+        hasPurchasePendingInvoice,
+        hasPurchaseInProgress,
+      };
     } catch (error: any) {
       console.error(
         '[IvoAuthSlice] Error al obtener información del usuario:',
@@ -284,7 +363,7 @@ export const fetchMe = createAsyncThunk(
 // Async thunk to update user profile
 export const updateUserProfile = createAsyncThunk(
   'auth/updateUserProfile',
-  async (data: UpdateMeRequest, {rejectWithValue}) => {
+  async (data: UpdateMeRequest, {rejectWithValue, dispatch}) => {
     try {
       console.log('[IvoAuthSlice] Actualizando perfil del usuario');
       const response = await updateMe(data);
@@ -321,7 +400,33 @@ export const updateUserProfile = createAsyncThunk(
       };
       await AuthStorage.saveUser(userData as any);
 
-      return {user: userData};
+      // Extraer purchases y hasPurchasePendingInvoice de la respuesta
+      const purchases: RevisionResponse[] =
+        (response as any).purchases || (response.user as any)?.purchases || [];
+      const hasPurchasePendingInvoice: boolean =
+        (response as any).hasPurchasePendingInvoice ||
+        (response.user as any)?.hasPurchasePendingInvoice ||
+        false;
+      const hasPurchaseInProgress: boolean =
+        (response as any).hasPurchaseInProgress ||
+        (response.user as any)?.hasPurchaseInProgress ||
+        false;
+
+      // Setear purchases en el purchase slice
+      dispatch(
+        setPurchases({
+          purchases,
+          hasPurchasePendingInvoice,
+          hasPurchaseInProgress,
+        }),
+      );
+
+      return {
+        user: userData,
+        purchases,
+        hasPurchasePendingInvoice,
+        hasPurchaseInProgress,
+      };
     } catch (error: any) {
       console.error('[IvoAuthSlice] Error al actualizar perfil:', error);
       return rejectWithValue(error.message || 'Error al actualizar perfil');
@@ -488,6 +593,7 @@ const authSlice = createSlice({
         state.user = null;
         state.isLoggedIn = false;
         state.error = null;
+        // Las purchases se limpian en el purchase slice mediante dispatch en el thunk
       })
       .addCase(logout.rejected, state => {
         state.isLoading = false;

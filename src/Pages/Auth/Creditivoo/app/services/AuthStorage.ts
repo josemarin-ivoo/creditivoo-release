@@ -1,11 +1,11 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 import * as Keychain from 'react-native-keychain';
-// import {User} from '@ivoo/store/slices/auth-slice';
 import {User} from '../../store-creditivoo/slices/auth-slice';
 
 const TOKEN_KEY = 'userToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 const USER_KEY = 'user';
+const CREDENTIALS_KEY = 'userCredentials';
 
 // Helper function to validate user data
 const isValidUser = (user: any): user is User => {
@@ -120,6 +120,7 @@ export const AuthStorage = {
 
   async clearAuthData(): Promise<void> {
     try {
+      // No eliminamos las credenciales aquí para permitir login biométrico después del logout
       await Promise.all([
         this.deleteToken(),
         this.deleteRefreshToken(),
@@ -131,6 +132,21 @@ export const AuthStorage = {
     }
   },
 
+  async clearAllAuthData(): Promise<void> {
+    try {
+      // Esta función elimina TODO incluyendo credenciales (usar cuando se cambia contraseña, etc.)
+      await Promise.all([
+        this.deleteToken(),
+        this.deleteRefreshToken(),
+        this.deleteUser(),
+        this.deleteCredentials(),
+      ]);
+    } catch (error) {
+      console.error('Error clearing all auth data:', error);
+      throw error;
+    }
+  },
+
   async isAuthenticated(): Promise<boolean> {
     try {
       const token = await this.getToken();
@@ -139,6 +155,47 @@ export const AuthStorage = {
     } catch (error) {
       console.error('Error checking authentication:', error);
       return false;
+    }
+  },
+
+  async saveCredentials(email: string, password: string): Promise<void> {
+    try {
+      const credentials = {email, password};
+      const credentialsString = JSON.stringify(credentials);
+      await EncryptedStorage.setItem(CREDENTIALS_KEY, credentialsString);
+    } catch (error) {
+      console.error('Error saving credentials:', error);
+      throw error;
+    }
+  },
+
+  async getCredentials(): Promise<{email: string; password: string} | null> {
+    try {
+      const credentialsString = await EncryptedStorage.getItem(CREDENTIALS_KEY);
+      if (!credentialsString) {
+        return null;
+      }
+      const credentials = JSON.parse(credentialsString);
+      if (
+        credentials &&
+        typeof credentials.email === 'string' &&
+        typeof credentials.password === 'string'
+      ) {
+        return credentials;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting credentials:', error);
+      return null;
+    }
+  },
+
+  async deleteCredentials(): Promise<void> {
+    try {
+      await EncryptedStorage.removeItem(CREDENTIALS_KEY);
+    } catch (error) {
+      console.error('Error deleting credentials:', error);
+      throw error;
     }
   },
 };

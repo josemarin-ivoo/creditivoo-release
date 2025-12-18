@@ -1,3 +1,7 @@
+source 'https://token:KzfLB1RYYNCXNqr9@dl.cloudsmith.io/basic/credolab/proxyen-sdk/cocoapods/index.git'
+source 'https://cdn.cocoapods.org/'
+
+
 $RNFirebaseAsStaticFramework = true
 
 def node_require(script)

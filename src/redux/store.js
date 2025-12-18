@@ -149,22 +149,23 @@ import DeepLinkReducer from "./reducers/deepLinkReducer";
 // ===================================
 // IMPORTS DE CREDITIVOO (Reducers)
 // ===================================
-import loaderReducer from '../Pages/Auth/Creditivoo/store/slices/loader-slice';
+// import loaderReducer from '../Pages/Auth/Creditivoo/store/slices/loader-slice';
 import authReducer from '../Pages/Auth/Creditivoo/store-creditivoo/slices/auth-slice';
-import brandsReducer from '../Pages/Auth/Creditivoo/store/slices/brands-slice';
-import modelsReducer from '../Pages/Auth/Creditivoo/store/slices/models-slice';
-import usersReducer from '../Pages/Auth/Creditivoo/store/slices/users-slice';
-import financingReducer from '../Pages/Auth/Creditivoo/store/slices/financing-slice';
-import purchasesReducer from '../Pages/Auth/Creditivoo/store/slices/purchase-slice';
-import balancesReducer from '../Pages/Auth/Creditivoo/store/slices/balance-slice';
-import paymentsReducer from '../Pages/Auth/Creditivoo/store/slices/payment-slice';
-import banksReducer from '../Pages/Auth/Creditivoo/store/slices/banksSlice';
-import deviceUnitReducer from '../Pages/Auth/Creditivoo/store/slices/deviceUnit-slice';
-import paymentMethodsReducer from '../Pages/Auth/Creditivoo/store/slices/payment-methods-slice';
-import termsAndConditionsReducer from '../Pages/Auth/Creditivoo/store/slices/termsAndConditions-slice';
-import tenantsReducer from '../Pages/Auth/Creditivoo/store/slices/tenants-slice';
+// import brandsReducer from '../Pages/Auth/Creditivoo/store/slices/brands-slice';
+// import modelsReducer from '../Pages/Auth/Creditivoo/store/slices/models-slice';
+// import usersReducer from '../Pages/Auth/Creditivoo/store/slices/users-slice';
+// import financingReducer from '../Pages/Auth/Creditivoo/store/slices/financing-slice';
+// import purchasesReducer from '../Pages/Auth/Creditivoo/store/slices/purchase-slice';
+// import balancesReducer from '../Pages/Auth/Creditivoo/store/slices/balance-slice';
+// import paymentsReducer from '../Pages/Auth/Creditivoo/store/slices/payment-slice';
+// import banksReducer from '../Pages/Auth/Creditivoo/store/slices/banksSlice';
+// import deviceUnitReducer from '../Pages/Auth/Creditivoo/store/slices/deviceUnit-slice';
+// import paymentMethodsReducer from '../Pages/Auth/Creditivoo/store/slices/payment-methods-slice';
+// import termsAndConditionsReducer from '../Pages/Auth/Creditivoo/store/slices/termsAndConditions-slice';
+// import tenantsReducer from '../Pages/Auth/Creditivoo/store/slices/tenants-slice';
 import registerReducer from '../Pages/Auth/Creditivoo/store-creditivoo/slices/register-slice';
-
+import creditReducer from '../Pages/Auth/Creditivoo/store-creditivoo/credit-slice';
+import purchaseReducer from '../Pages/Auth/Creditivoo/store-creditivoo/purchase-slice';
 
 // ==========================================================
 // 1. DEFINICIÓN DEL ROOT REDUCER DE CREDITIVOO 
@@ -172,21 +173,23 @@ import registerReducer from '../Pages/Auth/Creditivoo/store-creditivoo/slices/re
 // ==========================================================
 const creditivooRootReducer = combineReducers({
      // Nodos internos de Creditivoo
-     loader: loaderReducer,
+     // loader: loaderReducer,
      auth: authReducer,
-     brands: brandsReducer,
-     models: modelsReducer,
-     users: usersReducer,
-     financing: financingReducer,
-     purchases: purchasesReducer,
-     balances: balancesReducer,
-     payments: paymentsReducer,
-     banks: banksReducer,
-     deviceUnit: deviceUnitReducer,
-     paymentMethods: paymentMethodsReducer,
-     termsAndConditions: termsAndConditionsReducer,
-     tenants: tenantsReducer,
+     // brands: brandsReducer,
+     // models: modelsReducer,
+     // users: usersReducer,
+     // financing: financingReducer,
+     // purchases: purchasesReducer,
+     // balances: balancesReducer,
+     // payments: paymentsReducer,
+     // banks: banksReducer,
+     // deviceUnit: deviceUnitReducer,
+     // paymentMethods: paymentMethodsReducer,
+     // termsAndConditions: termsAndConditionsReducer,
+     // tenants: tenantsReducer,
      register: registerReducer,
+     credit: creditReducer,
+     purchase: purchaseReducer,
 });
 
 

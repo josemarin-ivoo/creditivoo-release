@@ -35,10 +35,7 @@ const GemTransactionCard: React.FC<GemTransactionCardProps> = ({
           <Text style={styles.amountText} numberOfLines={1}>
             +{transaction.amount}
           </Text>
-          <GemIcon
-            width={SCREEN_WIDTH * 0.05}
-            height={SCREEN_WIDTH * 0.05}
-          />
+          <GemIcon width={SCREEN_WIDTH * 0.05} height={SCREEN_WIDTH * 0.05} />
         </View>
         <Text style={styles.dateText}>{transaction.date}</Text>
       </View>
@@ -108,5 +105,3 @@ const styles = StyleSheet.create({
 });
 
 export default GemTransactionCard;
-
-

@@ -58,6 +58,9 @@ import PurchasesScreen from './src/Pages/Auth/Creditivoo/views/purchases/MyPurch
 import GemsScreen from './src/Pages/Auth/Creditivoo/views/gem/GemsScreen';
 import MainTabsCreditivoo from './src/Pages/Auth/Creditivoo/navigation/TabsNavigation';
 import ProfileScreen from './src/Pages/Auth/Creditivoo/views/profile/ProfileScreen';
+import PlanGroupSelection from './src/Pages/Auth/Creditivoo/views/plan/PlanGroupSelection';
+import PlanSelection from './src/Pages/Auth/Creditivoo/views/plan/PlanSelection';
+import PurchasesConfirm from './src/Pages/Auth/Creditivoo/views/plan/PurchaseConfirmationScreen';
 
 // import CreditivooLogin from './src/Pages/Auth/Creditivoo/CreditivooLogin'; // revisar a donde va a abrir 
 
@@ -642,6 +645,25 @@ const Route = () => {
           component={GemsScreen}
           options={{headerShown: false}}
         />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_PLANGROUPSELECTION}
+          component={PlanGroupSelection}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_PLANSELECTION}
+          component={PlanSelection}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_PURCHASESCONFIRM}
+          component={PurchasesConfirm}
+          options={{headerShown: false}}
+        />
+
 
         {/* ¡CORRECCIÓN CLAVE: AÑADIR GUESTLOGIN! */}
         <Stack.Screen

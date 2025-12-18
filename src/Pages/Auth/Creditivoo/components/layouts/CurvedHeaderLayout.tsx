@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Text,
+  RefreshControl,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
@@ -25,6 +26,8 @@ interface CurvedHeaderLayoutProps {
   showBackButton?: boolean;
   onBackPress?: () => void;
   scroll?: boolean;
+  floatingComponent?: React.ReactNode;
+  refreshControl?: React.ReactElement<typeof RefreshControl>;
 }
 
 const CurvedHeaderLayout: React.FC<CurvedHeaderLayoutProps> = ({
@@ -35,6 +38,8 @@ const CurvedHeaderLayout: React.FC<CurvedHeaderLayoutProps> = ({
   showBackButton = true,
   onBackPress,
   scroll = true,
+  floatingComponent,
+  refreshControl,
 }) => {
   const BodyWrapper = scroll ? ScrollView : View;
 
@@ -69,11 +74,18 @@ const CurvedHeaderLayout: React.FC<CurvedHeaderLayoutProps> = ({
             <View style={styles.cardHeader}>{headerContent}</View>
           )}
 
-          <BodyWrapper
-            {...(scroll ? {contentContainerStyle: styles.scrollContent} : {style: styles.nonScrollContent})}>
-            {children}
-          </BodyWrapper>
+          {scroll ? (
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              refreshControl={refreshControl}
+              showsVerticalScrollIndicator={false}>
+              {children}
+            </ScrollView>
+          ) : (
+            <View style={styles.nonScrollContent}>{children}</View>
+          )}
         </View>
+        {floatingComponent}
       </View>
     </SafeAreaView>
   );
