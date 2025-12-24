@@ -55,12 +55,20 @@ import SettingScreen from './src/Pages/Auth/Creditivoo/views/settings/SettingScr
 import SecurityScreen from './src/Pages/Auth/Creditivoo/views/settings/SecurityScreen';
 import NotificationScreen from './src/Pages/Auth/Creditivoo/views/notifications/NotificationScreen';
 import PurchasesScreen from './src/Pages/Auth/Creditivoo/views/purchases/MyPurchasesScreen';
+import PaymentInstallmentsScreen from './src/Pages/Auth/Creditivoo/views/purchases/PaymentInstallmentsScreen';
+import MovementsScreen from './src/Pages/Auth/Creditivoo/views/movements/MovementsScreen';
+import PurchaseSuccessScreen from './src/Pages/Auth/Creditivoo/views/plan/PurchaseSuccessScreen';
 import GemsScreen from './src/Pages/Auth/Creditivoo/views/gem/GemsScreen';
 import MainTabsCreditivoo from './src/Pages/Auth/Creditivoo/navigation/TabsNavigation';
 import ProfileScreen from './src/Pages/Auth/Creditivoo/views/profile/ProfileScreen';
 import PlanGroupSelection from './src/Pages/Auth/Creditivoo/views/plan/PlanGroupSelection';
 import PlanSelection from './src/Pages/Auth/Creditivoo/views/plan/PlanSelection';
 import PurchasesConfirm from './src/Pages/Auth/Creditivoo/views/plan/PurchaseConfirmationScreen';
+import SubscriptionSuccessScreen from './src/Pages/Auth/Creditivoo/views/plan/SubscriptionSuccessScreen';
+import HowToEarnGemsScreen from './src/Pages/Auth/Creditivoo/views/gem/HowToEarnGemsScreen';
+
+// import SplashScreen from './src/Pages/Auth/Creditivoo/views/splash/SplashScreen';
+import ChangePasswordScreen from './src/Pages/Auth/Creditivoo/views/settings/ChangePasswordScreen';
 
 // import CreditivooLogin from './src/Pages/Auth/Creditivoo/CreditivooLogin'; // revisar a donde va a abrir 
 
@@ -664,6 +672,42 @@ const Route = () => {
           options={{headerShown: false}}
         />
 
+        <Stack.Screen
+          name={Routes.NAVIGATION_PURCHASESSUCCESS}
+          component={PurchaseSuccessScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_PAYMENTSINSTALLS}
+          component={PaymentInstallmentsScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_MOVEMENTS}
+          component={MovementsScreen}
+          options={{headerShown: false}}
+        />
+
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_CHANGEPASSWORD}
+          component={ChangePasswordScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_HOWTOEARNGEMS}
+          component={HowToEarnGemsScreen}
+          options={{headerShown: false}}
+        />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_SUSCRIPTIONSUCCESS}
+          component={SubscriptionSuccessScreen}
+          options={{headerShown: false}}
+        />
 
         {/* ¡CORRECCIÓN CLAVE: AÑADIR GUESTLOGIN! */}
         <Stack.Screen

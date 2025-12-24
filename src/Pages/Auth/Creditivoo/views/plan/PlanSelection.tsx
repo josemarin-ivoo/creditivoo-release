@@ -1,4 +1,4 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -10,6 +10,7 @@ import {
   ScrollView,
   RefreshControl,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import {
   useNavigation,
   useRoute,
@@ -18,12 +19,14 @@ import {
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
+import GemIcon from '../../svgs/menus/gem.svg';
 import {getPlansByGroupId, Financing} from '../../services/plan';
 import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
-import {updatePurchase} from '../../services/credit';
-// import {setCurrentPurchase} from '../../store-creditivoo/slices/purchase-slice';
+import {updatePurchase, simulatePurchase} from '../../services/credit';
 import {setCurrentPurchase} from '../../store-creditivoo/purchase-slice';
-import { Routes } from '../../../../../Utils/NavigationRoutes';
+import {getIsPlusUser} from '../../services/auth';
+import {getSubscriptionAmount} from '../../services/megasoft';
+import {createPurchase} from '../../services/purchases';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -31,19 +34,84 @@ const PlanSelection: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const groupId = (route.params as any)?.groupId as number;
+  const isPlusPlanParam = (route.params as any)?.isPlusPlan as
+    | boolean
+    | undefined;
   const dispatch = useIvoDispatch();
 
   const {currentPurchase} = useIvoSelector(state => state.creditivoo.purchase);
+  const {user} = useIvoSelector(state => state.creditivoo.auth);
 
   const [plans, setPlans] = useState<Financing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [isPlusPlan, setIsPlusPlan] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updatingPlanId, setUpdatingPlanId] = useState<number | null>(null);
+  const [isInsufficientCredit, setIsInsufficientCredit] = useState(false);
+  const [subscriptionAmount, setSubscriptionAmount] = useState<number | null>(
+    null,
+  );
+  const [isSubscribing, setIsSubscribing] = useState(false);
+
+  // Verificar si el usuario es Plus cuando se recibe isPlusPlanParam
+  useEffect(() => {
+    const checkIsPlusUser = async () => {
+      if (isPlusPlanParam) {
+        try {
+          const isPlusUser = await getIsPlusUser();
+          // Si el usuario ya es Plus, no mostrar el card de suscripción
+          setIsPlusPlan(!isPlusUser);
+        } catch (err: any) {
+          console.error(
+            '[PlanSelection] Error al verificar si usuario es Plus:',
+            err,
+          );
+          // En caso de error, no mostrar el card Plus
+          setIsPlusPlan(false);
+        }
+      } else {
+        setIsPlusPlan(false);
+      }
+    };
+
+    checkIsPlusUser();
+  }, [isPlusPlanParam]);
+
+  // Obtener el monto de suscripción cuando se muestra el card de PLAN PLUS
+  useEffect(() => {
+    const fetchSubscriptionAmount = async () => {
+      if (isPlusPlan) {
+        try {
+          console.log('[PlanSelection] Obteniendo monto de suscripción...');
+          const amount = await getSubscriptionAmount();
+          console.log('[PlanSelection] Monto obtenido:', amount);
+          setSubscriptionAmount(amount);
+        } catch (err: any) {
+          console.error(
+            '[PlanSelection] Error al obtener monto de suscripción:',
+            err,
+          );
+          // En caso de error, mantener null para mostrar un valor por defecto o manejar el error
+        }
+      } else {
+        setSubscriptionAmount(null);
+      }
+    };
+
+    fetchSubscriptionAmount();
+  }, [isPlusPlan]);
 
   const fetchPlans = useCallback(
     async (showRefreshing = false) => {
+      // Si es PLAN PLUS, no hacer fetch de planes
+      if (isPlusPlan) {
+        setIsLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
       if (!groupId) {
         setError('ID de grupo no válido');
         setIsLoading(false);
@@ -57,8 +125,10 @@ const PlanSelection: React.FC = () => {
           setIsLoading(true);
         }
         setError(null);
+        setIsInsufficientCredit(false);
         console.log('[PlanSelection] Obteniendo planes del grupo:', groupId);
-        const plansData = await getPlansByGroupId(groupId);
+        const purchaseId = currentPurchase?.id;
+        const plansData = await getPlansByGroupId(groupId, purchaseId);
         console.log('[PlanSelection] Planes obtenidos:', plansData);
         // Filtrar solo planes activos y no eliminados
         const activePlans = (plansData || []).filter(
@@ -77,7 +147,7 @@ const PlanSelection: React.FC = () => {
         }
       }
     },
-    [groupId],
+    [groupId, currentPurchase?.id, isPlusPlan],
   );
 
   // Hacer fetch cuando la pantalla recibe foco
@@ -92,9 +162,7 @@ const PlanSelection: React.FC = () => {
   }, [fetchPlans]);
 
   const handlePaymentSelect = async (plan: Financing) => {
-    // Evitar múltiples llamadas mientras se está actualizando
     if (isUpdating) {
-      console.log('[PlanSelection] Ya se está actualizando, ignorando click');
       return;
     }
 
@@ -108,30 +176,46 @@ const PlanSelection: React.FC = () => {
       setIsUpdating(true);
       setUpdatingPlanId(plan.id);
       setError(null);
-      console.log('[PlanSelection] Actualizando purchase:', {
-        purchaseId: currentPurchase.id,
-        financingTypeId: plan.id,
-      });
+      setIsInsufficientCredit(false);
+      console.log(
+        '[PlanSelection] Actualizando purchase y obteniendo simulación:',
+        {
+          purchaseId: currentPurchase.id,
+          financingTypeId: plan.id,
+        },
+      );
 
       const updatedPurchase = await updatePurchase(currentPurchase.id, {
         financingTypeId: plan.id,
       });
 
-      console.log(
-        '[PlanSelection] Purchase actualizada exitosamente:',
-        updatedPurchase,
-      );
-
       // Actualizar el store con la purchase actualizada
       dispatch(setCurrentPurchase(updatedPurchase));
 
-      // Navegar a la pantalla de confirmación
-      (navigation as any).navigate(Routes.NAVIGATION_PURCHASESCONFIRM, {
+      // Obtener la simulación de la purchase
+      const simulation = await simulatePurchase(updatedPurchase.id);
+
+      // Navegar a la pantalla de confirmación con los datos de simulación
+      (navigation as any).navigate('PurchaseConfirmation', {
         purchaseId: updatedPurchase.id,
+        simulation: simulation,
       });
     } catch (err: any) {
-      console.error('[PlanSelection] Error al actualizar purchase:', err);
-      setError(err.message || 'Error al seleccionar el plan');
+      console.error('[PlanSelection] Error al seleccionar plan:', err);
+      const errorMessage = err.message || 'Error al seleccionar el plan';
+
+      // Detectar si es error de crédito insuficiente
+      if (
+        errorMessage.includes('Crédito insuficiente') ||
+        errorMessage.includes('crédito insuficiente') ||
+        errorMessage.includes('Crédito insuficiente para este plan')
+      ) {
+        setIsInsufficientCredit(true);
+        setError(null);
+      } else {
+        setIsInsufficientCredit(false);
+        setError(errorMessage);
+      }
     } finally {
       setIsUpdating(false);
       setUpdatingPlanId(null);
@@ -141,6 +225,60 @@ const PlanSelection: React.FC = () => {
   const handleCustomAmount = () => {
     console.log('[PlanSelection] Monto personalizado');
     // TODO: Navegar a pantalla de monto personalizado
+  };
+
+  const handleSubscribe = async () => {
+    if (isSubscribing) {
+      return; // Evitar múltiples llamadas
+    }
+
+    try {
+      setIsSubscribing(true);
+      setError(null);
+      console.log('[PlanSelection] Suscribirse a PLAN PLUS');
+
+      if (!user?.id) {
+        console.error('[PlanSelection] No se encontró el ID del usuario');
+        setError('No se encontró información del usuario');
+        return;
+      }
+
+      if (subscriptionAmount === null) {
+        console.warn('[PlanSelection] Monto de suscripción no disponible aún');
+        setError(
+          'El monto de suscripción no está disponible. Por favor, intenta nuevamente.',
+        );
+        return;
+      }
+
+      console.log('[PlanSelection] Creando purchase para suscripción...');
+      const purchase = await createPurchase({
+        userId: user.id,
+        isForPlanSubscription: true,
+      });
+
+      console.log('[PlanSelection] Purchase creada exitosamente:', purchase);
+
+      // Actualizar el store con la purchase creada
+      dispatch(setCurrentPurchase(purchase as any));
+
+      // Navegar a la pantalla de confirmación sin simulación (es un solo pago)
+      (navigation as any).navigate('PurchaseConfirmation', {
+        purchaseId: purchase.id,
+        isPlanSubscription: true, // Indicar que es una suscripción, no necesita simulación
+      });
+    } catch (subscribeError: any) {
+      console.error(
+        '[PlanSelection] Error al procesar suscripción:',
+        subscribeError,
+      );
+      setError(
+        subscribeError.message ||
+          'Error al procesar la suscripción. Por favor, intenta nuevamente.',
+      );
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const formatPercentage = (rate: number) => {
@@ -177,9 +315,140 @@ const PlanSelection: React.FC = () => {
             <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
             <Text style={styles.loadingText}>Cargando planes...</Text>
           </View>
+        ) : isInsufficientCredit ? (
+          <View style={styles.insufficientCreditContainer}>
+            <Text style={styles.sorryText}>¡Lo sentimos!</Text>
+            <Text style={styles.insufficientCreditMessage}>
+              Crédito insuficiente para este plan
+            </Text>
+            <Image
+              source={require('../../images/purchases/ivitoo-triste-1.png')}
+              style={styles.ivitooSadImage}
+              resizeMode="contain"
+            />
+          </View>
         ) : error ? (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : isPlusPlan ? (
+          // Mostrar tarjeta PLAN PLUS cuando isPlusPlan es true
+          <View style={styles.content}>
+            <View style={styles.plusPlanCard}>
+              {/* Header con gradiente */}
+              <LinearGradient
+                colors={['#52e665', '#b1c0d8', '#fea9fe']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={styles.plusPlanHeader}>
+                <View style={styles.plusPlanHeaderContent}>
+                  <Text style={styles.plusPlanLabel}>PLAN</Text>
+                  <Text style={styles.plusPlanTitle}>PLUS</Text>
+                </View>
+              </LinearGradient>
+
+              {/* Contenido principal */}
+              <View style={styles.plusPlanContent}>
+                {/* Inicial desde 0% */}
+                <View style={styles.plusPlanInitial}>
+                  <Text style={styles.plusPlanInitialPercent}>Desde 0%</Text>
+                  <Text style={styles.plusPlanInitialLabel}>de inicial</Text>
+                </View>
+
+                {/* Lista de beneficios */}
+                <View style={styles.plusPlanBenefits}>
+                  <View style={styles.benefitItem}>
+                    <Icon
+                      name="check-circle"
+                      type={IconType.MaterialIcons}
+                      size={24}
+                      color={IVOO_COLORS.primary}
+                      style={styles.benefitIcon}
+                    />
+                    <Text style={styles.benefitText}>Más cuotas</Text>
+                  </View>
+                  <View style={styles.benefitItem}>
+                    <Icon
+                      name="check-circle"
+                      type={IconType.MaterialIcons}
+                      size={24}
+                      color={IVOO_COLORS.primary}
+                      style={styles.benefitIcon}
+                    />
+                    <Text style={styles.benefitText}>Desde $100</Text>
+                  </View>
+                  <View style={styles.benefitItem}>
+                    <Icon
+                      name="check-circle"
+                      type={IconType.MaterialIcons}
+                      size={24}
+                      color={IVOO_COLORS.primary}
+                      style={styles.benefitIcon}
+                    />
+                    <Text style={styles.benefitText}>Acumula Gemas</Text>
+                  </View>
+                  <View style={styles.benefitItem}>
+                    <Icon
+                      name="check-circle"
+                      type={IconType.MaterialIcons}
+                      size={24}
+                      color={IVOO_COLORS.primary}
+                      style={styles.benefitIcon}
+                    />
+                    <Text style={styles.benefitText}>Aumenta tu linea</Text>
+                  </View>
+                  <View style={styles.benefitItem}>
+                    <Icon
+                      name="check-circle"
+                      type={IconType.MaterialIcons}
+                      size={20}
+                      color="#B8E6B8"
+                      style={styles.benefitIcon}
+                    />
+                    <Text style={styles.benefitTextFuture}>
+                      Descubre proximamente mas beneficios
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Caja de precio */}
+                <View style={styles.plusPlanPricing}>
+                  <Text style={styles.plusPlanPricingLabel}>Solo por</Text>
+                  <View style={styles.plusPlanPricingAmount}>
+                    <Text style={styles.plusPlanPrice}>
+                      ${subscriptionAmount ?? '...'}
+                    </Text>
+                    <Text style={styles.plusPlanPricePeriod}>/año</Text>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.plusPlanSubscribeButton,
+                    isSubscribing && styles.plusPlanSubscribeButtonDisabled,
+                  ]}
+                  onPress={handleSubscribe}
+                  activeOpacity={0.8}
+                  disabled={isSubscribing}>
+                  <LinearGradient
+                    colors={['#52e665', '#b1c0d8', '#fea9fe']}
+                    start={{x: 0, y: 0}}
+                    end={{x: 1, y: 0}}
+                    style={styles.plusPlanSubscribeButtonGradient}>
+                    {isSubscribing ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={IVOO_COLORS.white}
+                      />
+                    ) : (
+                      <Text style={styles.plusPlanSubscribeButtonText}>
+                        Suscribirse
+                      </Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         ) : plans.length === 0 ? (
           <View style={styles.emptyContainer}>
@@ -233,26 +502,39 @@ const PlanSelection: React.FC = () => {
                             </Text>
                           </View>
                         </View>
-                        {isUpdating && updatingPlanId === plan.id ? (
-                          <ActivityIndicator
-                            size="small"
-                            color={IVOO_COLORS.primary}
-                          />
-                        ) : (
-                        <Icon
-                          name="chevron-forward"
-                          type={IconType.Ionicons}
-                          size={24}
-                          color={IVOO_COLORS.black}
-                        />
-                        )}
+                        <View style={styles.optionRight}>
+                          {plan.points != null && plan.points > 0 && (
+                            <View style={styles.pointsContainer}>
+                              <Text style={styles.pointsText}>
+                                Gana {plan.points}
+                              </Text>
+                              <GemIcon
+                                width={SCREEN_WIDTH * 0.04}
+                                height={SCREEN_WIDTH * 0.04}
+                              />
+                            </View>
+                          )}
+                          {isUpdating && updatingPlanId === plan.id ? (
+                            <ActivityIndicator
+                              size="small"
+                              color={IVOO_COLORS.primary}
+                            />
+                          ) : (
+                            <Icon
+                              name="chevron-forward"
+                              type={IconType.Ionicons}
+                              size={24}
+                              color={IVOO_COLORS.black}
+                            />
+                          )}
+                        </View>
                       </View>
                     </TouchableOpacity>
                   ))
                 : null}
 
               {/* Opción personalizada */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[
                   styles.optionCard,
                   isUpdating && styles.optionCardDisabled,
@@ -276,7 +558,7 @@ const PlanSelection: React.FC = () => {
                     color={IVOO_COLORS.black}
                   />
                 </View>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </View>
         )}
@@ -294,7 +576,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: SCREEN_HEIGHT * 0.02,
   },
   optionsContainer: {
     width: '100%',
@@ -317,6 +598,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  optionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SCREEN_WIDTH * 0.02,
+  },
   optionTextContainer: {
     flex: 1,
   },
@@ -337,6 +623,23 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: '#6E717C',
     marginRight: SCREEN_WIDTH * 0.02,
+  },
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  pointsText: {
+    fontSize: SCREEN_WIDTH * 0.037,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: '#6E717C',
+    marginRight: 4,
+  },
+  pointsAdvanceText: {
+    fontSize: SCREEN_WIDTH * 0.033,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.grayMedium,
   },
   gemsContainer: {
     flexDirection: 'row',
@@ -386,6 +689,33 @@ const styles = StyleSheet.create({
     color: '#E74C3C',
     textAlign: 'center',
   },
+  insufficientCreditContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SCREEN_HEIGHT * 0.1,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  sorryText: {
+    fontSize: SCREEN_WIDTH * 0.08,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+    textAlign: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.02,
+  },
+  insufficientCreditMessage: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary || '#6E717C',
+    textAlign: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.04,
+  },
+  ivitooSadImage: {
+    width: SCREEN_WIDTH * 0.8,
+    height: SCREEN_WIDTH * 0.8,
+    marginTop: SCREEN_HEIGHT * 0.02,
+  },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
@@ -404,6 +734,148 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.grayMedium || IVOO_COLORS.textSecondary || '#6E717C',
     textAlign: 'center',
+  },
+  // PLAN PLUS Card Styles
+  plusPlanCard: {
+    width: '100%',
+    backgroundColor: IVOO_COLORS.white,
+    borderRadius: 11,
+    overflow: 'hidden',
+    marginTop: SCREEN_HEIGHT * 0.01,
+    borderWidth: 1,
+    borderColor: 'rgba(110, 113, 124, 0.2)',
+  },
+  plusPlanHeader: {
+    paddingTop: SCREEN_HEIGHT * 0.03,
+    paddingBottom: SCREEN_HEIGHT * 0.015,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  plusPlanHeaderContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  plusPlanLabel: {
+    fontSize: SCREEN_WIDTH * 0.055,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.white,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  plusPlanTitle: {
+    fontSize: SCREEN_WIDTH * 0.11,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: '900',
+    color: IVOO_COLORS.white,
+    letterSpacing: 2,
+  },
+
+  plusPlanContent: {
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    paddingTop: SCREEN_HEIGHT * 0.025,
+    paddingBottom: SCREEN_HEIGHT * 0.03,
+  },
+  plusPlanInitial: {
+    alignItems: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.03,
+    fontSize: SCREEN_WIDTH * 0.055,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+  },
+  plusPlanInitialPercent: {
+    fontSize: SCREEN_WIDTH * 0.12,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+    marginBottom: 1,
+  },
+  plusPlanInitialLabel: {
+    fontSize: SCREEN_WIDTH * 0.055,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.black,
+  },
+  plusPlanBenefits: {
+    marginBottom: SCREEN_HEIGHT * 0.025,
+    marginLeft: SCREEN_WIDTH * 0.07,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.015,
+  },
+  benefitIcon: {
+    marginRight: SCREEN_WIDTH * 0.03,
+  },
+  benefitText: {
+    fontSize: SCREEN_WIDTH * 0.05,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+    flex: 1,
+  },
+  benefitTextFuture: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.primary,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    flex: 1,
+  },
+  plusPlanPricing: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingVertical: SCREEN_HEIGHT * 0.01,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    alignItems: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.025,
+  },
+  plusPlanPricingLabel: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.primary,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+  },
+  plusPlanPricingAmount: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+  },
+  plusPlanPrice: {
+    fontSize: SCREEN_WIDTH * 0.18,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
+    marginRight: SCREEN_WIDTH * 0.015,
+  },
+  plusPlanPricePeriod: {
+    fontSize: SCREEN_WIDTH * 0.048,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.primary,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+  },
+  plusPlanSubscribeButton: {
+    width: '100%',
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  plusPlanSubscribeButtonDisabled: {
+    opacity: 0.6,
+  },
+  plusPlanSubscribeButtonGradient: {
+    paddingVertical: SCREEN_HEIGHT * 0.018,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusPlanSubscribeButtonText: {
+    fontSize: SCREEN_WIDTH * 0.055,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.white,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
 });
 

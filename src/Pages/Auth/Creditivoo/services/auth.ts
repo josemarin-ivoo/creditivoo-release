@@ -66,6 +66,10 @@ export interface MeResponse {
   user: User;
 }
 
+export interface IsPlusUserResponse {
+  isPlusUser: boolean;
+}
+
 /**
  * Inicia sesión con email y password
  * @param data - Datos del login (email, password)
@@ -491,5 +495,42 @@ export async function refreshToken(
       JSON.stringify(error, null, 2),
     );
     throw new Error(error.message || 'No se pudo conectar al servidor');
+  }
+}
+
+/**
+ * Verifica si el usuario actual es usuario Plus
+ * @returns boolean indicando si el usuario es Plus
+ */
+export async function getIsPlusUser(): Promise<boolean> {
+  try {
+    console.log('[Auth Service] ===== VERIFICANDO SI USUARIO ES PLUS =====');
+    console.log(
+      '[Auth Service] Endpoint:',
+      api.defaults.baseURL + '/users/is-plus',
+    );
+
+    const response = await api.get<IsPlusUserResponse>('/users/is-plus');
+
+    console.log('[Auth Service] Usuario es Plus:', response.data.isPlusUser);
+
+    return response.data.isPlusUser || false;
+  } catch (error: any) {
+    console.error(
+      '[Auth Service] Error al verificar si usuario es Plus:',
+      error,
+    );
+
+    if (error.response) {
+      console.error('[Auth Service] Error response data:', error.response.data);
+      const errorData = error.response.data as AuthErrorResponse;
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Error al verificar si usuario es Plus',
+      );
+    }
+
+    throw new Error('No se pudo conectar al servidor');
   }
 }

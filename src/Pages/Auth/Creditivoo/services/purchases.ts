@@ -189,3 +189,104 @@ export async function getPurchaseById(
     throw new Error('No se pudo conectar al servidor');
   }
 }
+
+export interface CreatePurchaseRequest {
+  userId: number;
+  isForPlanSubscription?: boolean;
+  [key: string]: any;
+}
+
+/**
+ * Crea una nueva purchase.
+ * Endpoint: POST /api/purchases
+ * @param data - Datos de la purchase a crear
+ */
+export async function createPurchase(
+  data: CreatePurchaseRequest,
+): Promise<PurchaseResponse> {
+  try {
+    console.log('[Purchases Service] ===== CREATE PURCHASE =====');
+    console.log(
+      '[Purchases Service] Endpoint:',
+      api.defaults.baseURL + '/purchases',
+    );
+    console.log('[Purchases Service] Request data:', {
+      ...data,
+    });
+
+    const response = await api.post<PurchaseResponse>('/purchases', data);
+
+    console.log('[Purchases Service] Purchase creada exitosamente:', {
+      purchaseId: response.data.id,
+      status: response.data.status,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[Purchases Service] Error al crear purchase:', error);
+
+    if (error.response) {
+      const errorData = error.response.data as CreditErrorResponse;
+      const message =
+        errorData?.message ||
+        errorData?.error ||
+        error.response.data?.message ||
+        'Error al crear la compra';
+      throw new Error(message);
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}
+
+export interface UpdatePurchaseRequest {
+  status?: string;
+  [key: string]: any;
+}
+
+/**
+ * Actualiza una purchase existente.
+ * Endpoint: PUT /api/purchases/:id
+ * @param purchaseId - ID de la purchase a actualizar
+ * @param data - Datos a actualizar
+ */
+export async function updatePurchase(
+  purchaseId: number,
+  data: UpdatePurchaseRequest,
+): Promise<PurchaseResponse> {
+  try {
+    console.log('[Purchases Service] ===== UPDATE PURCHASE =====');
+    console.log(
+      '[Purchases Service] Endpoint:',
+      api.defaults.baseURL + `/purchases/${purchaseId}`,
+    );
+    console.log('[Purchases Service] Purchase ID:', purchaseId);
+    console.log('[Purchases Service] Request data:', data);
+
+    const response = await api.put<PurchaseResponse>(
+      `/purchases/${purchaseId}`,
+      data,
+    );
+
+    console.log('[Purchases Service] Purchase actualizada exitosamente:', {
+      purchaseId: response.data.id,
+      status: response.data.status,
+    });
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[Purchases Service] Error al actualizar purchase:', error);
+
+    if (error.response) {
+      const errorData = error.response.data as CreditErrorResponse;
+      const message =
+        errorData?.message ||
+        errorData?.error ||
+        error.response.data?.message ||
+        'Error al actualizar la compra';
+      throw new Error(message);
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}

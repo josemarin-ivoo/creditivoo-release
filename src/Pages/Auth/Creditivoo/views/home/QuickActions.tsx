@@ -14,6 +14,7 @@ import PaymentsOneIcon from '../../svgs/menus/payments-one.svg';
 import ExtractIcon from '../../svgs/menus/extract.svg';
 import GemIcon from '../../svgs/menus/gem.svg';
 import PaymentsTwoIcon from '../../svgs/menus/payments-two.svg';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 

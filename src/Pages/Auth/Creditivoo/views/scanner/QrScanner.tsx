@@ -34,7 +34,7 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {AlertModal} from '../../components';
 import {revisionQr} from '../../services/credit';
-import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {useIvoDispatch} from '../../../../../redux/useIvo';
 import {setCurrentPurchase} from '../../store-creditivoo/purchase-slice';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -75,7 +75,7 @@ const QrScanner: React.FC = () => {
         console.log('[QrScanner] Respuesta del endpoint:', response);
 
         // Verificar que el status sea IN_REVIEW
-        if (response.status === 'IN_REVIEW') {
+        if (response.status === 'IN_REVIEW_BY_CLIENT') {
           console.log(
             '[QrScanner] Revisión exitosa, guardando purchase en store',
           );

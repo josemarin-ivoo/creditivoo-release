@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {
   View,
   StyleSheet,
@@ -63,9 +63,11 @@ const LoginScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
-  const [focusedInputs, setFocusedInputs] = useState<Set<string>>(new Set());
+  // const [focusedInputs, setFocusedInputs] = useState<Set<string>>(new Set());
   const [hasBiometricEnabled, setHasBiometricEnabled] = useState(false);
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+  const snapPoints = useMemo(() => ['50%', '85%'], []);
+
 
   const handleContinue = () => {
     // Si ya está autenticado, navegar directamente
@@ -143,7 +145,8 @@ const LoginScreen: React.FC = () => {
     setShowLoginModal(false);
     setEmail('');
     setPassword('');
-    setFocusedInputs(new Set());
+
+    // setFocusedInputs(new Set());
   };
 
   const handleRegister = () => {
@@ -282,40 +285,44 @@ const LoginScreen: React.FC = () => {
         </View>
 
         {/* Continue Button */}
-        <Button
-          onPress={handleContinue}
-          title="Continuar"
-          style={styles.continueButton}
-        />
+        <View style={styles.buttonContainer}>
 
-        {/* Biometric Login Button */}
-        {hasBiometricEnabled && (
-          <TouchableOpacity
-            onPress={handleBiometricLogin}
-            style={styles.biometricButton}
-            disabled={isBiometricLoading || isLoading}
-            activeOpacity={0.7}>
-            {isBiometricLoading ? (
-              <ActivityIndicator
-                size="small"
-                color={IVOO_COLORS.primary}
-                style={styles.biometricLoader}
-              />
-            ) : (
-              <Icon
-                name="fingerprint"
-                type={IconType.MaterialIcons}
-                size={SCREEN_WIDTH * 0.08}
-                color={IVOO_COLORS.primary}
-              />
-            )}
-            <Text style={styles.biometricText}>
-              {isBiometricLoading
-                ? 'Autenticando...'
-                : 'Iniciar sesión con biometría'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        
+          <Button
+            onPress={handleContinue}
+            title="Continuar"
+            style={styles.continueButton}
+          />
+
+          {/* Biometric Login Button */}
+          {hasBiometricEnabled && (
+            <TouchableOpacity
+              onPress={handleBiometricLogin}
+              style={styles.biometricButton}
+              disabled={isBiometricLoading || isLoading}
+              activeOpacity={0.7}>
+              {isBiometricLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={IVOO_COLORS.primary}
+                  style={styles.biometricLoader}
+                />
+              ) : (
+                <Icon
+                  name="fingerprint"
+                  type={IconType.MaterialIcons}
+                  size={30}
+                  color={IVOO_COLORS.primary}
+                />
+              )}
+              {/* <Text style={styles.biometricText}>
+                {isBiometricLoading
+                  ? 'Autenticando...'
+                  : 'Iniciar sesión con biometría'}
+              </Text> */}
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Register Link */}
         <TouchableOpacity onPress={handleRegister} style={styles.registerLink}>
@@ -327,7 +334,7 @@ const LoginScreen: React.FC = () => {
       <CustomBottomSheetModal
         isVisible={showLoginModal}
         onClose={handleCloseModal}
-        snapPoints={focusedInputs.size > 0 ? ['70%'] : ['45%']}
+        snapPoints={snapPoints}
         scrollEnabled={true}
         accessibilityLabel="Login Bottom Sheet">
         <KeyboardAvoidingView
@@ -354,18 +361,18 @@ const LoginScreen: React.FC = () => {
                 autoCorrect={false}
                 containerStyle={styles.inputContainer}
                 editable={!isLoading}
-                onFocus={() => {
-                  if (!isLoading) {
-                    setFocusedInputs(prev => new Set(prev).add('email'));
-                  }
-                }}
-                onBlur={() => {
-                  setFocusedInputs(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete('email');
-                    return newSet;
-                  });
-                }}
+                // onFocus={() => {
+                //   if (!isLoading) {
+                //     setFocusedInputs(prev => new Set(prev).add('email'));
+                //   }
+                // }}
+                // onBlur={() => {
+                //   setFocusedInputs(prev => {
+                //     const newSet = new Set(prev);
+                //     newSet.delete('email');
+                //     return newSet;
+                //   });
+                // }}
               />
 
               <View style={styles.passwordInputWrapper}>
@@ -379,18 +386,18 @@ const LoginScreen: React.FC = () => {
                   containerStyle={styles.inputWrapper}
                   style={styles.passwordInput}
                   editable={!isLoading}
-                  onFocus={() => {
-                    if (!isLoading) {
-                      setFocusedInputs(prev => new Set(prev).add('password'));
-                    }
-                  }}
-                  onBlur={() => {
-                    setFocusedInputs(prev => {
-                      const newSet = new Set(prev);
-                      newSet.delete('password');
-                      return newSet;
-                    });
-                  }}
+                  // onFocus={() => {
+                  //   if (!isLoading) {
+                  //     setFocusedInputs(prev => new Set(prev).add('password'));
+                  //   }
+                  // }}
+                  // onBlur={() => {
+                  //   setFocusedInputs(prev => {
+                  //     const newSet = new Set(prev);
+                  //     newSet.delete('password');
+                  //     return newSet;
+                  //   });
+                  // }}
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
@@ -490,6 +497,8 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   continueButton: {
+    flex:1,
+    height: 54,
     marginTop: SCREEN_HEIGHT * 0.025,
     shadowColor: 'transparent',
     shadowOffset: {width: 0, height: 0},
@@ -571,10 +580,19 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   buttonContainer: {
+    // flexDirection: 'row',
     position: 'relative',
     width: '100%',
     marginTop: 8,
+    flexDirection: 'row',     // Los pone uno al lado del otro
+    alignItems: 'center',     // Los centra verticalmente entre sí
+    // width: '100%',            // Ocupa todo el ancho
+    paddingHorizontal: 20,    // Espacio a los lados
+    // marginTop: 20,
+    gap: 10,
   },
+
+ 
   buttonLoader: {
     position: 'absolute',
     left: 20,
@@ -593,16 +611,15 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   biometricButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: SCREEN_HEIGHT * 0.02,
-    width: IVOO_SPACING.buttonWidth,
-    height: 45,
-    borderRadius: IVOO_SPACING.buttonBorderRadius,
+    width: 55,                // Ancho fijo para que sea un círculo/cuadrado
+    height: 55,               // Igual al alto del botón de continuar
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: IVOO_COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'transparent',
+    marginTop: 17
   },
   biometricLoader: {
     marginRight: SCREEN_WIDTH * 0.02,

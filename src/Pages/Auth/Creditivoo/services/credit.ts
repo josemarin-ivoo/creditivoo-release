@@ -120,7 +120,11 @@ export async function revisionQr(): Promise<RevisionResponse> {
         errorData?.error ||
         error.response.data?.message ||
         'Error al revisar el código QR';
-      throw new Error(message);
+
+      // Preservar el error original con response para que el código que maneja el error pueda acceder al status
+      const customError: any = new Error(message);
+      customError.response = error.response;
+      throw customError;
     }
 
     throw new Error('No se pudo conectar al servidor');
@@ -129,6 +133,42 @@ export async function revisionQr(): Promise<RevisionResponse> {
 
 export interface UpdatePurchaseRequest {
   financingTypeId: number;
+}
+
+export interface PurchaseSimulationResponse {
+  payToday: number;
+  installmentsCount: number;
+  estimatedInstallment: number;
+  financedAmount: number;
+  newCreditBalance: number;
+}
+
+export interface Payment {
+  id: number;
+  amount: number;
+  status: string;
+  paymentDate: string;
+  purchaseId: number;
+}
+
+export interface CreditInfo {
+  hasActiveCredit: boolean;
+  creditLimit: number;
+  creditUsed: number;
+  creditAvailable: number;
+  creditStatus: string | null;
+  lastCreditTransactionAt: string | null;
+  outstandingBalance: number;
+  hasPassDuePayments: boolean;
+  pendingPayment: Payment | null;
+  overduePayment: Payment | null;
+  nextPayment: Payment | null;
+  nextPaymentDate: string | null;
+}
+
+export interface CreditInfoResponse {
+  success: boolean;
+  data: CreditInfo;
 }
 
 /**
@@ -173,6 +213,44 @@ export async function updatePurchase(
 }
 
 /**
+ * Obtiene una simulación de una purchase con el plan de pago seleccionado.
+ * Endpoint: GET /api/purchases/:purchaseId/simulation
+ */
+export async function simulatePurchase(
+  purchaseId: number,
+): Promise<PurchaseSimulationResponse> {
+  try {
+    console.log('[Credit Service] ===== SIMULATE PURCHASE =====');
+    console.log(
+      '[Credit Service] Endpoint:',
+      api.defaults.baseURL + `/purchases/${purchaseId}/simulation`,
+    );
+
+    const response = await api.get<PurchaseSimulationResponse>(
+      `/purchases/${purchaseId}/simulation`,
+    );
+
+    console.log('[Credit Service] Simulación obtenida:', response.data);
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[Credit Service] Error al obtener simulación:', error);
+
+    if (error.response) {
+      const errorData = error.response.data as CreditErrorResponse;
+      const message =
+        errorData?.message ||
+        errorData?.error ||
+        error.response.data?.message ||
+        'Error al obtener la simulación';
+      throw new Error(message);
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}
+
+/**
  * Obtiene una purchase por su ID.
  * Endpoint: GET /api/purchases/:id
  */
@@ -203,6 +281,144 @@ export async function getPurchaseById(
         errorData?.error ||
         error.response.data?.message ||
         'Error al obtener la compra';
+      throw new Error(message);
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}
+
+/**
+ * Obtiene información completa sobre el crédito del usuario autenticado.
+ * Endpoint: GET /api/credit/me
+ */
+export async function getCreditInfo(): Promise<CreditInfo> {
+  try {
+    console.log('[Credit Service] ===== GET CREDIT INFO =====');
+    console.log(
+      '[Credit Service] Endpoint:',
+      api.defaults.baseURL + '/credit/me',
+    );
+
+    const response = await api.get<CreditInfoResponse>('/credit/me');
+
+    console.log(
+      '[Credit Service] Información de crédito obtenida:',
+      response.data?.data,
+    );
+
+    return response.data.data;
+  } catch (error: any) {
+    console.error(
+      '[Credit Service] Error al obtener información de crédito:',
+      error,
+    );
+
+    if (error.response) {
+      const errorData = error.response.data as CreditErrorResponse;
+      const message =
+        errorData?.message ||
+        errorData?.error ||
+        error.response.data?.error ||
+        'Error al obtener información de crédito';
+      throw new Error(message);
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}
+
+export interface CreditMovement {
+  id: number;
+  type: 'purchase' | 'payment' | 'refund' | 'credit_granted';
+  amount: number;
+  description: string;
+  status: string;
+  date: string;
+  purchase?: {
+    id: number;
+    totalAmount: number;
+    status: string;
+    store?: {
+      id: number;
+      name: string;
+    } | null;
+    product?: {
+      id: number;
+      name: string;
+    } | null;
+    device?: {
+      id: number;
+      name: string;
+    } | null;
+  } | null;
+  payment?: {
+    id: number;
+    amount: number;
+    status: string;
+    paymentDate: string;
+  } | null;
+  balanceAfter: number;
+  createdAt: string;
+}
+
+export interface CreditMovementsResponse {
+  success: boolean;
+  data: CreditMovement[];
+  count: number;
+}
+
+/**
+ * Obtiene todos los movimientos de crédito del usuario autenticado.
+ * Endpoint: GET /api/credit/movements
+ *
+ * @param limit - Máximo número de movimientos a retornar (1-100, default: 100)
+ * @param offset - Número de movimientos a omitir para paginación (default: 0)
+ */
+export async function getCreditMovements(
+  limit?: number,
+  offset?: number,
+): Promise<CreditMovement[]> {
+  try {
+    console.log('[Credit Service] ===== GET CREDIT MOVEMENTS =====');
+    console.log(
+      '[Credit Service] Endpoint:',
+      api.defaults.baseURL + '/credit/movements',
+    );
+
+    const params: any = {};
+    if (limit !== undefined) {
+      params.limit = limit;
+    }
+    if (offset !== undefined) {
+      params.offset = offset;
+    }
+
+    const response = await api.get<CreditMovementsResponse>(
+      '/credit/movements',
+      {params},
+    );
+
+    console.log(
+      '[Credit Service] Movimientos obtenidos:',
+      response.data?.data?.length || 0,
+      'movimientos',
+    );
+
+    return response.data.data;
+  } catch (error: any) {
+    console.error(
+      '[Credit Service] Error al obtener movimientos de crédito:',
+      error,
+    );
+
+    if (error.response) {
+      const errorData = error.response.data as CreditErrorResponse;
+      const message =
+        errorData?.message ||
+        errorData?.error ||
+        error.response.data?.error ||
+        'Error al obtener movimientos de crédito';
       throw new Error(message);
     }
 

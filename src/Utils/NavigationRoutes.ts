@@ -100,6 +100,13 @@ export enum Routes {
   NAVIGATION_PLANSELECTION = 'PlanSelection',
   NAVIGATION_QR_SCANNER = 'QRScanner',
   NAVIGATION_PURCHASESCONFIRM = 'PurchaseConfirmation',
+  NAVIGATION_PURCHASESSUCCESS = 'PurchaseSuccessScreen',
+  NAVIGATION_MOVEMENTS = 'MovementsScreen',
+  NAVIGATION_HOWTOEARNGEMS = 'HowToEarnGems',
+  NAVIGATION_SUSCRIPTIONSUCCESS = 'SubscriptionSuccess',
+  NAVIGATION_CHANGEPASSWORD = 'ChangePassword',
+  NAVIGATION_PAYMENTSINSTALLS = 'PaymentInstallmentsScreen',
+
   // TAB
   //END JAMP 02-12-2025
 

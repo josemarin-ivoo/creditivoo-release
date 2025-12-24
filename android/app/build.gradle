@@ -3,7 +3,10 @@ apply plugin: "com.facebook.react"
 apply plugin: "com.google.gms.google-services"
 apply plugin: "com.google.firebase.crashlytics"
 apply plugin: 'org.jetbrains.kotlin.android'
-
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+project.ext.reactvectoricons = [
+    iconFontNames: [ 'Ionicons.ttf', 'Feather.ttf', 'MaterialIcons.ttf', 'AntDesign.ttf' ] // Añade las que uses
+]
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.

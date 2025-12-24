@@ -17,7 +17,6 @@ import HomeCreditIvoo from '../views/home/HomeCreditIvoo';
 import ProfileScreen from '../views/profile/ProfileScreen';
 import QrScanner from '../views/scanner/QrScanner';
 import HelpScreen from '../views/help/HelpScreen';
-
 import { Routes } from '../../../../Utils/NavigationRoutes';
 
 const Tab = createBottomTabNavigator();
@@ -50,7 +49,7 @@ const CustomTabBar = ({state, descriptors, navigation}: any) => {
         };
 
         // Render different UI for each tab
-        if (route.name === Routes.NAVIGATION_CREDITIVOO_HOME) {
+        if (route.name === SCREENS.HOME) {
           return (
             <TouchableOpacity
               key={route.key}
@@ -146,12 +145,12 @@ const renderTabBar = (props: any) => <CustomTabBar {...props} />;
 const MainTabs = () => {
   return (
     <Tab.Navigator
-    id="id_tabCreditivoo"
+      id="id_tabCreditivoo"
       tabBar={renderTabBar}
       screenOptions={{
         headerShown: false,
       }}>
-      <Tab.Screen name={Routes.NAVIGATION_CREDITIVOO_HOME} component={HomeCreditIvoo} />
+      <Tab.Screen name="Home" component={HomeCreditIvoo} />
       <Tab.Screen name={Routes.NAVIGATION_QR_SCANNER} component={QrScanner} />
       <Tab.Screen name={Routes.NAVIGATION_HELP} component={HelpScreen} />
       <Tab.Screen name={Routes.NAVIGATION_PROFILE} component={ProfileScreen} />

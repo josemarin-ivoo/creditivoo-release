@@ -179,7 +179,7 @@ const ProfileScreen: React.FC = () => {
               <Text style={styles.menuText}>Datos personales</Text>
             </View>
             <Icon
-              name="arrow-forward"
+              name="chevron-forward"
               type={IconType.Ionicons}
               size={20}
               color={IVOO_COLORS.grayLight}

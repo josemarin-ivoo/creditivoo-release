@@ -38,13 +38,13 @@ const mapPaymentToInstallment = (
   allPayments: Payment[],
 ): Installment => {
   // Determine if it's approved (COMPLETED) or pending
-  // COMPLETED = approved, all others = pending
+  // COMPLETED = approved, PASS_DUE = pass_due, all others = pending
   const isApproved = payment.status === PaymentStatus.COMPLETED;
+  const isPassDue = payment.status === PaymentStatus.PASS_DUE;
   const isPending =
     payment.status === PaymentStatus.PENDING ||
     payment.status === PaymentStatus.SCHEDULED ||
     payment.status === PaymentStatus.PENDING_CONFIRMATION ||
-    payment.status === PaymentStatus.PASS_DUE ||
     payment.status === PaymentStatus.FAILED;
 
   // Calculate installment number (exclude initial payment)
@@ -57,14 +57,24 @@ const mapPaymentToInstallment = (
     installmentNumber = nonInitialPaymentsBefore + 1;
   }
 
+  // Determine status for Installment
+  let status: 'approved' | 'pending' | 'pass_due';
+  if (isApproved) {
+    status = 'approved';
+  } else if (isPassDue) {
+    status = 'pass_due';
+  } else {
+    status = 'pending';
+  }
+
   return {
     id: payment.id.toString(),
     date: payment.paymentDate,
     type: payment.isInitialPayment ? 'initial' : 'installment',
     installmentNumber,
     amount: parseFloat(payment.amount),
-    status: isApproved ? 'approved' : 'pending',
-    gemsReward: isPending ? 47 : undefined, // TODO: Get actual gems reward from API if available
+    status,
+    gemsReward: isPending ? 47 : undefined,
   };
 };
 
@@ -118,6 +128,22 @@ const PaymentInstallmentsScreen: React.FC = () => {
       '[PaymentInstallmentsScreen] No se encontraron payments en la compra',
     );
     return [];
+  }, [purchase]);
+
+  // Check if there are any pass due payments
+  const hasPassDuePayments = useMemo(() => {
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'payments' in purchase &&
+      Array.isArray(purchase.payments)
+    ) {
+      const payments = purchase.payments as Payment[];
+      return payments.some(
+        payment => payment.status === PaymentStatus.PASS_DUE,
+      );
+    }
+    return false;
   }, [purchase]);
 
   // Refresh purchase data
@@ -211,8 +237,45 @@ const PaymentInstallmentsScreen: React.FC = () => {
   };
 
   const handlePayPress = () => {
-    // TODO: Navigate to payment method selection screen
-    console.log('[PaymentInstallmentsScreen] Pay pressed');
+    if (!purchaseId) {
+      console.error('[PaymentInstallmentsScreen] No purchaseId available');
+      return;
+    }
+
+    // Verificar que haya payments seleccionados
+    if (selectedPayments.size === 0) {
+      console.log('[PaymentInstallmentsScreen] No hay payments seleccionados');
+      // Podrías mostrar un Alert aquí si lo deseas
+      return;
+    }
+
+    // Convertir los IDs seleccionados a objetos Payment
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'payments' in purchase &&
+      Array.isArray(purchase.payments)
+    ) {
+      const payments = purchase.payments as Payment[];
+      const selectedPaymentObjects = payments.filter(payment =>
+        selectedPayments.has(payment.id.toString()),
+      );
+
+      console.log(
+        '[PaymentInstallmentsScreen] Payments seleccionados:',
+        selectedPaymentObjects,
+      );
+
+      // Navegar a PurchaseConfirmation con purchaseId y payments
+      (navigation as any).navigate('PurchaseConfirmation', {
+        purchaseId: purchaseId,
+        payments: selectedPaymentObjects,
+      });
+    } else {
+      console.error(
+        '[PaymentInstallmentsScreen] No se encontraron payments en la compra',
+      );
+    }
   };
 
   const getPlanName = (): string => {
@@ -268,6 +331,13 @@ const PaymentInstallmentsScreen: React.FC = () => {
           <Text style={styles.planDescription}>{getPlanDescription()}</Text>
         </View>
 
+        {/* Pass Due Alert */}
+        {hasPassDuePayments && (
+          <View style={styles.passDueAlert}>
+            <Text style={styles.passDueAlertText}>Tienes pagos pendientes</Text>
+          </View>
+        )}
+
         {/* Installments List */}
         <View style={styles.installmentsContainer}>
           {installments.map((item, index) => {
@@ -298,22 +368,26 @@ const PaymentInstallmentsScreen: React.FC = () => {
             );
           })}
 
-          {/* Action Buttons */}
-          <View style={styles.buttonsContainer}>
-            <TouchableOpacity
-              style={styles.helpButton}
-              onPress={handleHelpPress}
-              activeOpacity={0.7}>
-              <Text style={styles.helpButtonText}>Necesito ayuda</Text>
-            </TouchableOpacity>
+          {/* Action Buttons - Solo mostrar si la purchase NO está completada */}
+          {purchase &&
+            purchase.status !== 'COMPLETED' &&
+            purchase.status !== 'completed' && (
+              <View style={styles.buttonsContainer}>
+                <TouchableOpacity
+                  style={styles.helpButton}
+                  onPress={handleHelpPress}
+                  activeOpacity={0.7}>
+                  <Text style={styles.helpButtonText}>Necesito ayuda</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.payButton}
-              onPress={handlePayPress}
-              activeOpacity={0.7}>
-              <Text style={styles.payButtonText}>Pagar</Text>
-            </TouchableOpacity>
-          </View>
+                <TouchableOpacity
+                  style={styles.payButton}
+                  onPress={handlePayPress}
+                  activeOpacity={0.7}>
+                  <Text style={styles.payButtonText}>Pagar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
         </View>
       </View>
     </CurvedHeaderLayout>
@@ -335,9 +409,11 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    alignSelf: 'center',
+    width: SCREEN_WIDTH * 0.85,
   },
   planTitle: {
-    fontSize: SCREEN_WIDTH * 0.055,
+    fontSize: SCREEN_WIDTH * 0.048,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.textPrimary,
@@ -345,9 +421,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   planDescription: {
-    fontSize: SCREEN_WIDTH * 0.037,
+    fontSize: SCREEN_WIDTH * 0.033,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.grayMedium,
+    textAlign: 'center',
+  },
+  passDueAlert: {
+    backgroundColor: '#FFF3F2',
+    borderRadius: 8,
+    paddingVertical: SCREEN_WIDTH * 0.03,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    marginBottom: SCREEN_WIDTH * 0.04,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FFE5E3',
+  },
+  passDueAlertText: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interSemiBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.semibold,
+    color: '#C53030',
     textAlign: 'center',
   },
   installmentsContainer: {
@@ -356,6 +451,7 @@ const styles = StyleSheet.create({
     padding: SCREEN_WIDTH * 0.04,
     borderWidth: 1,
     borderColor: '#6E717C4F',
+    marginHorizontal: SCREEN_WIDTH * 0.01,
   },
   buttonsContainer: {
     flexDirection: 'row',

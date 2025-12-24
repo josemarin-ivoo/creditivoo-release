@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-import GemIcon from '../../svgs/menus/gem.svg';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -18,7 +17,7 @@ export interface Installment {
   type: 'initial' | 'installment';
   installmentNumber?: number;
   amount: number;
-  status: 'approved' | 'pending';
+  status: 'approved' | 'pending' | 'pass_due';
   gemsReward?: number; // Gems earned by paying in advance
 }
 
@@ -77,6 +76,7 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
   };
 
   const isApproved = installment.status === 'approved';
+  const isPassDue = installment.status === 'pass_due';
   const isCheckboxSelected = selected || isApproved;
   // Disabled if explicitly disabled and not approved (approved payments should not be grayed out)
   const isDisabledState = isDisabled && !isApproved;
@@ -111,7 +111,7 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
               <Icon
                 name="checkmark"
                 type={IconType.Ionicons}
-                size={SCREEN_WIDTH * 0.04}
+                size={SCREEN_WIDTH * 0.035}
                 color={IVOO_COLORS.white}
               />
             </View>
@@ -134,9 +134,11 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
       <View style={styles.middleSection}>
         {isApproved ? (
           <Text style={styles.approvedText}>Aprobado</Text>
+        ) : isPassDue ? (
+          <Text style={styles.passDueText}>Vencido</Text>
         ) : (
           <View style={styles.gemsContainer}>
-            <Text
+            {/* <Text
               style={[styles.gemsText, isDisabledState && styles.textDisabled]}>
               Gana {installment.gemsReward || 0}
             </Text>
@@ -152,7 +154,7 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
               ]}>
               {' '}
               por adelantar
-            </Text>
+            </Text> */}
           </View>
         )}
       </View>
@@ -173,8 +175,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: IVOO_COLORS.white,
     borderRadius: 12,
-    padding: SCREEN_WIDTH * 0.04,
-    marginBottom: SCREEN_WIDTH * 0.03,
+    paddingVertical: SCREEN_WIDTH * 0.025,
+    paddingHorizontal: SCREEN_WIDTH * 0.03,
+    marginBottom: SCREEN_WIDTH * 0.025,
     marginHorizontal: SCREEN_WIDTH * 0.01,
     borderWidth: 1,
     borderColor: '#6E717C4F',
@@ -188,20 +191,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   checkboxContainer: {
-    marginRight: SCREEN_WIDTH * 0.03,
+    marginRight: SCREEN_WIDTH * 0.025,
   },
   checkboxApproved: {
-    width: SCREEN_WIDTH * 0.065,
-    height: SCREEN_WIDTH * 0.065,
-    borderRadius: SCREEN_WIDTH * 0.0325,
+    width: SCREEN_WIDTH * 0.055,
+    height: SCREEN_WIDTH * 0.055,
+    borderRadius: SCREEN_WIDTH * 0.0275,
     backgroundColor: IVOO_COLORS.success || '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxPending: {
-    width: SCREEN_WIDTH * 0.065,
-    height: SCREEN_WIDTH * 0.065,
-    borderRadius: SCREEN_WIDTH * 0.0325,
+    width: SCREEN_WIDTH * 0.055,
+    height: SCREEN_WIDTH * 0.055,
+    borderRadius: SCREEN_WIDTH * 0.0275,
     borderWidth: 2,
     borderColor: IVOO_COLORS.primary,
   },
@@ -231,6 +234,12 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.success || '#4CAF50',
+  },
+  passDueText: {
+    fontSize: SCREEN_WIDTH * 0.037,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: '#E74C3C',
   },
   gemsContainer: {
     flexDirection: 'row',

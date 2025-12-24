@@ -15,6 +15,7 @@ import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import {getPlanGroups, PlanGroup} from '../../services/plan';
+import {getIsPlusUser} from '../../services/auth';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -60,8 +61,33 @@ const PlanGroupSelection: React.FC = () => {
     }, [fetchPlanGroups]),
   );
 
-  const handlePlanSelect = (groupId: number) => {
-    (navigation as any).navigate('PlanSelection', {groupId});
+  const handlePlanSelect = async (plan: PlanGroup) => {
+    try {
+      // Verificar si el usuario es Plus haciendo fetch al endpoint
+      let isPlusUser = false;
+      if (plan.isPlusPlan) {
+        isPlusUser = await getIsPlusUser();
+      }
+
+      // Si el plan es Plus pero el usuario ya es Plus, mostrar planes normales
+      // Si el usuario ya es Plus, no mostrar el card de suscripción
+      const shouldShowPlusPlan = plan.isPlusPlan && !isPlusUser;
+
+      (navigation as any).navigate('PlanSelection', {
+        groupId: plan.id,
+        isPlusPlan: shouldShowPlusPlan,
+      });
+    } catch (err: any) {
+      console.error(
+        '[PlanGroupSelection] Error al verificar si usuario es Plus:',
+        err,
+      );
+      // En caso de error, navegar sin mostrar el card Plus
+      (navigation as any).navigate('PlanSelection', {
+        groupId: plan.id,
+        isPlusPlan: false,
+      });
+    }
   };
 
   return (
@@ -93,7 +119,6 @@ const PlanGroupSelection: React.FC = () => {
         ) : planGroups.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Image
-              // source={require('../../images/plans/empty-box.png')}
               source={require('../../images/plans/empty-box.png')}
               style={styles.emptyBoxIcon}
               resizeMode="contain"
@@ -108,7 +133,7 @@ const PlanGroupSelection: React.FC = () => {
                 <TouchableOpacity
                   key={plan.id}
                   style={styles.planCard}
-                  onPress={() => handlePlanSelect(plan.id)}
+                  onPress={() => handlePlanSelect(plan)}
                   activeOpacity={0.7}>
                   <View style={styles.planContent}>
                     <View style={styles.planTextContainer}>

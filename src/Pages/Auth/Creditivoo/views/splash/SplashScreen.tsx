@@ -2,28 +2,26 @@ import React, {useEffect} from 'react';
 import {StatusBar, StyleSheet, View, ScrollView} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
-import {RootState} from 'store/store';
+import {useIvoSelector} from '../../store/hooks';
 import {SCREENS} from '@shared-constants';
 import CreditIvooLogo from '../../svgs/CreditIvooLogo';
 
 const SplashScreen: React.FC = () => {
   const navigation = useNavigation();
-  const {isLoggedIn, isAutoLoginLoading} = useSelector(
-    (state: RootState) => state.auth,
-  );
+  const {isLoggedIn, isAutoLoginLoading} = useIvoSelector(state => state.auth);
 
   useEffect(() => {
-    // Wait for auth to finish loading, then navigate
     if (!isAutoLoginLoading) {
       const timer = setTimeout(() => {
         if (!isLoggedIn) {
           (navigation as any).navigate(SCREENS.LOGIN);
         } else {
-          (navigation as any).navigate(SCREENS.HOME);
+          navigation.reset({
+            index: 0,
+            routes: [{name: 'MainTabs' as never}],
+          });
         }
-      }, 1500); // Show splash for 1.5 seconds
-
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [isAutoLoginLoading, isLoggedIn, navigation]);

@@ -16,16 +16,8 @@
       "eas": {
         "projectId": "999a6554-2630-4394-a791-b244d4cdf2aa"
       }
-    },
-    "plugins": [
-      [
-        "expo-asset",
-        {
-          "assets": ["./assets/fonts"] 
-        }
-      ],
-      "react-native-vector-icons"
-    ]
+    }
+    
   },
   "name": "ivoo",
   "displayName": "ivoo"

@@ -87,6 +87,7 @@ export interface Financing {
   tenantId?: number;
   financingCategoryId?: number;
   branchId?: number;
+  points?: number;
 }
 
 export interface PlansResponse {
@@ -100,13 +101,28 @@ export interface PlansResponse {
  * Obtiene los planes (financing) de un grupo de planes.
  * Endpoint: GET /api/plan-groups/:id/plans
  * @param groupId - ID del grupo de planes
+ * @param purchaseId - ID de la compra (opcional, se pasa como query string)
  */
-export async function getPlansByGroupId(groupId: number): Promise<Financing[]> {
+export async function getPlansByGroupId(
+  groupId: number,
+  purchaseId?: number,
+): Promise<Financing[]> {
   try {
     console.log('[Plan Service] ===== GET PLANS BY GROUP ID =====');
-    const endpoint = `/plan-groups/${groupId}/plans`;
+    let endpoint = `/plan-groups/${groupId}/plans`;
+
+    // Agregar purchaseId como query string si está presente
+    if (purchaseId) {
+      const queryParams = new URLSearchParams();
+      queryParams.append('purchaseId', purchaseId.toString());
+      endpoint += `?${queryParams.toString()}`;
+    }
+
     console.log('[Plan Service] Endpoint:', api.defaults.baseURL + endpoint);
     console.log('[Plan Service] Group ID:', groupId);
+    if (purchaseId) {
+      console.log('[Plan Service] Purchase ID:', purchaseId);
+    }
 
     const response = await api.get<Financing[] | PlansResponse>(endpoint);
 

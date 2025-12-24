@@ -28,13 +28,29 @@ export interface User {
   creditUsed: number;
   creditAvailable: number;
   creditStatus: string;
-  pendingPayment: number;
-  overduePayment: number;
+  pendingPayment: number | null;
+  overduePayment: number | null;
   dob?: string | null;
   address?: string | null;
   gender?: string | null;
   enableFaceIdCheck?: boolean;
   enableBiometricCheck?: boolean;
+  document?: string | null;
+  purchasesIds?: RevisionResponse[] | null;
+  createdAt?: string | null;
+  customRoleId?: number | null;
+  isFirstLogin?: boolean;
+  lastCreditTransactionAt?: string | null;
+  hasPurchasePendingInvoice?: boolean;
+  hasPurchaseInProgress?: boolean;
+  hasPassDuePayments?: boolean;
+  outstandingBalance?: number | null;
+  profilePictureUrl?: string | null;
+  profilePictureS3Key?: string | null;
+  profilePictureUpdatedAt?: string | null;
+  documentType?: string | null;
+  rawDocument?: string | null;
+  isPlusUser?: boolean | null;
 }
 
 interface AuthState {
@@ -94,8 +110,8 @@ export const loadAuth = createAsyncThunk<
           creditUsed: (storedUser as any).creditUsed || 0,
           creditAvailable: (storedUser as any).creditAvailable || 0,
           creditStatus: (storedUser as any).creditStatus || '',
-          pendingPayment: (storedUser as any).pendingPayment || 0,
-          overduePayment: (storedUser as any).overduePayment || 0,
+          pendingPayment: (storedUser as any).pendingPayment ?? null,
+          overduePayment: (storedUser as any).overduePayment ?? null,
           dob: (storedUser as any).dob || null,
           address: (storedUser as any).address || null,
           gender: (storedUser as any).gender || null,
@@ -103,6 +119,26 @@ export const loadAuth = createAsyncThunk<
             (storedUser as any).enableFaceIdCheck === true ? true : false,
           enableBiometricCheck:
             (storedUser as any).enableBiometricCheck === true ? true : false,
+          document: (storedUser as any).document || null,
+          purchasesIds: (storedUser as any).purchasesIds || null,
+          createdAt: (storedUser as any).createdAt || null,
+          customRoleId: (storedUser as any).customRoleId || null,
+          isFirstLogin: (storedUser as any).isFirstLogin ?? false,
+          lastCreditTransactionAt:
+            (storedUser as any).lastCreditTransactionAt || null,
+          hasPurchasePendingInvoice:
+            (storedUser as any).hasPurchasePendingInvoice ?? false,
+          hasPurchaseInProgress:
+            (storedUser as any).hasPurchaseInProgress ?? false,
+          hasPassDuePayments: (storedUser as any).hasPassDuePayments ?? false,
+          outstandingBalance: (storedUser as any).outstandingBalance ?? null,
+          profilePictureUrl: (storedUser as any).profilePictureUrl || null,
+          profilePictureS3Key: (storedUser as any).profilePictureS3Key || null,
+          profilePictureUpdatedAt:
+            (storedUser as any).profilePictureUpdatedAt || null,
+          documentType: (storedUser as any).documentType || null,
+          rawDocument: (storedUser as any).rawDocument || null,
+          isPlusUser: (storedUser as any).isPlusUser ?? null,
         }
       : null;
 
@@ -188,8 +224,8 @@ export const login = createAsyncThunk(
         creditUsed: response.user.creditUsed || 0,
         creditAvailable: response.user.creditAvailable || 0,
         creditStatus: response.user.creditStatus || '',
-        pendingPayment: response.user.pendingPayment || 0,
-        overduePayment: response.user.overduePayment || 0,
+        pendingPayment: (response.user as any).pendingPayment ?? null,
+        overduePayment: (response.user as any).overduePayment ?? null,
         dob: (response.user as any).dob || null,
         address: (response.user as any).address || null,
         gender: (response.user as any).gender || null,
@@ -197,6 +233,37 @@ export const login = createAsyncThunk(
           (response.user as any).enableFaceIdCheck === true ? true : false,
         enableBiometricCheck:
           (response.user as any).enableBiometricCheck === true ? true : false,
+        document: (response.user as any).document || null,
+        purchasesIds: (response.user as any).purchasesIds || null,
+        createdAt: (response.user as any).createdAt || null,
+        customRoleId: (response.user as any).customRoleId || null,
+        isFirstLogin: (response.user as any).isFirstLogin ?? false,
+        lastCreditTransactionAt:
+          (response.user as any).lastCreditTransactionAt || null,
+        hasPurchasePendingInvoice:
+          (response as any).hasPurchasePendingInvoice ??
+          (response.user as any)?.hasPurchasePendingInvoice ??
+          false,
+        hasPurchaseInProgress:
+          (response as any).hasPurchaseInProgress ??
+          (response.user as any)?.hasPurchaseInProgress ??
+          false,
+        hasPassDuePayments:
+          (response as any).hasPassDuePayments ??
+          (response.user as any)?.hasPassDuePayments ??
+          false,
+        outstandingBalance:
+          (response as any).outstandingBalance ??
+          (response.user as any)?.outstandingBalance ??
+          null,
+        profilePictureUrl: (response.user as any)?.profilePictureUrl || null,
+        profilePictureS3Key:
+          (response.user as any)?.profilePictureS3Key || null,
+        profilePictureUpdatedAt:
+          (response.user as any)?.profilePictureUpdatedAt || null,
+        documentType: (response.user as any)?.documentType || null,
+        rawDocument: (response.user as any)?.rawDocument || null,
+        isPlusUser: (response.user as any)?.isPlusUser ?? null,
       };
       await AuthStorage.saveUser(userData as any);
 
@@ -223,12 +290,12 @@ export const login = createAsyncThunk(
       const purchases: RevisionResponse[] =
         (response as any).purchases || (response.user as any)?.purchases || [];
       const hasPurchasePendingInvoice: boolean =
-        (response as any).hasPurchasePendingInvoice ||
-        (response.user as any)?.hasPurchasePendingInvoice ||
+        (response as any).hasPurchasePendingInvoice ??
+        (response.user as any)?.hasPurchasePendingInvoice ??
         false;
       const hasPurchaseInProgress: boolean =
-        (response as any).hasPurchaseInProgress ||
-        (response.user as any)?.hasPurchaseInProgress ||
+        (response as any).hasPurchaseInProgress ??
+        (response.user as any)?.hasPurchaseInProgress ??
         false;
 
       // Setear purchases en el purchase slice
@@ -253,10 +320,25 @@ export const login = createAsyncThunk(
       console.error('[IvoAuthSlice] Tipo de error:', error?.name || 'Unknown');
       console.error('[IvoAuthSlice] Mensaje de error:', error?.message);
       console.error('[IvoAuthSlice] Stack trace:', error?.stack);
-      console.error(
-        '[IvoAuthSlice] Error completo:',
-        JSON.stringify(error, null, 2),
-      );
+
+      // Serializar error de forma segura para evitar problemas con Hermes
+      try {
+        const errorInfo = {
+          name: error?.name,
+          message: error?.message,
+          code: error?.code,
+          response: error?.response
+            ? {
+                status: error.response.status,
+                statusText: error.response.statusText,
+                data: error.response.data,
+              }
+            : undefined,
+        };
+        console.error('[IvoAuthSlice] Error completo:', errorInfo);
+      } catch (serializeError) {
+        console.error('[IvoAuthSlice] Error al serializar:', serializeError);
+      }
 
       await AuthStorage.clearAuthData();
 
@@ -309,8 +391,8 @@ export const fetchMe = createAsyncThunk(
         creditUsed: response.user.creditUsed || 0,
         creditAvailable: response.user.creditAvailable || 0,
         creditStatus: response.user.creditStatus || '',
-        pendingPayment: response.user.pendingPayment || 0,
-        overduePayment: response.user.overduePayment || 0,
+        pendingPayment: (response.user as any).pendingPayment ?? null,
+        overduePayment: (response.user as any).overduePayment ?? null,
         dob: (response.user as any).dob || null,
         address: (response.user as any).address || null,
         gender: (response.user as any).gender || null,
@@ -318,6 +400,37 @@ export const fetchMe = createAsyncThunk(
           (response.user as any).enableFaceIdCheck === true ? true : false,
         enableBiometricCheck:
           (response.user as any).enableBiometricCheck === true ? true : false,
+        document: (response.user as any).document || null,
+        purchasesIds: (response.user as any).purchasesIds || null,
+        createdAt: (response.user as any).createdAt || null,
+        customRoleId: (response.user as any).customRoleId || null,
+        isFirstLogin: (response.user as any).isFirstLogin ?? false,
+        lastCreditTransactionAt:
+          (response.user as any).lastCreditTransactionAt || null,
+        hasPurchasePendingInvoice:
+          (response as any).hasPurchasePendingInvoice ??
+          (response.user as any)?.hasPurchasePendingInvoice ??
+          false,
+        hasPurchaseInProgress:
+          (response as any).hasPurchaseInProgress ??
+          (response.user as any)?.hasPurchaseInProgress ??
+          false,
+        hasPassDuePayments:
+          (response as any).hasPassDuePayments ??
+          (response.user as any)?.hasPassDuePayments ??
+          false,
+        outstandingBalance:
+          (response as any).outstandingBalance ??
+          (response.user as any)?.outstandingBalance ??
+          null,
+        profilePictureUrl: (response.user as any)?.profilePictureUrl || null,
+        profilePictureS3Key:
+          (response.user as any)?.profilePictureS3Key || null,
+        profilePictureUpdatedAt:
+          (response.user as any)?.profilePictureUpdatedAt || null,
+        documentType: (response.user as any)?.documentType || null,
+        rawDocument: (response.user as any)?.rawDocument || null,
+        isPlusUser: (response.user as any)?.isPlusUser ?? null,
       };
       await AuthStorage.saveUser(userData as any);
 
@@ -325,12 +438,12 @@ export const fetchMe = createAsyncThunk(
       const purchases: RevisionResponse[] =
         (response as any).purchases || (response.user as any)?.purchases || [];
       const hasPurchasePendingInvoice: boolean =
-        (response as any).hasPurchasePendingInvoice ||
-        (response.user as any)?.hasPurchasePendingInvoice ||
+        (response as any).hasPurchasePendingInvoice ??
+        (response.user as any)?.hasPurchasePendingInvoice ??
         false;
       const hasPurchaseInProgress: boolean =
-        (response as any).hasPurchaseInProgress ||
-        (response.user as any)?.hasPurchaseInProgress ||
+        (response as any).hasPurchaseInProgress ??
+        (response.user as any)?.hasPurchaseInProgress ??
         false;
 
       // Setear purchases en el purchase slice
@@ -353,6 +466,23 @@ export const fetchMe = createAsyncThunk(
         '[IvoAuthSlice] Error al obtener información del usuario:',
         error,
       );
+
+      // Si es un error 401, limpiar datos de autenticación
+      if (
+        error.response?.status === 401 ||
+        error.message?.includes('401') ||
+        error.message?.includes('Unauthorized')
+      ) {
+        console.warn(
+          '[IvoAuthSlice] Error 401 detectado, limpiando datos de autenticación',
+        );
+        try {
+          await AuthStorage.clearAuthData();
+        } catch (clearError) {
+          console.error('[IvoAuthSlice] Error al limpiar datos:', clearError);
+        }
+      }
+
       return rejectWithValue(
         error.message || 'Error al obtener información del usuario',
       );
@@ -388,8 +518,8 @@ export const updateUserProfile = createAsyncThunk(
         creditUsed: response.user.creditUsed || 0,
         creditAvailable: response.user.creditAvailable || 0,
         creditStatus: response.user.creditStatus || '',
-        pendingPayment: response.user.pendingPayment || 0,
-        overduePayment: response.user.overduePayment || 0,
+        pendingPayment: (response.user as any).pendingPayment ?? null,
+        overduePayment: (response.user as any).overduePayment ?? null,
         dob: (response.user as any).dob || null,
         address: (response.user as any).address || null,
         gender: (response.user as any).gender || null,
@@ -397,6 +527,37 @@ export const updateUserProfile = createAsyncThunk(
           (response.user as any).enableFaceIdCheck === true ? true : false,
         enableBiometricCheck:
           (response.user as any).enableBiometricCheck === true ? true : false,
+        document: (response.user as any).document || null,
+        purchasesIds: (response.user as any).purchasesIds || null,
+        createdAt: (response.user as any).createdAt || null,
+        customRoleId: (response.user as any).customRoleId || null,
+        isFirstLogin: (response.user as any).isFirstLogin ?? false,
+        lastCreditTransactionAt:
+          (response.user as any).lastCreditTransactionAt || null,
+        hasPurchasePendingInvoice:
+          (response as any).hasPurchasePendingInvoice ??
+          (response.user as any)?.hasPurchasePendingInvoice ??
+          false,
+        hasPurchaseInProgress:
+          (response as any).hasPurchaseInProgress ??
+          (response.user as any)?.hasPurchaseInProgress ??
+          false,
+        hasPassDuePayments:
+          (response as any).hasPassDuePayments ??
+          (response.user as any)?.hasPassDuePayments ??
+          false,
+        outstandingBalance:
+          (response as any).outstandingBalance ??
+          (response.user as any)?.outstandingBalance ??
+          null,
+        profilePictureUrl: (response.user as any)?.profilePictureUrl || null,
+        profilePictureS3Key:
+          (response.user as any)?.profilePictureS3Key || null,
+        profilePictureUpdatedAt:
+          (response.user as any)?.profilePictureUpdatedAt || null,
+        documentType: (response.user as any)?.documentType || null,
+        rawDocument: (response.user as any)?.rawDocument || null,
+        isPlusUser: (response.user as any)?.isPlusUser ?? null,
       };
       await AuthStorage.saveUser(userData as any);
 
@@ -404,12 +565,12 @@ export const updateUserProfile = createAsyncThunk(
       const purchases: RevisionResponse[] =
         (response as any).purchases || (response.user as any)?.purchases || [];
       const hasPurchasePendingInvoice: boolean =
-        (response as any).hasPurchasePendingInvoice ||
-        (response.user as any)?.hasPurchasePendingInvoice ||
+        (response as any).hasPurchasePendingInvoice ??
+        (response.user as any)?.hasPurchasePendingInvoice ??
         false;
       const hasPurchaseInProgress: boolean =
-        (response as any).hasPurchaseInProgress ||
-        (response.user as any)?.hasPurchaseInProgress ||
+        (response as any).hasPurchaseInProgress ??
+        (response.user as any)?.hasPurchaseInProgress ??
         false;
 
       // Setear purchases en el purchase slice
@@ -611,9 +772,20 @@ const authSlice = createSlice({
       })
       .addCase(fetchMe.rejected, (state, action) => {
         state.isLoading = false;
+        // Si es un error 401, limpiar el estado de autenticación
+        const errorMessage = (action.payload as string) || '';
+        if (
+          errorMessage.includes('401') ||
+          errorMessage.includes('Unauthorized') ||
+          errorMessage.includes('Token')
+        ) {
+          state.token = null;
+          state.refreshToken = null;
+          state.user = null;
+          state.isLoggedIn = false;
+        }
         state.error =
-          (action.payload as string) ||
-          'Error al obtener información del usuario';
+          errorMessage || 'Error al obtener información del usuario';
       })
       // Update user profile
       .addCase(updateUserProfile.pending, state => {
@@ -659,6 +831,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.token = null;
         state.refreshToken = null;
+        state.user = null;
         state.isLoggedIn = false;
         state.error = (action.payload as string) || 'Error al refrescar token';
       });

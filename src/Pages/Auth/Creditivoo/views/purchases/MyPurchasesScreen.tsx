@@ -13,7 +13,7 @@ import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {PurchaseCard, Purchase} from '../../components/purchases';
-import {useIvoSelector} from '../../../../../redux/useIvo'; // cambiar useIvo
+import {useIvoSelector} from '../../../../../redux/useIvo';
 import {
   getPurchasesByUserId,
   getPurchaseById,
@@ -62,13 +62,32 @@ const formatDate = (dateString: string): string => {
 const mapPurchaseResponseToPurchase = (
   purchaseResponse: PurchaseResponse,
 ): Purchase => {
-  // Mapear status del API al formato del componente
-  let status: 'pending' | 'completed' | 'cancelled' = 'pending';
-  if (purchaseResponse.status === 'COMPLETED') {
+  // Preservar el status original del API o mapearlo
+  let status:
+    | 'pending'
+    | 'completed'
+    | 'cancelled'
+    | 'DRAFT'
+    | 'IN_REVIEW_BY_CLIENT'
+    | 'PENDING_INVOICE'
+    | 'IN_PROGRESS' = 'pending';
+
+  const apiStatus = purchaseResponse.status?.toUpperCase();
+
+  if (apiStatus === 'COMPLETED') {
     status = 'completed';
-  } else if (purchaseResponse.status === 'CANCELLED') {
+  } else if (apiStatus === 'CANCELLED') {
     status = 'cancelled';
+  } else if (apiStatus === 'DRAFT') {
+    status = 'DRAFT';
+  } else if (apiStatus === 'IN_REVIEW_BY_CLIENT') {
+    status = 'IN_REVIEW_BY_CLIENT';
+  } else if (apiStatus === 'PENDING_INVOICE') {
+    status = 'PENDING_INVOICE';
+  } else if (apiStatus === 'IN_PROGRESS') {
+    status = 'IN_PROGRESS';
   } else {
+    // Para cualquier otro status, mantenerlo como 'pending'
     status = 'pending';
   }
 
@@ -96,6 +115,9 @@ const MyPurchasesScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingPurchaseId, setLoadingPurchaseId] = useState<string | null>(
+    null,
+  );
 
   const fetchPurchases = useCallback(
     async (showLoading = true) => {
@@ -152,7 +174,12 @@ const MyPurchasesScreen: React.FC = () => {
   };
 
   const handlePurchasePress = async (purchase: Purchase) => {
+    if (loadingPurchaseId) {
+      return; // Evitar múltiples llamadas
+    }
+
     try {
+      setLoadingPurchaseId(purchase.id);
       console.log(
         '[MyPurchasesScreen] Obteniendo detalles de compra:',
         purchase.id,
@@ -184,11 +211,18 @@ const MyPurchasesScreen: React.FC = () => {
       (navigation as any).navigate('PaymentInstallments', {
         purchase,
       });
+    } finally {
+      setLoadingPurchaseId(null);
     }
   };
 
   const handlePayPress = async (purchase: Purchase) => {
+    if (loadingPurchaseId) {
+      return; // Evitar múltiples llamadas
+    }
+
     try {
+      setLoadingPurchaseId(purchase.id);
       console.log(
         '[MyPurchasesScreen] Obteniendo detalles de compra para pagar:',
         purchase.id,
@@ -220,12 +254,24 @@ const MyPurchasesScreen: React.FC = () => {
       (navigation as any).navigate('PaymentInstallments', {
         purchase,
       });
+    } finally {
+      setLoadingPurchaseId(null);
     }
   };
 
-  const filteredPurchases = purchases.filter(
-    purchase => purchase.status === selectedTab,
-  );
+  const filteredPurchases = purchases.filter(purchase => {
+    if (selectedTab === 'pending') {
+      // Incluir todos los estados pendientes
+      return (
+        purchase.status === 'pending' ||
+        purchase.status === 'DRAFT' ||
+        purchase.status === 'IN_REVIEW_BY_CLIENT' ||
+        purchase.status === 'PENDING_INVOICE' ||
+        purchase.status === 'IN_PROGRESS'
+      );
+    }
+    return purchase.status === selectedTab;
+  });
 
   const tabs: {key: PurchaseStatus; label: string}[] = [
     {key: 'pending', label: 'Pendientes'},
@@ -233,13 +279,17 @@ const MyPurchasesScreen: React.FC = () => {
     {key: 'cancelled', label: 'Canceladas'},
   ];
 
-  const renderPurchaseCard = ({item}: {item: Purchase}) => (
-    <PurchaseCard
-      purchase={item}
-      onPress={() => handlePurchasePress(item)}
-      onPayPress={() => handlePayPress(item)}
-    />
-  );
+  const renderPurchaseCard = ({item}: {item: Purchase}) => {
+    const isItemLoading = loadingPurchaseId === item.id;
+    return (
+      <PurchaseCard
+        purchase={item}
+        onPress={() => handlePurchasePress(item)}
+        onPayPress={() => handlePayPress(item)}
+        isLoading={isItemLoading}
+      />
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
