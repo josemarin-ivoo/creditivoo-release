@@ -9,7 +9,7 @@ export * from './auth';
 export * from './kyc';
 export * from './credit';
 export * from './plan';
-export * from './purchases';
+export * from './api/purchases';
 export * from './points';
 export * from './profile';
 export * from './megasoft';

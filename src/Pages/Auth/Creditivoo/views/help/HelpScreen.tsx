@@ -92,10 +92,7 @@ const HelpScreen: React.FC = () => {
             return (
               <TouchableOpacity
                 key={item.id}
-                style={[
-                  styles.faqItem,
-                  isExpanded && styles.faqItemExpanded,
-                ]}
+                style={[styles.faqItem, isExpanded && styles.faqItemExpanded]}
                 onPress={() => handleTopicPress(item.id)}
                 activeOpacity={0.7}>
                 <View style={styles.faqHeader}>
@@ -125,7 +122,7 @@ const styles = StyleSheet.create({
   content: {
     paddingTop: SCREEN_HEIGHT * 0.02,
     paddingBottom: SCREEN_HEIGHT * 0.03,
-    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    paddingHorizontal: SCREEN_WIDTH * 0.01,
   },
   sectionTitle: {
     fontSize: SCREEN_WIDTH * 0.045,

@@ -41,6 +41,7 @@ export default {
   ic_search: require('../../assets/images/tab/ic_search.png'),
   ic_search_white: require('../../assets/images/tab/ic_search_white.png'),
   
+  ic_creditivo: require('../../assets/images/tab/Asset 105.png'),
   ic_creditivodark: require('../../assets/images/tab/25px-white-stroke.png'),
   ic_creditivodark_b: require('../../assets/images/tab/49px-white-stroke.png'),
   ic_creditivodark_c: require('../../assets/images/tab/72px-logo.png'),

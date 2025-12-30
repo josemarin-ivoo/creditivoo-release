@@ -17,6 +17,9 @@ export interface Purchase {
   storeName: string;
   date: string;
   amount: number;
+  tenant?: {
+    name: string;
+  };
   status:
     | 'pending'
     | 'completed'
@@ -102,7 +105,7 @@ const PurchaseCard: React.FC<PurchaseCardProps> = ({
       <View style={styles.cardContent}>
         <View style={styles.cardLeft}>
           <Text style={styles.storeName} numberOfLines={1}>
-            {purchase.storeName}
+            {purchase.tenant?.name}
           </Text>
           <Text style={styles.date}>
             {purchase.formattedDate || purchase.date}

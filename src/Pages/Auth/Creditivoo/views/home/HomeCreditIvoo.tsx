@@ -10,9 +10,10 @@ import {
   RefreshControl,
   Image,
   ImageBackground,
+  Platform,
 } from 'react-native';
 import HomeHelpIvooAdvisor from './HomeHelpIvooAdvisor';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -23,7 +24,11 @@ import QuickActions from './QuickActions';
 import {useIvoDispatch, useIvoSelector} from '../../../../../redux/useIvo';
 import {fetchMe} from '../../store-creditivoo/slices/auth-slice';
 import {getCreditInfo, CreditInfo} from '../../services/credit';
-import {getPurchaseById, PurchaseResponse} from '../../services/purchases';
+import {
+  getPurchaseById,
+  getPurchasesByUserId,
+  PurchaseResponse,
+} from '../../services/purchases';
 import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -31,6 +36,7 @@ const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const HomeCreditIvoo: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
+  const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
 
@@ -140,8 +146,66 @@ const HomeCreditIvoo: React.FC = () => {
     }
   };
 
-  const handleQuickAction = (action: string) => {
+  const handleQuickAction = async (action: string) => {
     switch (action) {
+      case 'cuotas':
+        // Obtener la primera compra disponible y navegar a installments
+        try {
+          if (!user?.id) {
+            console.error(
+              '[HomeCreditIvoo] No se puede obtener compras: usuario no encontrado',
+            );
+            return;
+          }
+
+          console.log(
+            '[HomeCreditIvoo] Obteniendo compras para navegar a cuotas',
+          );
+          const purchases = await getPurchasesByUserId(user.id);
+
+          // Filtrar compras que no estén completadas
+          const availablePurchases = purchases.filter(
+            purchase =>
+              purchase.status !== 'COMPLETED' &&
+              purchase.status !== 'completed',
+          );
+
+          if (availablePurchases.length === 0) {
+            console.log(
+              '[HomeCreditIvoo] No hay compras disponibles para pagar cuotas',
+            );
+            // Si no hay compras disponibles, navegar a MyPurchases
+            (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
+            return;
+          }
+
+          // Seleccionar la primera compra disponible
+          const firstPurchase = availablePurchases[0];
+          console.log(
+            '[HomeCreditIvoo] Navegando a PaymentInstallments con compra:',
+            firstPurchase.id,
+          );
+
+          // Obtener los detalles completos de la compra (incluyendo payments)
+          const purchaseDetails = await getPurchaseById(
+            typeof firstPurchase.id === 'string'
+              ? parseInt(firstPurchase.id, 10)
+              : firstPurchase.id,
+          );
+
+          // Navegar a PaymentInstallments con la compra seleccionada
+          (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+            purchase: purchaseDetails,
+          });
+        } catch (error: any) {
+          console.error(
+            '[HomeCreditIvoo] Error al obtener compras para cuotas:',
+            error,
+          );
+          // En caso de error, navegar a MyPurchases como fallback
+          (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
+        }
+        break;
       case 'compras':
         (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
         break;
@@ -149,7 +213,7 @@ const HomeCreditIvoo: React.FC = () => {
         (navigation as any).navigate(Routes.NAVIGATION_MOVEMENTS);
         break;
       case 'puntos':
-        (navigation as any).navigate('puntos');
+        (navigation as any).navigate(Routes.NAVIGATION_GEMS);
         break;
       default:
         console.log('Quick Action', action);
@@ -160,18 +224,18 @@ const HomeCreditIvoo: React.FC = () => {
   const handleProfilePress = () => {
     // Try to navigate to Profile tab first, if that doesn't work, use parent navigator
     try {
-      (navigation as any).navigate(SCREENS.PROFILE);
+      (navigation as any).navigate(Routes.NAVIGATION_PROFILE);
     } catch (error) {
       // If navigation fails, try using parent navigator
       const parent = (navigation as any).getParent();
       if (parent) {
-        parent.navigate(SCREENS.PROFILE);
+        parent.navigate(Routes.NAVIGATION_PROFILE);
       }
     }
   };
 
   const handleNotificationPress = () => {
-    (navigation as any).navigate(SCREENS.NOTIFICATIONS);
+    (navigation as any).navigate(Routes.NAVIGATION_NOTIFICATIONS);
   };
 
   return (
@@ -267,7 +331,20 @@ const HomeCreditIvoo: React.FC = () => {
         </View>
       </View>
       <HomeCreditCard
-        style={styles.mainCard}
+        style={[
+          styles.mainCard,
+          {
+            top: Platform.select({
+              ios:
+                insets.top +
+                SCREEN_HEIGHT * 0.01 + // header paddingTop (iOS)
+                SCREEN_WIDTH * 0.08 + // altura aproximada del contenido del header
+                SCREEN_HEIGHT * 0.05 - // header paddingBottom
+                25, // overlap para que el card se superponga correctamente al header
+              android: SCREEN_HEIGHT * 0.075,
+            }),
+          },
+        ]}
         onRequestCredit={handleRequestCredit}
         onPayPress={handlePayPress}
       />
@@ -308,9 +385,6 @@ const HomeCreditIvoo: React.FC = () => {
               imageStyle={styles.bannerImage}
               resizeMode="cover"
             />
-            <Text style={styles.sectionTitle}>
-              {isPlusUser ? 'Plus' : 'No Plus'}
-            </Text>
 
             <View style={styles.bottomRow}>
               <View style={styles.halfColumn}>
@@ -366,7 +440,10 @@ const styles = StyleSheet.create({
 
   header: {
     backgroundColor: IVOO_COLORS.primary,
-    paddingTop: SCREEN_HEIGHT * 0.02,
+    paddingTop: Platform.select({
+      ios: SCREEN_HEIGHT * 0.01,
+      android: SCREEN_HEIGHT * 0.02,
+    }),
     paddingBottom: SCREEN_HEIGHT * 0.05, // Extra height to show the card overlap
     paddingHorizontal: SCREEN_WIDTH * 0.05,
     flexDirection: 'row',
@@ -450,7 +527,7 @@ const styles = StyleSheet.create({
 
   mainCard: {
     position: 'absolute',
-    top: SCREEN_HEIGHT * 0.075,
+    // top is calculated dynamically based on safe area insets
     left: SCREEN_WIDTH * 0.05,
     right: SCREEN_WIDTH * 0.05,
     zIndex: 20,

@@ -10,6 +10,9 @@ import {setNavigator} from './src/Utils/NavigationRef';
 //import analytics from '@react-native-firebase/analytics';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { getApp } from '@react-native-firebase/app';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import {MenuProvider} from 'react-native-popup-menu';
 
 const Stack = createStackNavigator();
 const AuthStack = createStackNavigator();
@@ -1171,17 +1174,7 @@ const Route = () => {
     </RootStack.Navigator>
     
   );
-  // const Tabcreditivoo = () =>(
-  //   <RootStack.Navigator>
-  //     <Stack.Screen
-          
-  //       name={Routes.NAVIGATION_TABCREDITIVOO}
-  //       component={MainTabsCreditivoo}
-  //       options={{headerShown: false}}
-  //     />
-  //   </RootStack.Navigator>
 
-  // );
   return (
     <NavigationContainer
       //linking={linking}
@@ -1209,7 +1202,14 @@ const Route = () => {
         }
         routeNameRef.current = currentRouteName;
       }}>
-      <RootScreens options={{animationEnabled: false}} />
+      <GestureHandlerRootView style={{flex: 1}}>
+        <BottomSheetModalProvider>
+          <MenuProvider>
+            <RootScreens options={{animationEnabled: true}} />
+          </MenuProvider>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
+      
       {/* <Tabcreditivoo options={{animationEnabled: false}} /> */}
     </NavigationContainer>
   );

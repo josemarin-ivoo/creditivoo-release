@@ -241,14 +241,14 @@ const App = () => {
         <Provider store={store}>
           <PersistGate loading={null} persistor={persistedStore}>
             <NotifactionContext.Provider value={fcmMessage}>
-              <GestureHandlerRootView style={{ flex: 1 }}>
+              {/* <GestureHandlerRootView style={{ flex: 1 }}> */}
                 <AppContextProvider>
                   {/* <Route /> */}
-                  <BottomSheetModalProvider>
+                  {/* <BottomSheetModalProvider> */}
                     <Route />
-                  </BottomSheetModalProvider>
+                  {/* </BottomSheetModalProvider> */}
                 </AppContextProvider>
-              </GestureHandlerRootView>
+              {/* </GestureHandlerRootView> */}
               
             </NotifactionContext.Provider>
           </PersistGate>

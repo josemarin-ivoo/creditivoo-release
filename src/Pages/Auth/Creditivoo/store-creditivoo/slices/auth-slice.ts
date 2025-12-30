@@ -467,15 +467,17 @@ export const fetchMe = createAsyncThunk(
         error,
       );
 
-      // Si es un error 401, limpiar datos de autenticación
-      if (
-        error.response?.status === 401 ||
-        error.message?.includes('401') ||
-        error.message?.includes('Unauthorized')
-      ) {
-        console.warn(
-          '[IvoAuthSlice] Error 401 detectado, limpiando datos de autenticación',
-        );
+      // Si hay un error al obtener información del usuario, ejecutar logout
+      // Esto asegura que el usuario sea redirigido al login
+      console.warn(
+        '[IvoAuthSlice] Error al obtener información del usuario, ejecutando logout',
+      );
+      try {
+        // Ejecutar logout para limpiar todo el estado y redirigir al login
+        await dispatch(logout()).unwrap();
+      } catch (logoutError) {
+        console.error('[IvoAuthSlice] Error al ejecutar logout:', logoutError);
+        // Fallback: limpiar AuthStorage manualmente
         try {
           await AuthStorage.clearAuthData();
         } catch (clearError) {
@@ -772,20 +774,15 @@ const authSlice = createSlice({
       })
       .addCase(fetchMe.rejected, (state, action) => {
         state.isLoading = false;
-        // Si es un error 401, limpiar el estado de autenticación
-        const errorMessage = (action.payload as string) || '';
-        if (
-          errorMessage.includes('401') ||
-          errorMessage.includes('Unauthorized') ||
-          errorMessage.includes('Token')
-        ) {
-          state.token = null;
-          state.refreshToken = null;
-          state.user = null;
-          state.isLoggedIn = false;
-        }
+        // Si fetchMe falla, limpiar el estado de autenticación para forzar logout
+        // Esto asegura que el usuario sea redirigido al login
+        state.token = null;
+        state.refreshToken = null;
+        state.user = null;
+        state.isLoggedIn = false;
         state.error =
-          errorMessage || 'Error al obtener información del usuario';
+          (action.payload as string) ||
+          'Error al obtener información del usuario';
       })
       // Update user profile
       .addCase(updateUserProfile.pending, state => {

@@ -18,8 +18,7 @@ import {
 import {getCreditInfo, CreditInfo} from '../../services/credit';
 import AtomIcon from '../../svgs/svg-icons/atom.svg';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-import {useIvoSelector} from '../../store/hooks';
-
+import {useIvoSelector} from '../../../../../redux/useIvo';
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 interface HomeCreditCardProps {
@@ -74,7 +73,11 @@ const HomeCreditCard: React.FC<HomeCreditCardProps> = ({
   const pendingAmount = creditInfo?.outstandingBalance ?? 0;
   const formattedAvailable = isCreditHidden
     ? 'USD $••••'
-    : `USD $${availableAmount}`;
+    : `USD ${
+        typeof availableAmount === 'number'
+          ? availableAmount.toFixed(2)
+          : availableAmount
+      }`;
   const formattedPending = isCreditHidden
     ? 'USD $••••'
     : `USD $${

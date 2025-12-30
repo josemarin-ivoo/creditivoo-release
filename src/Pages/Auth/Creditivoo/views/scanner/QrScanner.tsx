@@ -32,16 +32,23 @@ type OnReadCodeData = {
 
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
-import {AlertModal} from '../../components';
+import {AlertModal, Button} from '../../components';
 import {revisionQr} from '../../services/credit';
-import {useIvoDispatch} from '../../../../../redux/useIvo';
+import {useIvoDispatch, useIvoSelector} from '../../../../../redux/useIvo';
 import {setCurrentPurchase} from '../../store-creditivoo/purchase-slice';
+import {
+  getPurchasesByUserId,
+  getPurchaseById,
+  PurchaseResponse,
+} from '../../services/purchases';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const QrScanner: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
+  const {user} = useIvoSelector(state => state.creditivoo.auth);
   const [hasPermission, setHasPermission] = useState(false);
   const [scannedContent, setScannedContent] = useState<string | null>(null);
   const [lastScannedTime, setLastScannedTime] = useState<number>(0);
@@ -50,6 +57,10 @@ const QrScanner: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [hasPurchaseInProgress, setHasPurchaseInProgress] = useState(false);
+  const [inProgressPurchase, setInProgressPurchase] =
+    useState<PurchaseResponse | null>(null);
+  const [isCheckingPurchases, setIsCheckingPurchases] = useState(true);
 
   // Usar refs para mantener valores actuales en el callback
   const lastScannedValueRef = useRef<string | null>(null);
@@ -190,33 +201,165 @@ const QrScanner: React.FC = () => {
     }
   }, [navigation]);
 
-  useEffect(() => {
-    const init = async () => {
-      const granted = await requestCameraPermission();
-      setHasPermission(granted);
-    };
-    init();
-  }, [requestCameraPermission]);
-
-  // Resetear estado cuando la pantalla recibe foco (cuando vuelve de otra pantalla)
+  // Verificar si hay compras en progreso cada vez que la pantalla recibe foco
   useFocusEffect(
     useCallback(() => {
-      // Resetear el estado para permitir escanear de nuevo
-      console.log('[QrScanner] Reseteando estado al recibir foco');
-      setScannedContent(null);
-      setLastScannedTime(0);
-      setLastScannedValue(null);
-      // También resetear los refs inmediatamente
-      lastScannedValueRef.current = null;
-      lastScannedTimeRef.current = 0;
-      scannedContentRef.current = null;
-      // Forzar remount del componente Camera para reactivar el escaneo
-      setCameraKey(prev => prev + 1);
+      const checkPurchases = async () => {
+        if (!user?.id) {
+          setIsCheckingPurchases(false);
+          setHasPurchaseInProgress(false);
+          return;
+        }
+
+        try {
+          setIsCheckingPurchases(true);
+          const purchases = await getPurchasesByUserId(user.id);
+
+          // Buscar compras con status IN_PROGRESS
+          const inProgressPurchases = purchases.filter(
+            purchase =>
+              purchase.status?.toUpperCase() === 'IN_PROGRESS' ||
+              purchase.status?.toUpperCase() === 'IN_PROGRESS_BY_CLIENT' ||
+              purchase.status?.toUpperCase() === 'PENDING_INVOICE',
+          );
+
+          if (inProgressPurchases.length > 0) {
+            // Obtener los detalles completos de la primera compra en progreso
+            const firstPurchase = inProgressPurchases[0];
+            const purchaseDetails = await getPurchaseById(
+              typeof firstPurchase.id === 'string'
+                ? parseInt(firstPurchase.id, 10)
+                : firstPurchase.id,
+            );
+            setInProgressPurchase(purchaseDetails);
+            setHasPurchaseInProgress(true);
+          } else {
+            setHasPurchaseInProgress(false);
+            setInProgressPurchase(null);
+          }
+        } catch (error) {
+          console.error('[QrScanner] Error al verificar compras:', error);
+          setHasPurchaseInProgress(false);
+          setInProgressPurchase(null);
+        } finally {
+          setIsCheckingPurchases(false);
+        }
+      };
+
+      checkPurchases();
+    }, [user?.id]),
+  );
+
+  // Solicitar permiso de cámara solo si no hay compra en progreso
+  useEffect(() => {
+    if (!isCheckingPurchases && !hasPurchaseInProgress && !hasPermission) {
+      const init = async () => {
+        const granted = await requestCameraPermission();
+        setHasPermission(granted);
+      };
+      init();
+    }
+    // Si hay compra en progreso, resetear el permiso para que no se muestre la cámara
+    if (hasPurchaseInProgress && hasPermission) {
+      setHasPermission(false);
+    }
+  }, [
+    isCheckingPurchases,
+    hasPurchaseInProgress,
+    hasPermission,
+    requestCameraPermission,
+  ]);
+
+  // Resetear estado del escáner cuando la pantalla recibe foco (solo si no hay compra en progreso)
+  useFocusEffect(
+    useCallback(() => {
+      // Solo resetear el estado del escáner si no hay compra en progreso
+      if (!hasPurchaseInProgress) {
+        console.log('[QrScanner] Reseteando estado al recibir foco');
+        setScannedContent(null);
+        setLastScannedTime(0);
+        setLastScannedValue(null);
+        // También resetear los refs inmediatamente
+        lastScannedValueRef.current = null;
+        lastScannedTimeRef.current = 0;
+        scannedContentRef.current = null;
+        // Forzar remount del componente Camera para reactivar el escaneo
+        setCameraKey(prev => prev + 1);
+      }
 
       // Cleanup: no hacer nada al desmontar
       return () => {};
-    }, []),
+    }, [hasPurchaseInProgress]),
   );
+
+  const handleGoToPurchase = async () => {
+    if (!inProgressPurchase) {
+      return;
+    }
+
+    try {
+      // Obtener los detalles completos de la compra
+      const purchaseId =
+        typeof inProgressPurchase.id === 'string'
+          ? parseInt(inProgressPurchase.id, 10)
+          : inProgressPurchase.id;
+      const purchaseDetails = await getPurchaseById(purchaseId);
+
+      // Navegar a PaymentInstallmentsScreen
+      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+        purchase: purchaseDetails,
+      });
+    } catch (error) {
+      console.error('[QrScanner] Error al obtener detalles de compra:', error);
+      setAlertMessage('Error al cargar los detalles de la compra');
+      setAlertVisible(true);
+    }
+  };
+
+  // Mostrar loading mientras se verifican las compras
+  if (isCheckingPurchases) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+          <Text style={styles.loadingText}>Verificando compras...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Mostrar mensaje si hay compra en progreso
+  if (hasPurchaseInProgress) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <CurvedHeaderLayout
+          title=""
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+          scroll={false}>
+          <View style={styles.messageContainer}>
+            <Image
+              source={require('../../images/creditivo-logo-full.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.messageTitle}>
+              Ya tienes una compra en progreso
+            </Text>
+            <Text style={styles.messageText}>
+              Tienes una compra pendiente de pago. Por favor, termina de pagar
+              las cuotas antes de realizar una nueva compra.
+            </Text>
+            <Button
+              title="Ver mis cuotas"
+              onPress={handleGoToPurchase}
+              style={styles.actionButton}
+            />
+          </View>
+        </CurvedHeaderLayout>
+      </SafeAreaView>
+    );
+  }
 
   if (!hasPermission) {
     return (
@@ -491,6 +634,35 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.textSecondary || '#6E717C',
     textAlign: 'center',
+  },
+  messageContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SCREEN_WIDTH * 0.1,
+    paddingTop: SCREEN_HEIGHT * 0.05,
+    paddingBottom: SCREEN_WIDTH * 0.18,
+  },
+  messageTitle: {
+    fontSize: SCREEN_WIDTH * 0.055,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.textPrimary,
+    textAlign: 'center',
+    marginTop: SCREEN_HEIGHT * 0.04,
+    marginBottom: SCREEN_HEIGHT * 0.02,
+  },
+  messageText: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary || '#6E717C',
+    textAlign: 'center',
+    lineHeight: SCREEN_WIDTH * 0.06,
+    marginBottom: SCREEN_HEIGHT * 0.05,
+  },
+  actionButton: {
+    width: '100%',
+    marginTop: SCREEN_HEIGHT * 0.02,
   },
 });
 

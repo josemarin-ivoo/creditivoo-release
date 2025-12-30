@@ -19,6 +19,7 @@ import {
   getPurchaseById,
   PurchaseResponse,
 } from '../../services/purchases';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -91,7 +92,7 @@ const mapPurchaseResponseToPurchase = (
     status = 'pending';
   }
 
-  // Obtener nombre de la tienda desde branch, store, o device
+  // Obtener nombre de la tienda desde tenant
   const storeName = purchaseResponse.tenant?.name || 'IVOO';
 
   // Convertir totalAmount de string a number
@@ -104,6 +105,8 @@ const mapPurchaseResponseToPurchase = (
     amount,
     status,
     formattedDate: formatDate(purchaseResponse.createdAt),
+    // Pasar el tenant directamente desde la respuesta del API
+    tenant: purchaseResponse.tenant || undefined,
   };
 };
 
@@ -143,6 +146,11 @@ const MyPurchasesScreen: React.FC = () => {
         // Mapear las compras del API al formato del componente
         const mappedPurchases = purchasesData.map(
           mapPurchaseResponseToPurchase,
+        );
+        console.log('[MyPurchasesScreen] Compras mapeadas:', mappedPurchases);
+        console.log(
+          '[MyPurchasesScreen] Primer tenant:',
+          mappedPurchases[0]?.tenant,
         );
         setPurchases(mappedPurchases);
       } catch (err: any) {
@@ -199,7 +207,7 @@ const MyPurchasesScreen: React.FC = () => {
       );
 
       // Navigate to payment installments screen with full purchase data
-      (navigation as any).navigate('PaymentInstallments', {
+      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
         purchase: purchaseDetails,
       });
     } catch (err: any) {
@@ -242,7 +250,7 @@ const MyPurchasesScreen: React.FC = () => {
       );
 
       // Navigate to payment installments screen with full purchase data
-      (navigation as any).navigate('PaymentInstallments', {
+      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
         purchase: purchaseDetails,
       });
     } catch (err: any) {
@@ -251,7 +259,7 @@ const MyPurchasesScreen: React.FC = () => {
         err,
       );
       // Fallback: navigate with basic purchase data
-      (navigation as any).navigate('PaymentInstallments', {
+      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
         purchase,
       });
     } finally {

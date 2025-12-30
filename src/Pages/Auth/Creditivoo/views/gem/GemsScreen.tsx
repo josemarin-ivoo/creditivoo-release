@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useCallback, useMemo} from 'react';
 import {
   View,
   StyleSheet,
@@ -6,50 +6,92 @@ import {
   Dimensions,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {GemTransactionCard, GemTransaction} from '../../components/gems';
 import GemIcon from '../../svgs/menus/gem.svg';
+import {
+  getPointsInfo,
+  PointsTransaction,
+  PointsData,
+} from '../../services/points';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
-// Mock data - Replace with actual API call
-const mockTransactions: GemTransaction[] = [
-  {
-    id: '1',
-    amount: 15,
-    date: '9/12/2025',
-    reason: 'Por pagar tus cuotas a tiempo',
-    iconType: 'clock',
-  },
-  {
-    id: '2',
-    amount: 15,
-    date: '19/11/2025',
-    reason: 'Por pagar tus cuotas a tiempo',
-    iconType: 'clock',
-  },
-  {
-    id: '3',
-    amount: 48,
-    date: '8/11/2025',
-    reason: 'Por pagar tus cuotas a tiempo',
-    iconType: 'card',
-  },
-  {
-    id: '4',
-    amount: 80,
-    date: '28/10/2025',
-    reason: 'Por pagar tus cuotas a tiempo',
-    iconType: 'card',
-  },
-];
+// Helper function to format date from YYYY-MM-DD to DD/MM/YYYY
+const formatDate = (dateString: string): string => {
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
+};
+
+// Helper function to map API icon to component iconType
+const mapIconToIconType = (icon: string): 'clock' | 'card' => {
+  // hourglass, bills -> clock
+  // gem, star -> card
+  if (icon === 'hourglass' || icon === 'bills') {
+    return 'clock';
+  }
+  return 'card';
+};
 
 const GemsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const [pointsData, setPointsData] = useState<PointsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchPointsData = useCallback(async (showRefreshing = false) => {
+    try {
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
+      const data = await getPointsInfo();
+      setPointsData(data);
+    } catch (err: any) {
+      console.error('[GemsScreen] Error al obtener información de gemas:', err);
+      setError(err.message || 'Error al cargar la información de gemas');
+    } finally {
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPointsData();
+    }, [fetchPointsData]),
+  );
+
+  const onRefresh = useCallback(() => {
+    fetchPointsData(true);
+  }, [fetchPointsData]);
+
+  // Map API transactions to component format
+  const transactions = useMemo((): GemTransaction[] => {
+    if (!pointsData?.recentTransactions) {
+      return [];
+    }
+
+    return pointsData.recentTransactions.map((tx: PointsTransaction) => ({
+      id: tx.id.toString(),
+      amount: tx.amount,
+      date: formatDate(tx.date),
+      reason: tx.reason,
+      iconType: mapIconToIconType(tx.icon),
+    }));
+  }, [pointsData]);
 
   const handleBackPress = () => {
     navigation.goBack();
@@ -63,12 +105,65 @@ const GemsScreen: React.FC = () => {
     <GemTransactionCard transaction={item} />
   );
 
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyStateText}>
+        No tienes transacciones de gemas aún
+      </Text>
+    </View>
+  );
+
+  if (isLoading && !refreshing) {
+    return (
+      <CurvedHeaderLayout
+        title="Gemas"
+        showBackButton={true}
+        onBackPress={handleBackPress}
+        scroll={true}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+          <Text style={styles.loadingText}>
+            Cargando información de gemas...
+          </Text>
+        </View>
+      </CurvedHeaderLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <CurvedHeaderLayout
+        title="Gemas"
+        showBackButton={true}
+        onBackPress={handleBackPress}
+        scroll={true}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => fetchPointsData()}
+            activeOpacity={0.7}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      </CurvedHeaderLayout>
+    );
+  }
+
   return (
     <CurvedHeaderLayout
       title="Gemas"
       showBackButton={true}
       onBackPress={handleBackPress}
-      scroll={true}>
+      scroll={true}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[IVOO_COLORS.primary]}
+          tintColor={IVOO_COLORS.primary}
+        />
+      }>
       {/* Main Gems Card */}
       <View style={styles.mainCard}>
         {/* GEMAS Title with Gradient */}
@@ -85,7 +180,9 @@ const GemsScreen: React.FC = () => {
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>Total ganadas:</Text>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>240</Text>
+              <Text style={styles.statValue}>
+                {pointsData?.totalPoints || 0}
+              </Text>
               <GemIcon
                 width={SCREEN_WIDTH * 0.055}
                 height={SCREEN_WIDTH * 0.055}
@@ -96,9 +193,11 @@ const GemsScreen: React.FC = () => {
           <View style={styles.divider} />
 
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Pendientes hoy:</Text>
+            <Text style={styles.statLabel}>Gemas actuales:</Text>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>94</Text>
+              <Text style={styles.statValue}>
+                {pointsData?.currentPoints || 0}
+              </Text>
               <GemIcon
                 width={SCREEN_WIDTH * 0.055}
                 height={SCREEN_WIDTH * 0.055}
@@ -110,13 +209,17 @@ const GemsScreen: React.FC = () => {
         {/* Recent Transactions */}
         <View style={styles.transactionsSection}>
           <Text style={styles.sectionTitle}>Transacciones recientes:</Text>
-          <FlatList
-            data={mockTransactions}
-            renderItem={renderTransaction}
-            keyExtractor={item => item.id}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-          />
+          {transactions.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <FlatList
+              data={transactions}
+              renderItem={renderTransaction}
+              keyExtractor={item => item.id}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </View>
       </View>
 
@@ -144,7 +247,7 @@ const styles = StyleSheet.create({
     padding: SCREEN_WIDTH * 0.04,
     marginBottom: SCREEN_WIDTH * 0.05,
     marginHorizontal: SCREEN_WIDTH * 0.01,
-    elevation: 3,
+    elevation: 1,
   },
   titleGradient: {
     borderRadius: 8,
@@ -220,6 +323,56 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.primary,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SCREEN_WIDTH * 0.2,
+  },
+  loadingText: {
+    marginTop: SCREEN_WIDTH * 0.04,
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary || '#6E717C',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SCREEN_WIDTH * 0.2,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  errorText: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: '#E74C3C',
+    textAlign: 'center',
+    marginBottom: SCREEN_WIDTH * 0.04,
+  },
+  retryButton: {
+    backgroundColor: IVOO_COLORS.primary,
+    paddingHorizontal: SCREEN_WIDTH * 0.06,
+    paddingVertical: SCREEN_WIDTH * 0.03,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.white,
+  },
+  emptyState: {
+    paddingVertical: SCREEN_WIDTH * 0.08,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
+    fontSize: SCREEN_WIDTH * 0.037,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.grayMedium,
+    textAlign: 'center',
   },
 });
 

@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
+import {SCREENS} from '@shared-constants';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {InstallmentItem, Installment} from '../../components/purchases';
@@ -17,6 +18,7 @@ import {
   PaymentStatus,
   getPurchaseById,
 } from '../../services/purchases';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -232,8 +234,7 @@ const PaymentInstallmentsScreen: React.FC = () => {
   };
 
   const handleHelpPress = () => {
-    // TODO: Navigate to help screen or show help modal
-    console.log('[PaymentInstallmentsScreen] Help pressed');
+    (navigation as any).navigate(Routes.NAVIGATION_HELP);
   };
 
   const handlePayPress = () => {
@@ -267,7 +268,7 @@ const PaymentInstallmentsScreen: React.FC = () => {
       );
 
       // Navegar a PurchaseConfirmation con purchaseId y payments
-      (navigation as any).navigate('PurchaseConfirmation', {
+      (navigation as any).navigate(Routes.NAVIGATION_PURCHASESCONFIRM, {
         purchaseId: purchaseId,
         payments: selectedPaymentObjects,
       });
