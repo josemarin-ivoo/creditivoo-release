@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
+  ScrollView,
 } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {
@@ -373,7 +374,10 @@ const IdentityVerificator: React.FC = () => {
   );
 
   const content = (
-    <>
+    <ScrollView 
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
       <Text style={styles.title}>Validación de identidad</Text>
       <Text style={styles.subtitle}>
         Para validar tu identidad, necesitaremos que tomes unas fotos a tu
@@ -560,7 +564,7 @@ const IdentityVerificator: React.FC = () => {
           resizeMode="contain"
         />
       </View>
-    </>
+    </ScrollView>
   );
 
   const getButtonTitle = () => {
@@ -647,6 +651,16 @@ const IdentityVerificator: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
+  centerContent: {
+    alignItems: 'center',
+    width: '100%',
+  },
+
   logo: {
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72 * 0.154,

@@ -35,23 +35,8 @@ api.interceptors.request.use(
   },
 );
 
-// Variable para evitar múltiples llamadas simultáneas de refresh
+// Variable para evitar múltiples ejecuciones de logout simultáneas
 let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: any) => void;
-  reject: (error?: any) => void;
-}> = [];
-
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
 
 // Interceptor para responses
 api.interceptors.response.use(
@@ -61,113 +46,93 @@ api.interceptors.response.use(
 
     // Manejo de errores globales
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Token expirado o inválido
-      console.warn('[API] 401 Unauthorized - Token inválido o expirado');
+      // Rutas públicas que no deberían ejecutar logout cuando fallan con 401
+      const publicRoutes = [
+        '/auth/login',
+        '/auth/register',
+        '/auth/signup',
+        '/otp/send-sms',
+        '/otp/verify-sms',
+        '/otp/send',
+        '/otp/verify',
+        '/otp/resend',
+      ];
 
-      if (isRefreshing) {
-        // Si ya se está refrescando, encolar la petición
-        return new Promise((resolve, reject) => {
-          failedQueue.push({resolve, reject});
-        })
-          .then(token => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return api(originalRequest);
-          })
-          .catch(err => {
-            return Promise.reject(err);
-          });
-      }
+      const isPublicRoute = publicRoutes.some(route =>
+        originalRequest.url?.includes(route),
+      );
 
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const {AuthStorage} = await import('../app/services/AuthStorage');
-        const refreshTokenValue = await AuthStorage.getRefreshToken();
-
-        console.log(
-          '[API] Refresh token obtenido del storage:',
-          !!refreshTokenValue,
-        );
-
-        if (!refreshTokenValue) {
-          console.warn(
-            '[API] No hay refresh token disponible, limpiando datos de autenticación',
-          );
-          await AuthStorage.clearAuthData();
-          throw new Error('No hay refresh token disponible');
-        }
-
-        // Importar dinámicamente para evitar dependencias circulares
-        const {refreshToken} = await import('./auth');
-        const response = await refreshToken(refreshTokenValue);
-
-        console.log(
-          '[API] Token refrescado exitosamente, guardando nuevos tokens',
-        );
-
-        // Guardar nuevos tokens
-        await AuthStorage.saveToken(response.token);
-        await AuthStorage.saveRefreshToken(response.refreshToken);
-
-        console.log('[API] Nuevos tokens guardados exitosamente');
-
-        // Actualizar el header de la petición original
-        originalRequest.headers.Authorization = `Bearer ${response.token}`;
-
-        // Procesar cola de peticiones pendientes
-        processQueue(null, response.token);
-        isRefreshing = false;
-
-        // Reintentar la petición original
-        return api(originalRequest);
-      } catch (refreshError: any) {
-        console.error(
-          '[API] ===== ERROR AL REFRESCAR TOKEN EN INTERCEPTOR =====',
-        );
-        console.error('[API] Error completo:', refreshError);
-        console.error('[API] Mensaje de error:', refreshError?.message);
-        processQueue(refreshError, null);
-        isRefreshing = false;
-
-        // Si falla el refresh, limpiar datos y redirigir al login
+      // Solo ejecutar logout si NO es una ruta pública Y hay una sesión activa
+      if (!isPublicRoute) {
+        // Verificar si hay una sesión activa antes de ejecutar logout
         try {
-          console.log(
-            '[API] Limpiando datos de autenticación debido a error en refresh',
-          );
           const {AuthStorage} = await import('../app/services/AuthStorage');
-          await AuthStorage.clearAuthData();
-          console.log('[API] Datos de autenticación limpiados exitosamente');
+          const token = await AuthStorage.getToken();
+          const hasActiveSession = !!token;
 
-          // Intentar actualizar el estado de Redux si está disponible
-          try {
-            // Importar dinámicamente el store para evitar dependencias circulares
-            const {ivooStore} = await import('../store-creditivoo');
-            ivooStore.dispatch({type: 'auth/logout'});
-            console.log('[API] Estado de Redux actualizado (logout)');
-          } catch (reduxError) {
+          if (hasActiveSession) {
+            // Token expirado o inválido - ejecutar logout inmediatamente sin intentar refrescar
             console.warn(
-              '[API] No se pudo actualizar el estado de Redux:',
-              reduxError,
+              '[API] 401 Unauthorized - Token inválido o expirado, ejecutando logout',
             );
+
+            // Evitar múltiples ejecuciones de logout simultáneas
+            if (isRefreshing) {
+              // Si ya se está procesando un logout, rechazar la petición
+              return Promise.reject(error);
+            }
+
+            isRefreshing = true;
+            originalRequest._retry = true;
+
+            try {
+              // Ejecutar logout inmediatamente sin intentar refrescar el token
+              const {ivooStore} = await import('../store-creditivoo');
+              const {logout} = await import('../store/slices/auth-slice');
+              console.log('[API] Ejecutando logout desde interceptor...');
+              const logoutPromise = ivooStore.dispatch(logout());
+              await logoutPromise;
+              console.log('[API] Logout completado, estado actualizado');
+
+              // Verificar que el estado se actualizó
+              const state = ivooStore.getState();
+              console.log(
+                '[API] Estado después de logout - isLoggedIn:',
+                state?.auth?.isLoggedIn,
+              );
+            } catch (logoutError) {
+              console.error('[API] Error ejecutando logout:', logoutError);
+              // Fallback: limpiar AuthStorage manualmente
+              try {
+                const {AuthStorage} = await import('../app/services/AuthStorage');
+                await AuthStorage.clearAuthData();
+              } catch (clearError) {
+                console.error(
+                  '[API] Error en fallback de limpieza:',
+                  clearError,
+                );
+              }
+            } finally {
+              isRefreshing = false;
+            }
+
+            // Crear un error más descriptivo
+            const errorMessage =
+              'Sesión expirada. Por favor, inicia sesión nuevamente.';
+            const enhancedError = new Error(errorMessage);
+            (enhancedError as any).isAuthError = true;
+            (enhancedError as any).shouldLogout = true;
+
+            return Promise.reject(enhancedError);
           }
-        } catch (clearError) {
-          console.error(
-            '[API] Error limpiando datos de autenticación:',
-            clearError,
-          );
+        } catch (storageError) {
+          // Si hay error accediendo al storage, continuar con el error original
+          console.warn('[API] Error verificando sesión activa:', storageError);
         }
-
-        // Crear un error más descriptivo
-        const errorMessage =
-          refreshError?.message ||
-          'Sesión expirada. Por favor, inicia sesión nuevamente.';
-        const enhancedError = new Error(errorMessage);
-        (enhancedError as any).isAuthError = true;
-        (enhancedError as any).shouldLogout = true;
-
-        return Promise.reject(enhancedError);
       }
+
+      // Para rutas públicas o cuando no hay sesión activa, simplemente rechazar el error original
+      return Promise.reject(error);
     }
 
     if (error.response?.status === 403) {

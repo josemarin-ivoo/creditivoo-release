@@ -30,6 +30,7 @@ import {
   PurchaseResponse,
 } from '../../services/purchases';
 import { Routes } from '../../../../../Utils/NavigationRoutes';
+import Sales from '../../../../../Components/Sales';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 

@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {OtpInput} from 'react-native-otp-entry';
@@ -51,15 +53,11 @@ const OTPVerificationScreen: React.FC = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
-  const [alertType, setAlertType] = useState<'error' | 'warning' | 'info'>(
-    'error',
-  );
-  const [countdown, setCountdown] = useState<number>(60); // 60 segundos iniciales
+  const [alertType, setAlertType] = useState<'error' | 'warning' | 'info'>('error');
+  const [countdown, setCountdown] = useState<number>(60);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Iniciar cuenta regresiva cuando la pantalla se monta
   useEffect(() => {
-    // Iniciar cuenta regresiva
     countdownRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -73,7 +71,6 @@ const OTPVerificationScreen: React.FC = () => {
       });
     }, 1000);
 
-    // Limpiar intervalo al desmontar
     return () => {
       if (countdownRef.current) {
         clearInterval(countdownRef.current);
@@ -91,12 +88,7 @@ const OTPVerificationScreen: React.FC = () => {
     } catch (err: any) {
       setIsValid(false);
       if (code.length === OTP_LENGTH) {
-        // Only show error if code is complete
-        if (err.errors && err.errors.length > 0) {
-          setError(err.errors[0]);
-        } else {
-          setError('Código inválido');
-        }
+        setError(err.errors && err.errors.length > 0 ? err.errors[0] : 'Código inválido');
       } else {
         setError(null);
       }
@@ -107,62 +99,41 @@ const OTPVerificationScreen: React.FC = () => {
   const handleOtpChange = async (code: string) => {
     setOtpCode(code);
     await validateCode(code);
+    if (code.length === OTP_LENGTH) {
+      Keyboard.dismiss();
+    }
   };
 
   const handleVerify = async () => {
+    Keyboard.dismiss();
     const isValidCode = await validateCode(otpCode);
-    if (!isValidCode || !phoneNumber) {
-      return;
-    }
+    if (!isValidCode || !phoneNumber) return;
 
     setIsVerifying(true);
     setError(null);
 
     try {
       const response = await verifyOTP(phoneNumber, otpCode);
-
       if (response.verified) {
-        if (response.isAlreadyVerified) {
-          console.log('Teléfono ya estaba verificado previamente');
-        } else {
-        console.log('OTP verificado exitosamente');
-        }
-        // Si hay un token, podrías guardarlo aquí
-        if (response.token) {
-          // TODO: Guardar token de autenticación
-          console.log('Token recibido:', response.token);
-        }
-        // Navigate to email input screen
         (navigation as any).navigate('EmailInput');
       } else {
-        setError(
-          'Código OTP inválido. Por favor, verifica e intenta de nuevo.',
-        );
+        setError('Código OTP inválido. Por favor, verifica e intenta de nuevo.');
       }
     } catch (err: any) {
-      const errorMessage =
-        err.message ||
-        'Error al verificar el código. Por favor, intenta de nuevo.';
+      const errorMessage = err.message || 'Error al verificar el código.';
       setError(errorMessage);
       setAlertTitle('Error');
       setAlertMessage(errorMessage);
       setAlertType('error');
       setAlertVisible(true);
-      console.error('Error al verificar OTP:', err);
     } finally {
       setIsVerifying(false);
     }
   };
 
   const handleResend = async () => {
-    if (!phoneNumber) {
-      setAlertTitle('Error');
-      setAlertMessage('No se encontró el número telefónico.');
-      setAlertType('error');
-      setAlertVisible(true);
-      return;
-    }
-
+    Keyboard.dismiss();
+    if (!phoneNumber) return;
     setIsResending(true);
     setError(null);
 
@@ -171,56 +142,16 @@ const OTPVerificationScreen: React.FC = () => {
       setOtpCode('');
       setIsValid(false);
       setAlertTitle('Código reenviado');
-      setAlertMessage(
-        'Se ha enviado un nuevo código OTP a tu número telefónico.',
-      );
+      setAlertMessage('Se ha enviado un nuevo código OTP a tu número telefónico.');
       setAlertType('info');
       setAlertVisible(true);
-
-      // Reiniciar cuenta regresiva
       setCountdown(60);
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current);
-      }
-      countdownRef.current = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            if (countdownRef.current) {
-              clearInterval(countdownRef.current);
-              countdownRef.current = null;
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      console.log('OTP reenviado exitosamente a:', phoneNumber);
     } catch (err: any) {
-      const errorMessage =
-        err.message ||
-        'Error al reenviar el código. Por favor, intenta de nuevo.';
-
-      // Título diferente para cooldown
-      const title =
-        errorMessage.includes('espera') ||
-        errorMessage.includes('cooldown') ||
-        errorMessage.includes('Cooldown')
-          ? 'Espera requerida'
-          : 'Error';
-
-      const type: 'error' | 'warning' =
-        errorMessage.includes('espera') ||
-        errorMessage.includes('cooldown') ||
-        errorMessage.includes('Cooldown')
-          ? 'warning'
-          : 'error';
-
-      setAlertTitle(title);
+      const errorMessage = err.message || 'Error al reenviar el código.';
+      setAlertTitle('Error');
       setAlertMessage(errorMessage);
-      setAlertType(type);
+      setAlertType('error');
       setAlertVisible(true);
-      console.error('Error al reenviar OTP:', err);
     } finally {
       setIsResending(false);
     }
@@ -234,54 +165,6 @@ const OTPVerificationScreen: React.FC = () => {
     />
   );
 
-  const content = (
-    <>
-      <Text style={styles.title}>Escribe el código</Text>
-
-      <Text style={styles.subtitle}>
-        Ingresa el código de 6 digitos para validar tu número telefónico 📲
-      </Text>
-
-      <View style={styles.otpContainer}>
-        <OtpInput
-          numberOfDigits={OTP_LENGTH}
-          onTextChange={handleOtpChange}
-          autoFocus
-          theme={{
-            containerStyle: styles.otpInputContainer,
-            pinCodeContainerStyle: styles.otpInputBox,
-            pinCodeTextStyle: styles.otpInputText,
-            focusedPinCodeContainerStyle: styles.otpInputBoxFocused,
-          }}
-        />
-        {error && <Text style={styles.errorText}>{error}</Text>}
-      </View>
-
-      <View style={styles.resendContainer}>
-        {countdown === 0 && (
-          <Text style={styles.resendQuestion}>¿No recibiste el código?</Text>
-        )}
-        <TouchableOpacity
-          onPress={handleResend}
-          disabled={isResending || countdown > 0}
-          style={[
-            styles.resendButton,
-            (isResending || countdown > 0) && styles.resendButtonDisabled,
-          ]}>
-          {isResending ? (
-            <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
-          ) : countdown > 0 ? (
-            <Text style={[styles.resendLink, styles.resendLinkDisabled]}>
-              Reenviar código ({countdown}s)
-            </Text>
-          ) : (
-            <Text style={styles.resendLink}>Reenviar código</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </>
-  );
-
   const bottomAction = (
     <TouchableOpacity
       style={[styles.verifyButton, !isValid && styles.verifyButtonDisabled]}
@@ -291,11 +174,7 @@ const OTPVerificationScreen: React.FC = () => {
       {isVerifying ? (
         <ActivityIndicator size="small" color={IVOO_COLORS.white} />
       ) : (
-        <Text
-          style={[
-            styles.verifyButtonText,
-            !isValid && styles.verifyButtonTextDisabled,
-          ]}>
+        <Text style={[styles.verifyButtonText, !isValid && styles.verifyButtonTextDisabled]}>
           Verificar
         </Text>
       )}
@@ -303,21 +182,67 @@ const OTPVerificationScreen: React.FC = () => {
   );
 
   return (
-    <>
-      <RegisterLayout
-        contentPaddingTop={SCREEN_HEIGHT * 0.09}
-        logo={logo}
-        bottomAction={bottomAction}>
-        {content}
-      </RegisterLayout>
-      <AlertModal
-        visible={alertVisible}
-        title={alertTitle}
-        message={alertMessage}
-        type={alertType}
-        onClose={() => setAlertVisible(false)}
-      />
-    </>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={{flex: 1}}>
+        <RegisterLayout
+          contentPaddingTop={SCREEN_HEIGHT * 0.09}
+          logo={logo}
+          bottomAction={bottomAction}>
+          
+          <Text style={styles.title}>Escribe el código</Text>
+
+          <Text style={styles.subtitle}>
+            Ingresa el código de 6 digitos para validar tu número telefónico 📲
+          </Text>
+
+          <View style={styles.otpContainer}>
+            <OtpInput
+              numberOfDigits={OTP_LENGTH}
+              onTextChange={handleOtpChange}
+              autoFocus
+              theme={{
+                containerStyle: styles.otpInputContainer,
+                pinCodeContainerStyle: styles.otpInputBox,
+                pinCodeTextStyle: styles.otpInputText,
+                focusedPinCodeContainerStyle: styles.otpInputBoxFocused,
+              }}
+            />
+            {error && <Text style={styles.errorText}>{error}</Text>}
+          </View>
+
+          <View style={styles.resendContainer}>
+            {countdown === 0 && (
+              <Text style={styles.resendQuestion}>¿No recibiste el código?</Text>
+            )}
+            <TouchableOpacity
+              onPress={handleResend}
+              disabled={isResending || countdown > 0}
+              style={[
+                styles.resendButton,
+                (isResending || countdown > 0) && styles.resendButtonDisabled,
+              ]}>
+              {isResending ? (
+                <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
+              ) : countdown > 0 ? (
+                <Text style={[styles.resendLink, styles.resendLinkDisabled]}>
+                  Reenviar código ({countdown}s)
+                </Text>
+              ) : (
+                <Text style={styles.resendLink}>Reenviar código</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </RegisterLayout>
+
+        <AlertModal
+          visible={alertVisible}
+          title={alertTitle}
+          message={alertMessage}
+          type={alertType}
+          onClose={() => setAlertVisible(false)}
+        />
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -432,6 +357,7 @@ const styles = StyleSheet.create({
     width: '90%',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
   },
   verifyButtonDisabled: {
     backgroundColor: IVOO_COLORS.grayLight,

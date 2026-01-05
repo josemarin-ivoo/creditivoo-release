@@ -878,6 +878,7 @@ const Home = () => {
               }
               {
                 //Sales
+                //probar este componente en creditivoo
                 <View style={{marginBottom: 10}}>
                   {StoreConfig_data &&
                   StoreConfig_data.storeConfig.storeConfig.storeConfig
