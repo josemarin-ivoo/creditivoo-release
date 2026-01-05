@@ -42,37 +42,37 @@ const HelpScreen: React.FC = () => {
       id: '1',
       title: '¿Qué es Creditivoo y cómo funciona?',
       content:
-        'Creditivoo es tu aliado financiero que te permite comprar productos en tiendas IVOO y pagarlos en cómodas cuotas. Funciona mediante una evaluación rápida de tu perfil, asignándote un límite de crédito para que disfrutes de lo que necesitas hoy y pagues después.',
+        'Es una opción para comprar hoy en tiendas IVOO y pagar después, sin intereses. Eliges Creditivoo al pagar, haces tu inicial y el resto en 4 cuotas cada 14 días.',
     },
     {
       id: '2',
       title: '¿Dónde puedo usar Creditivoo?',
       content:
-        'Puedes usar tu crédito en todas las tiendas IVOO a nivel nacional. Simplemente dirígete a la caja, indica que pagarás con Creditivoo y escanea el código QR desde tu aplicación.',
+        'Solo en tiendas IVOO, dentro de la app IVOO al momento del pago.',
     },
     {
       id: '3',
       title: '¿Qué es la inicial y cómo se calcula?',
       content:
-        'La inicial es un pago parcial que realizas al momento de la compra. Se calcula automáticamente basándose en tu historial crediticio y el valor del producto, permitiéndote financiar el resto en cuotas ajustadas a tu capacidad.',
+        'Es el primer pago de tu compra. Corresponde a un porcentaje del total y baja el monto de tus cuotas siguientes.',
     },
     {
       id: '4',
       title: '¿Qué son las gemas y cómo las gano?',
       content:
-        'Las gemas son puntos de recompensa que obtienes por mantener un buen comportamiento de pago. Ganas gemas cada vez que pagas tus cuotas a tiempo. ¡Acumúlalas para desbloquear beneficios exclusivos y mejorar tu nivel en la app!',
+        'Son puntos que ganas por pagar a tiempo o antes de la fecha. Cuanto más responsable seas, más gemas acumulas.',
     },
     {
       id: '5',
       title: '¿Qué es el Plan Plus y qué incluye?',
       content:
-        'El Plan Plus es una suscripción premium que te ofrece ventajas adicionales, como tasas de interés preferenciales, acceso prioritario a promociones, mayor límite de crédito y atención personalizada.',
+        'Es una membresía anual de $50 que te da más flexibilidad: eliges tu inicial (desde 0%), pagas en 4 cuotas y acumulas gemas. Se activa una vez y dura todo el año.',
     },
     {
       id: '6',
       title: '¿Cómo contacto a soporte?',
       content:
-        'Estamos aquí para ayudarte. Puedes contactarnos directamente desde esta aplicación usando el botón de chat con Ivitoo, o escribirnos a nuestro correo de soporte soporte@creditivoo.com. También puedes visitar el área de atención al cliente en cualquiera de nuestras tiendas.',
+        'Escríbenos por WhatsApp al 0422-4866729 o al correo info@creditivoo.com. Estamos para ayudarte.',
     },
   ];
 

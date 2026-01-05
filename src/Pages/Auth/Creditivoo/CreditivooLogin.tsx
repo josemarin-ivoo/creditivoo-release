@@ -20,7 +20,7 @@ import { IVOO_COLORS, IVOO_TYPOGRAPHY } from './styles';
 import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
 import {login} from './store-creditivoo/slices/auth-slice';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-import ReactNativeBiometrics from 'react-native-biometrics';
+import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
 import {AuthStorage} from './app/services/AuthStorage';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -36,20 +36,21 @@ const LoginScreen: React.FC = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   
-  // IMPORTANTE: Control de visibilidad del icono
+  // Estados para biometría
   const [isSensorAvailable, setIsSensorAvailable] = useState(false);
+  const [biometryType, setBiometryType] = useState<string | undefined>(undefined);
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
   const checkSensor = React.useCallback(async () => {
     try {
-      // 1. Cargamos email si existe
       const credentials = await AuthStorage.getCredentials();
       if (credentials?.email) setEmail(credentials.email);
       
-      // 2. Verificamos si el dispositivo tiene huella/faceID
       const rnBiometrics = new ReactNativeBiometrics();
-      const {available} = await rnBiometrics.isSensorAvailable();
-      setIsSensorAvailable(available); // Se mostrará el icono si el cel tiene el sensor
+      const {available, biometryType} = await rnBiometrics.isSensorAvailable();
+      
+      setIsSensorAvailable(available);
+      setBiometryType(biometryType); // Guardamos el tipo (FaceID, TouchID o Biometrics)
     } catch (error) {
       setIsSensorAvailable(false);
     }
@@ -58,11 +59,24 @@ const LoginScreen: React.FC = () => {
   useEffect(() => { checkSensor(); }, [checkSensor]);
   useFocusEffect(React.useCallback(() => { checkSensor(); }, [checkSensor]));
 
+  // Función para determinar qué icono mostrar
+  const getBiometricIcon = () => {
+    if (Platform.OS === 'ios') {
+      if (biometryType === BiometryTypes.FaceID) {
+        return { name: 'faceid', type: IconType.MaterialCommunityIcons };
+      }
+      return { name: 'fingerprint', type: IconType.MaterialIcons }; // TouchID
+    }
+    return { name: 'fingerprint', type: IconType.MaterialIcons }; // Android
+  };
+
+  const biometricIcon = getBiometricIcon();
+
   const handleBiometricLogin = async () => {
     try {
       const credentials = await AuthStorage.getCredentials();
       if (!credentials) {
-        setAlertMessage('Primero debes iniciar sesión manualmente una vez para activar la huella.');
+        setAlertMessage('Inicia sesión manualmente una vez para activar el acceso biométrico.');
         setAlertVisible(true);
         return;
       }
@@ -70,7 +84,9 @@ const LoginScreen: React.FC = () => {
       setIsBiometricLoading(true);
       const rnBiometrics = new ReactNativeBiometrics();
       const result = await rnBiometrics.simplePrompt({
-        promptMessage: 'Confirma tu identidad',
+        promptMessage: Platform.OS === 'ios' && biometryType === BiometryTypes.FaceID 
+          ? 'Confirma tu FaceID' 
+          : 'Confirma tu huella',
       });
 
       if (result.success) {
@@ -135,7 +151,12 @@ const LoginScreen: React.FC = () => {
                   {isBiometricLoading ? (
                     <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
                   ) : (
-                    <Icon name="fingerprint" type={IconType.MaterialIcons} size={30} color={IVOO_COLORS.primary} />
+                    <Icon 
+                      name={biometricIcon.name} 
+                      type={biometricIcon.type} 
+                      size={28} 
+                      color={IVOO_COLORS.primary} 
+                    />
                   )}
                 </TouchableOpacity>
               )}
@@ -189,25 +210,22 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF' },
   scrollContent: { flexGrow: 1, paddingHorizontal: 30, alignItems: 'center', paddingTop: 20 },
-  welcomeText: { fontSize: 16, color: IVOO_COLORS.primary, marginBottom: 5 },
+  welcomeText: { fontSize: 28, color: IVOO_COLORS.primary, marginBottom: 25, marginTop: 40 },
   logoContainer: { width: SCREEN_WIDTH * 0.6, height: 45, marginBottom: 15 },
   logo: { width: '100%', height: '100%' },
-  illustrationContainer: { width: SCREEN_WIDTH * 0.45, height: SCREEN_WIDTH * 0.45, marginBottom: 20 },
+  illustrationContainer: { width: SCREEN_WIDTH * 0.45, height: SCREEN_WIDTH * 0.45, marginBottom: -15 },
   illustration: { width: '100%', height: '100%' },
   formContainer: { width: '100%' },
-  
   inputWrapper: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 15,
-    // El secreto es que el contenedor no tenga bordes pero controle el espacio
   },
   inputBody: {
     flex: 1,
     borderWidth: 0,
     backgroundColor: 'transparent',
-    // Si tu componente Input tiene un fondo por defecto, aquí se sobreescribe
   },
   inputText: { color: '#1C1C1E', fontSize: 16, paddingRight: 45 },
   iconInside: {

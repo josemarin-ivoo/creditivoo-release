@@ -281,7 +281,7 @@ const Route = () => {
                   <Image
                     source={
                       appTheme.type == 'light'
-                        ? imageResource.ic_search
+                        ? imageResource.ic_creditivo
                         : appTheme.type == 'dark'
                         ? imageResource.ic_creditivodark
                         : imageResource.ic_creditivo

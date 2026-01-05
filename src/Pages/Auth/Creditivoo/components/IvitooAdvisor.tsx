@@ -1,4 +1,4 @@
-import React, {useRef, useEffect} from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   ViewStyle,
   Animated,
   PanResponder,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../styles';
 
@@ -29,14 +31,12 @@ const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
   showBubble = false,
   imageOnLeft = false,
 }) => {
+  const [isBubbleVisible, setIsBubbleVisible] = useState(showBubble || !staticMode);
   const pan = useRef(new Animated.ValueXY()).current;
-  // Keep track of the current value to set offset correctly
   const val = useRef({x: 0, y: 0}).current;
 
   useEffect(() => {
-    if (staticMode) {
-      return;
-    }
+    if (staticMode) return;
     const id = pan.addListener(value => {
       val.x = value.x;
       val.y = value.y;
@@ -48,104 +48,88 @@ const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
     PanResponder.create({
       onStartShouldSetPanResponder: () => !staticMode,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        if (staticMode) {
-          return false;
-        }
-        // Only activate if moved a bit to prevent accidental drags on tap
-        return Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2;
+        if (staticMode) return false;
+        // Solo activamos el movimiento si el usuario arrastra más de 5px
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
       },
       onPanResponderGrant: () => {
-        if (staticMode) {
-          return;
-        }
-        pan.setOffset({
-          x: val.x,
-          y: val.y,
-        });
+        if (staticMode) return;
+        pan.setOffset({x: val.x, y: val.y});
         pan.setValue({x: 0, y: 0});
       },
       onPanResponderMove: Animated.event([null, {dx: pan.x, dy: pan.y}], {
         useNativeDriver: false,
       }),
-      onPanResponderRelease: () => {
-        if (staticMode) {
-          return;
-        }
+      onPanResponderRelease: (_, gestureState) => {
+        if (staticMode) return;
         pan.flattenOffset();
+        
+        // Si el desplazamiento es mínimo, lo tratamos como un tap
+        if (Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5) {
+          setIsBubbleVisible(prev => !prev);
+        }
       },
     }),
   ).current;
 
-  // Modo estático: diseño compacto
+  const toggleBubble = () => setIsBubbleVisible(prev => !prev);
+
+  const imageComponent = (
+    <Image
+      source={require('../images/profile/ivitoo-profile.png')}
+      style={staticMode ? styles.staticCharacterImage : styles.characterImage}
+      resizeMode="contain"
+    />
+  );
+
+  const bubbleComponent = isBubbleVisible ? (
+    <View
+      style={[
+        staticMode ? styles.staticSpeechBubble : styles.speechBubble,
+        staticMode && imageOnLeft && styles.staticSpeechBubbleReversed,
+      ]}>
+      <Text style={staticMode ? styles.staticSpeechText : styles.speechText}>
+        {message}
+      </Text>
+    </View>
+  ) : null;
+
+  // --- MODO ESTÁTICO ---
   if (staticMode) {
-    const bubbleComponent = showBubble ? (
-      <View
-        style={[
-          styles.staticSpeechBubble,
-          imageOnLeft && styles.staticSpeechBubbleReversed,
-        ]}>
-              <Text style={styles.staticSpeechText}>{message}</Text>
-            </View>
-    ) : (
-      <View
-        style={[
-          styles.staticTextContainer,
-          imageOnLeft && styles.staticTextContainerReversed,
-        ]}>
-        <Text style={styles.staticText}>{message}</Text>
-      </View>
-    );
-
-    const imageComponent = (
-            <Image
-              source={require('../images/profile/ivitoo-profile.png')}
-              style={styles.staticCharacterImage}
-              resizeMode="contain"
-            />
-    );
-
     return (
-      <View style={[styles.staticContainer, containerStyle]}>
+      <TouchableOpacity 
+        activeOpacity={0.9} 
+        onPress={toggleBubble} 
+        style={[styles.staticContainer, containerStyle]}>
         {imageOnLeft ? (
-          <>
-            {imageComponent}
-            {bubbleComponent}
-          </>
+          <>{imageComponent}{bubbleComponent}</>
         ) : (
-          <>
-            {bubbleComponent}
-            {imageComponent}
-          </>
+          <>{bubbleComponent}{imageComponent}</>
         )}
-      </View>
+      </TouchableOpacity>
     );
   }
 
-  // Modo flotante: diseño original con globo de diálogo
+  // --- MODO FLOTANTE ---
   return (
     <Animated.View
       {...panResponder.panHandlers}
       style={[
         styles.characterContainer,
         containerStyle,
-        {
-          transform: pan.getTranslateTransform(),
-        },
+        {transform: pan.getTranslateTransform()},
       ]}>
-      <View style={styles.speechBubble}>
-        <Text style={styles.speechText}>{message}</Text>
-      </View>
-      <Image
-        source={require('../images/profile/ivitoo-profile.png')}
-        style={styles.characterImage}
-        resizeMode="contain"
-      />
+      {bubbleComponent}
+      <TouchableWithoutFeedback onPress={toggleBubble}>
+        <View>
+          {imageComponent}
+        </View>
+      </TouchableWithoutFeedback>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  // Estilos para modo flotante (original)
   characterContainer: {
     position: 'absolute',
     bottom: 20,
@@ -155,21 +139,18 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingRight: 10,
     zIndex: 1000,
-    elevation: 10, // Ensure it sits on top on Android
+    elevation: 10,
   },
   speechBubble: {
     backgroundColor: IVOO_COLORS.white,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
-    borderBottomRightRadius: 2, // Pico del globo
+    borderBottomRightRadius: 2,
     marginRight: 10,
-    marginBottom: 40, // Ajustar para alinear con la cabeza/boca
+    marginBottom: 40,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -185,7 +166,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
   },
-  // Estilos para modo estático (tarjeta de ayuda)
   staticContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -193,45 +173,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 8,
     width: '100%',
-    height: '100%',
-    gap: 0,
-  },
-  staticTextContainer: {
-    flex: 1,
-    paddingRight: 8,
-    justifyContent: 'center',
-  },
-  staticTextContainerReversed: {
-    paddingRight: 0,
-    paddingLeft: 8,
-  },
-  staticText: {
-    fontSize: SCREEN_WIDTH * 0.028,
-    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-    color: IVOO_COLORS.textSecondary,
-    textAlign: 'left',
-    lineHeight: SCREEN_WIDTH * 0.04,
   },
   staticSpeechBubble: {
-    width: SCREEN_WIDTH * 0.25,
+    flex: 1,
     backgroundColor: IVOO_COLORS.white,
-    paddingVertical: 5,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     borderBottomRightRadius: 2,
-    marginRight: 0,
+    marginHorizontal: 10,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.08,
     shadowRadius: 3,
     elevation: 2,
   },
   staticSpeechBubbleReversed: {
-    marginRight: 0,
-    marginLeft: 0,
     borderBottomRightRadius: 8,
     borderBottomLeftRadius: 2,
   },
@@ -240,7 +197,7 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.textSecondary,
     textAlign: 'left',
-    lineHeight: SCREEN_WIDTH * 0.038,
+    lineHeight: SCREEN_WIDTH * 0.04,
   },
   staticCharacterImage: {
     width: 70,
