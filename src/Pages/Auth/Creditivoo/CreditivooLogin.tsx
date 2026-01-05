@@ -50,7 +50,7 @@ const LoginScreen: React.FC = () => {
       const {available, biometryType} = await rnBiometrics.isSensorAvailable();
       
       setIsSensorAvailable(available);
-      setBiometryType(biometryType); // Guardamos el tipo (FaceID, TouchID o Biometrics)
+      setBiometryType(biometryType); 
     } catch (error) {
       setIsSensorAvailable(false);
     }
@@ -59,15 +59,18 @@ const LoginScreen: React.FC = () => {
   useEffect(() => { checkSensor(); }, [checkSensor]);
   useFocusEffect(React.useCallback(() => { checkSensor(); }, [checkSensor]));
 
-  // Función para determinar qué icono mostrar
+  // FUNCIÓN CORREGIDA PARA ICONOS EN IOS
   const getBiometricIcon = () => {
     if (Platform.OS === 'ios') {
       if (biometryType === BiometryTypes.FaceID) {
-        return { name: 'faceid', type: IconType.MaterialCommunityIcons };
+        // 'face-recognition' es el nombre estándar en MaterialCommunityIcons para FaceID
+        return { name: 'face-recognition', type: IconType.MaterialCommunityIcons };
       }
-      return { name: 'fingerprint', type: IconType.MaterialIcons }; // TouchID
+      // Para TouchID usamos fingerprint
+      return { name: 'fingerprint', type: IconType.MaterialIcons };
     }
-    return { name: 'fingerprint', type: IconType.MaterialIcons }; // Android
+    // Android por defecto usa fingerprint
+    return { name: 'fingerprint', type: IconType.MaterialIcons };
   };
 
   const biometricIcon = getBiometricIcon();
@@ -87,6 +90,7 @@ const LoginScreen: React.FC = () => {
         promptMessage: Platform.OS === 'ios' && biometryType === BiometryTypes.FaceID 
           ? 'Confirma tu FaceID' 
           : 'Confirma tu huella',
+        cancelButtonText: 'Cancelar'
       });
 
       if (result.success) {
@@ -142,6 +146,7 @@ const LoginScreen: React.FC = () => {
                 containerStyle={styles.inputBody}
                 inputStyle={styles.inputText}
                 placeholderTextColor="#A0A0A0"
+                autoCapitalize="none"
               />
               {isSensorAvailable && (
                 <TouchableOpacity 
@@ -227,17 +232,20 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     backgroundColor: 'transparent',
   },
-  inputText: { color: '#1C1C1E', fontSize: 16, paddingRight: 45 },
+  inputText: { color: '#1C1C1E', fontSize: 16, paddingRight: 50 }, // Aumentado padding para que el texto no choque con el icono
   iconInside: {
     position: 'absolute',
     right: 5,
     zIndex: 99,
     padding: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 40,
   },
-  loginButton: { marginTop: 15, borderRadius: 12, height: 50 },
+  loginButton: { marginTop: 15, borderRadius: 12, height: 50, backgroundColor: IVOO_COLORS.primary },
   forgotBtn: { marginTop: 15, alignItems: 'center' },
   forgotText: { color: IVOO_COLORS.primary, fontSize: 14 },
-  regContainer: { marginTop: 40, alignItems: 'center' },
+  regContainer: { marginTop: 40, alignItems: 'center', marginBottom: 20 },
   regText: { color: IVOO_COLORS.primary, fontSize: 15 },
 });
 

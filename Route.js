@@ -35,6 +35,8 @@ import {NewPassword} from './src/Pages/unAuth/NewPassword';
 import {ChangeMobile} from './src/Pages/unAuth/ChangeMobile';
 import ProductList from './src/Pages/Auth/Product/ProductList';
 
+import { NewFeatureOverlay } from './src/Components/NewFeatureOverlay';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import CreditivooLogin from './src/Pages/Auth/Creditivoo/CreditivooLogin';
 
 import CreditivooRegister from './src/Pages/Auth/Creditivoo/CreditivooRegister';
@@ -150,6 +152,34 @@ const Route = () => {
 
   function HomeTabs() {
     const {appTheme} = useContext(AppContext);
+    const [showIntro, setShowIntro] = React.useState(false);
+    const [showOnboarding, setShowOnboarding] = React.useState(false);
+
+    React.useEffect(() => {
+      const checkFirstTime = async () => {
+        try {
+          const hasSeen = await AsyncStorage.getItem('@seen_creditivoo_hint');
+          if (hasSeen === null) {
+            // Si es null, es la primera vez que abre la app
+            setShowIntro(true);
+          }
+        } catch (error) {
+          console.log("Error consultando AsyncStorage", error);
+        }
+      };
+      
+      checkFirstTime();
+    }, []);
+
+    const handleCloseIntro = async () => {
+      setShowIntro(false);
+      try {
+        await AsyncStorage.setItem('@seen_creditivoo_hint', 'true');
+      } catch (error) {
+        console.log("Error guardando en AsyncStorage", error);
+      }
+    };
+
 
     const tabBarStyle = {
       backgroundColor: appTheme.background,
@@ -157,6 +187,7 @@ const Route = () => {
     };
     return (
       <Host>
+       
         <Tab.Navigator
           tabBarOptions={{
             style: {
@@ -363,6 +394,11 @@ const Route = () => {
             })}
           />
         </Tab.Navigator>
+        <NewFeatureOverlay 
+        visible={showIntro} 
+        onClose={handleCloseIntro} // Usamos la nueva función aquí
+        appTheme={appTheme}
+      />
       </Host>
     );
   }
