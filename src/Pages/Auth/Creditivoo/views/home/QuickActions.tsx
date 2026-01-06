@@ -26,7 +26,7 @@ const QuickActions: React.FC<QuickActionsProps> = ({onActionPress}) => {
   const actions = [
     {id: 'cuotas', label: 'Cuotas', Icon: PaymentsOneIcon},
     {id: 'movimientos', label: 'Movimientos', Icon: ExtractIcon},
-    {id: 'puntos', label: 'Puntos', Icon: GemIcon},
+    {id: 'puntos', label: 'Gemas', Icon: GemIcon},
     {id: 'compras', label: 'Compras', Icon: PaymentsTwoIcon},
   ];
 

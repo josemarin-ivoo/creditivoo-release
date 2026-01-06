@@ -215,9 +215,6 @@ const SelfieRequest: React.FC = () => {
         </>
       )}
 
-      {/* Spacer to push button to bottom */}
-      <View style={styles.spacer} />
-
       {/* Button */}
       <View style={styles.buttonContainer}>
         <Button
@@ -253,11 +250,9 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scrollContent: {
-    flexGrow: 1,
     alignItems: 'center',
     width: '100%',
     paddingTop: 0,
-    justifyContent: 'space-between',
   },
 
   title: {
@@ -318,14 +313,12 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.textSecondary,
   },
-  spacer: {
-    flexGrow: 1,
-  },
   buttonContainer: {
     width: SCREEN_WIDTH * 0.75,
     maxWidth: 302,
     alignItems: 'center',
     alignSelf: 'center',
+    marginTop: SCREEN_HEIGHT * 0.05,
   },
 });
 

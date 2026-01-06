@@ -6,7 +6,6 @@ import {
   Image,
   Dimensions,
   Platform,
-  KeyboardAvoidingView,
   StatusBar,
   Alert,
   TouchableOpacity,
@@ -365,6 +364,42 @@ const IdentityVerificator: React.FC = () => {
     }
   };
 
+  const getButtonTitle = () => {
+    // Si ya está verificado, mostrar continuar
+    if (uploadStatus?.isVerified === true) {
+      return 'Continuar';
+    }
+    // Si hay error (verificación fallida), mostrar botón de reintentar
+    if (shouldShowError()) {
+      return 'Reintentar proceso';
+    }
+    // Si puede verificar, mostrar botón de verificar
+    if (uploadStatus?.canVerify && !uploadStatus?.isVerified) {
+      return 'Verificar';
+    }
+    return 'Continuar';
+  };
+
+  const isButtonDisabled = () => {
+    // Si está reseteando, deshabilitar
+    if (isResetting) {
+      return true;
+    }
+    // Si ya está verificado, siempre habilitado para continuar
+    if (uploadStatus?.isVerified === true) {
+      return false;
+    }
+    // Si hay error, siempre habilitado para reintentar
+    if (shouldShowError()) {
+      return false;
+    }
+    // Si puede verificar, siempre habilitado para verificar
+    if (uploadStatus?.canVerify && !uploadStatus?.isVerified) {
+      return false;
+    }
+    return !selectedItem;
+  };
+
   const logo = (
     <Image
       source={require('../../images/creditivo-logo-full.png')}
@@ -374,20 +409,18 @@ const IdentityVerificator: React.FC = () => {
   );
 
   const content = (
-    <ScrollView 
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-    >
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollViewContent}
+      showsVerticalScrollIndicator={true}
+      keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>Validación de identidad</Text>
       <Text style={styles.subtitle}>
         Para validar tu identidad, necesitaremos que tomes unas fotos a tu
         cédula y una selfie
       </Text>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.formArea}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+      <View style={styles.formArea}>
         {/* Frente de la cédula */}
         <TouchableOpacity
           style={[
@@ -555,7 +588,7 @@ const IdentityVerificator: React.FC = () => {
             )}
           </View>
         </TouchableOpacity>
-      </KeyboardAvoidingView>
+      </View>
 
       <View style={styles.illustrationContainer}>
         <Image
@@ -564,52 +597,17 @@ const IdentityVerificator: React.FC = () => {
           resizeMode="contain"
         />
       </View>
+
+      {/* Botón dentro del ScrollView */}
+      <View style={styles.buttonContainer}>
+        <Button
+          onPress={handleContinue}
+          title={isResetting ? 'Reiniciando...' : getButtonTitle()}
+          style={StyleSheet.flatten([styles.continueButton])}
+          disabled={isButtonDisabled() || isLoading || isResetting}
+        />
+      </View>
     </ScrollView>
-  );
-
-  const getButtonTitle = () => {
-    // Si ya está verificado, mostrar continuar
-    if (uploadStatus?.isVerified === true) {
-      return 'Continuar';
-    }
-    // Si hay error (verificación fallida), mostrar botón de reintentar
-    if (shouldShowError()) {
-      return 'Reintentar proceso';
-    }
-    // Si puede verificar, mostrar botón de verificar
-    if (uploadStatus?.canVerify && !uploadStatus?.isVerified) {
-      return 'Verificar';
-    }
-    return 'Continuar';
-  };
-
-  const isButtonDisabled = () => {
-    // Si está reseteando, deshabilitar
-    if (isResetting) {
-      return true;
-    }
-    // Si ya está verificado, siempre habilitado para continuar
-    if (uploadStatus?.isVerified === true) {
-      return false;
-    }
-    // Si hay error, siempre habilitado para reintentar
-    if (shouldShowError()) {
-      return false;
-    }
-    // Si puede verificar, siempre habilitado para verificar
-    if (uploadStatus?.canVerify && !uploadStatus?.isVerified) {
-      return false;
-    }
-    return !selectedItem;
-  };
-
-  const bottomAction = (
-    <Button
-      onPress={handleContinue}
-      title={isResetting ? 'Reiniciando...' : getButtonTitle()}
-      style={StyleSheet.flatten([styles.continueButton])}
-      disabled={isButtonDisabled() || isLoading || isResetting}
-    />
   );
 
   return (
@@ -618,7 +616,7 @@ const IdentityVerificator: React.FC = () => {
       <RegisterLayout
         contentPaddingTop={SCREEN_HEIGHT * 0.04}
         logo={logo}
-        bottomAction={bottomAction}>
+        bottomAction={null}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
@@ -651,16 +649,20 @@ const IdentityVerificator: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  centerContent: {
-    alignItems: 'center',
+  scrollView: {
+    flex: 1,
     width: '100%',
   },
-
+  scrollViewContent: {
+    alignItems: 'center',
+    paddingBottom: SCREEN_HEIGHT * 0.04,
+  },
+  buttonContainer: {
+    width: SCREEN_WIDTH * 0.88,
+    alignItems: 'center',
+    marginTop: SCREEN_HEIGHT * 0.03,
+    paddingBottom: SCREEN_HEIGHT * 0.02,
+  },
   logo: {
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72 * 0.154,
