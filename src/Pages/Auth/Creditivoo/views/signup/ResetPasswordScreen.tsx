@@ -16,9 +16,9 @@ import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {resetPasswordOtp} from '../../services/auth';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-import {useIvoDispatch} from '../../store/hooks';
-import {updateAuth} from '../../store';
-import {User} from '../../store/slices/auth-slice';
+import {useIvoDispatch} from '../../../../../redux/useIvo';
+import {updateAuth} from '../../store-creditivoo';
+import {User} from '../../store-creditivoo/slices/auth-slice';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 

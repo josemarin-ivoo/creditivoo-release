@@ -8,6 +8,8 @@ import {
   Dimensions,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
+  TouchableWithoutFeedback
 } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import * as yup from 'yup';
@@ -164,7 +166,8 @@ const RegisterScreen: React.FC = () => {
   );
 
   const content = (
-    <>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={{flex: 1, alignItems: 'center', width: '100%'}}>
       <View style={styles.illustrationContainer}>
         <Image
           source={require('./images/onboarding/mobile-register-phone.png')}
@@ -260,7 +263,8 @@ const RegisterScreen: React.FC = () => {
           </Text>
         </View>
       </KeyboardAvoidingView>
-    </>
+      </View>
+    </TouchableWithoutFeedback>
   );
 
   const bottomAction = (

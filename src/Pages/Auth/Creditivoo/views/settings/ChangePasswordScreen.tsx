@@ -15,7 +15,7 @@ import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import {useIvoDispatch, useIvoSelector} from '../../store/hooks';
-import {changeUserPassword} from '../../store/slices/auth-slice';
+import {changeUserPassword} from '../../store-creditivoo/slices/auth-slice';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -27,7 +27,7 @@ interface PasswordRequirement {
 const ChangePasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
-  const {isLoading, error} = useIvoSelector((state: any) => state.auth);
+  const {isLoading, error} = useIvoSelector((state: any) => state.creditivoo.auth);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');

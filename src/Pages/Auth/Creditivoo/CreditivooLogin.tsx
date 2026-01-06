@@ -22,6 +22,7 @@ import {login} from './store-creditivoo/slices/auth-slice';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
 import {AuthStorage} from './app/services/AuthStorage';
+import { Routes } from '../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -107,6 +108,12 @@ const LoginScreen: React.FC = () => {
       setIsBiometricLoading(false);
     }
   };
+
+  const handleForgotPassword = () => {
+    (navigation as any).navigate(Routes.NAVIGATION_FORGOT_PASSWORD);
+  };
+
+
 
   // 4. LOGIN MANUAL (CON PERSISTENCIA CORREGIDA)
   const handleLogin = async () => {
@@ -203,8 +210,13 @@ const LoginScreen: React.FC = () => {
               style={styles.loginButton}
             />
 
-            <TouchableOpacity style={styles.forgotBtn}>
-              <Text style={styles.forgotText}>Olvidé mi contraseña</Text>
+             {/* Forgot Password Link */}
+            <TouchableOpacity
+              onPress={handleForgotPassword}
+              style={styles.regContainer}>
+              <Text style={styles.regText}>
+                Olvidé mi contraseña
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -229,6 +241,8 @@ const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+
+  
   safeArea: { flex: 1, backgroundColor: '#FFF' },
   scrollContent: { 
     flexGrow: 1, 

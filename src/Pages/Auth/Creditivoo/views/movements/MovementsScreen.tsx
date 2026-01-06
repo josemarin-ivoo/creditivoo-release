@@ -114,11 +114,11 @@ const MovementsScreen: React.FC = () => {
 
   // Obtener estado de purchases del store
   const {hasPurchasePendingInvoice, hasPurchaseInProgress} = useIvoSelector(
-    state => state.purchase,
+    state => state.creditivoo.purchase,
   );
 
   // Obtener usuario del store
-  const {user} = useIvoSelector(state => state.auth);
+  const {user} = useIvoSelector(state => state.creditivoo.auth);
 
   const hasNextPayment = !!creditInfo?.nextPayment;
 

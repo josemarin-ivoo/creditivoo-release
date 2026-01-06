@@ -82,7 +82,7 @@ const PersonalInfoFormScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useIvoDispatch();
-  const {user, isLoading} = useIvoSelector((state: any) => state.auth);
+  const {user, isLoading} = useIvoSelector((state: any) => state.creditivoo.auth);
 
   // Verificar si viene del ProfileScreen
   const fromProfile = (route.params as any)?.fromProfile || false;

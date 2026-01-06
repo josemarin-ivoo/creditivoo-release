@@ -28,7 +28,7 @@ interface SecurityOption {
 const SecurityScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
-  const {user, isLoading} = useIvoSelector((state: any) => state.auth);
+  const {user, isLoading} = useIvoSelector((state: any) => state.creditivoo.auth);
 
   const [biometricEnabled, setBiometricEnabled] = useState(false);
 

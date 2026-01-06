@@ -39,7 +39,7 @@ const PasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
   const {phoneNumber, email, isLoading, error} = useIvoSelector(
-    state => state.register,
+    state => state.creditivoo.register,
   );
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

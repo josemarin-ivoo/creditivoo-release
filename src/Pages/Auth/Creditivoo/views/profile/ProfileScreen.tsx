@@ -61,7 +61,7 @@ const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
   const insets = useSafeAreaInsets();
-  const {user} = useIvoSelector(state => state.auth);
+  const {user} = useIvoSelector(state => state.creditivoo.auth);
   const [isUploading, setIsUploading] = useState(false);
   const [showPhotoOptionsModal, setShowPhotoOptionsModal] = useState(false);
   const [imageKey, setImageKey] = useState(0); // Para forzar re-render de la imagen
@@ -637,9 +637,9 @@ const ProfileScreen: React.FC = () => {
 
           <View style={styles.logoContainer}>
             <CreditivooVerde width={SCREEN_WIDTH * 0.9} />
-            {userDocument && (
+            {/* {userDocument && (
               <Text style={styles.documentText}>{userDocument}</Text>
-            )}
+            )} */}
           </View>
         </View>
       </View>

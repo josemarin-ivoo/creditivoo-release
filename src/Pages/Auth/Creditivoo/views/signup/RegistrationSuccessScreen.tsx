@@ -18,7 +18,7 @@ const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const RegistrationSuccessScreen: React.FC = () => {
   const navigation = useNavigation();
-  const {isLoggedIn} = useIvoSelector(state => state.auth);
+  const {isLoggedIn} = useIvoSelector(state => state.creditivoo.auth);
   const canNavigateRef = useRef(false);
 
   // Prevenir navegación automática y hacia atrás desde esta pantalla

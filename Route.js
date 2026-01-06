@@ -71,7 +71,9 @@ import PlanSelection from './src/Pages/Auth/Creditivoo/views/plan/PlanSelection'
 import PurchasesConfirm from './src/Pages/Auth/Creditivoo/views/plan/PurchaseConfirmationScreen';
 import SubscriptionSuccessScreen from './src/Pages/Auth/Creditivoo/views/plan/SubscriptionSuccessScreen';
 import HowToEarnGemsScreen from './src/Pages/Auth/Creditivoo/views/gem/HowToEarnGemsScreen';
-
+import ForgotPasswordScreen from './src/Pages/Auth/Creditivoo/views/signup/ForgotPasswordScreen';
+import ForgotPasswordOTPScreen from './src/Pages/Auth/Creditivoo/views/signup/ForgotPasswordOTPScreen';
+import ResetPasswordScreen from './src/Pages/Auth/Creditivoo/views/signup/ResetPasswordScreen';
 // import SplashScreen from './src/Pages/Auth/Creditivoo/views/splash/SplashScreen';
 import ChangePasswordScreen from './src/Pages/Auth/Creditivoo/views/settings/ChangePasswordScreen';
 
@@ -767,7 +769,21 @@ const Route = () => {
           component={SubscriptionSuccessScreen}
           options={{headerShown: false}}
         />
-
+        <Stack.Screen
+          name={Routes.NAVIGATION_FORGOT_PASSWORD}
+          component={ForgotPasswordScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.NAVIGATION_FORGOT_OTPPASSWORD}
+          component={ForgotPasswordOTPScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.NAVIGATION_RESET_PASSWORD}
+          component={ResetPasswordScreen}
+          options={{headerShown: false}}
+        />
         {/* ¡CORRECCIÓN CLAVE: AÑADIR GUESTLOGIN! */}
         <Stack.Screen
         name={Routes.GUESTLOGIN}

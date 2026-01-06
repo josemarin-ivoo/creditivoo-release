@@ -106,7 +106,9 @@ export enum Routes {
   NAVIGATION_SUSCRIPTIONSUCCESS = 'SubscriptionSuccess',
   NAVIGATION_CHANGEPASSWORD = 'ChangePassword',
   NAVIGATION_PAYMENTSINSTALLS = 'PaymentInstallmentsScreen',
-
+  NAVIGATION_FORGOT_PASSWORD = 'ForgotPasswordScreen',
+  NAVIGATION_FORGOT_OTPPASSWORD = 'ForgotPasswordOTPScreen',
+  NAVIGATION_RESET_PASSWORD = 'ResetPasswordScreen',
   // TAB
   //END JAMP 02-12-2025
 

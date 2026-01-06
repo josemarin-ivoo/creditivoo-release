@@ -381,11 +381,11 @@ const QrScanner: React.FC = () => {
         onBackPress={() => navigation.goBack()}
         scroll={false}>
         <View style={styles.content}>
-          <Image
+          {/* <Image
             source={require('../../images/creditivo-logo-full.png')}
             style={styles.logo}
             resizeMode="contain"
-          />
+          /> */}
           <Text style={styles.instruction} numberOfLines={1}>
             Coloca el código QR en el lector
           </Text>
