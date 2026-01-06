@@ -7,10 +7,18 @@ import {
   Dimensions,
   Platform,
   KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
-import {Button, Input, AlertModal} from '../../components';
+import {
+  Button,
+  Input,
+  AlertModal,
+  GooglePlacesAutocomplete,
+  ProfessionSelector,
+} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
+import type {GooglePlaceAddress} from '../../components/GooglePlacesAutocomplete';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
 import {updateUserProfile, fetchMe} from '../../store-creditivoo/slices/auth-slice';
@@ -74,7 +82,7 @@ const PersonalInfoFormScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useIvoDispatch();
-  const {user, isLoading} = useIvoSelector((state: any) => state.creditivoo.auth);
+  const {user, isLoading} = useIvoSelector((state: any) => state.auth);
 
   // Verificar si viene del ProfileScreen
   const fromProfile = (route.params as any)?.fromProfile || false;
@@ -85,6 +93,7 @@ const PersonalInfoFormScreen: React.FC = () => {
     fechaNacimiento: '',
     direccion: '',
     genero: '',
+    profesion: '',
   });
 
   const [alertVisible, setAlertVisible] = useState(false);
@@ -117,16 +126,18 @@ const PersonalInfoFormScreen: React.FC = () => {
         fechaNacimiento: dobFormatted,
         direccion: user.address || '',
         genero: formatGenderForDisplay(user.gender),
+        profesion: user.profession || '',
       });
     }
   }, [user]);
 
   const handleConfirm = async () => {
-    // Solo actualizar dirección, independientemente de si viene del profile o del flujo de KYC
+    // Actualizar dirección y profesión
     try {
       await dispatch(
         updateUserProfile({
           address: formData.direccion.trim() || undefined,
+          profession: formData.profesion.trim() || undefined,
         }),
       ).unwrap();
 
@@ -148,8 +159,8 @@ const PersonalInfoFormScreen: React.FC = () => {
 
   // Validar que los campos requeridos estén llenos
   const isFormValid = () => {
-    // Solo dirección es requerida, independientemente de si viene del profile o del flujo de KYC
-    return formData.direccion.trim() !== '';
+    // Dirección y profesión son requeridas
+    return formData.direccion.trim() !== '' && formData.profesion.trim() !== '';
   };
 
   const logo = (
@@ -172,78 +183,103 @@ const PersonalInfoFormScreen: React.FC = () => {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.formContainer}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
-        {/* Nombres */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Nombres</Text>
-          <View style={styles.disabledContainer}>
-            <Input
-              value={formData.nombres}
-              onChangeText={text => setFormData({...formData, nombres: text})}
-              placeholder="Ingresa tus nombres"
-              style={styles.input}
-              containerStyle={styles.inputContainer}
-              editable={false}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
+          showsVerticalScrollIndicator={false}>
+          {/* Nombres */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Nombres</Text>
+            <View style={styles.disabledContainer}>
+              <Input
+                value={formData.nombres}
+                onChangeText={text => setFormData({...formData, nombres: text})}
+                placeholder="Ingresa tus nombres"
+                style={styles.input}
+                containerStyle={styles.inputContainer}
+                editable={false}
+              />
+            </View>
+          </View>
+
+          {/* Apellidos */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Apellidos</Text>
+            <View style={styles.disabledContainer}>
+              <Input
+                value={formData.apellidos}
+                onChangeText={text =>
+                  setFormData({...formData, apellidos: text})
+                }
+                placeholder="Ingresa tus apellidos"
+                style={styles.input}
+                containerStyle={styles.inputContainer}
+                editable={false}
+              />
+            </View>
+          </View>
+
+          {/* Fecha de nacimiento */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Fecha de nacimiento</Text>
+            <View style={[styles.dateInputContainer, styles.disabledContainer]}>
+              <Input
+                value={formData.fechaNacimiento}
+                editable={false}
+                placeholder="DD/MM/YYYY"
+                style={styles.input}
+                containerStyle={styles.inputContainer}
+              />
+            </View>
+          </View>
+
+          {/* Dirección */}
+          <View style={[styles.fieldContainer, styles.addressFieldContainer]}>
+            <Text style={styles.label}>Dirección *</Text>
+            <GooglePlacesAutocomplete
+              value={formData.direccion}
+              onChangeText={text => setFormData({...formData, direccion: text})}
+              onSelectAddress={(address: GooglePlaceAddress) => {
+                setFormData({...formData, direccion: address.description});
+              }}
+              placeholder="Buscar dirección..."
             />
           </View>
-        </View>
 
-        {/* Apellidos */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Apellidos</Text>
-          <View style={styles.disabledContainer}>
-            <Input
-              value={formData.apellidos}
-              onChangeText={text => setFormData({...formData, apellidos: text})}
-              placeholder="Ingresa tus apellidos"
-              style={styles.input}
+          {/* Género */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Género</Text>
+            <View
+              style={[styles.genderInputContainer, styles.disabledContainer]}>
+              <Input
+                value={formData.genero}
+                editable={false}
+                placeholder="Género"
+                style={styles.input}
+                containerStyle={styles.inputContainer}
+              />
+            </View>
+          </View>
+
+          {/* Profesión */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Profesión * </Text>
+            <ProfessionSelector
+              value={formData.profesion}
+              onSelect={profession =>
+                setFormData({...formData, profesion: profession})
+              }
+              placeholder="Selecciona tu profesión"
               containerStyle={styles.inputContainer}
-              editable={false}
+              error={!formData.profesion && formData.direccion !== ''}
             />
           </View>
-        </View>
-
-        {/* Fecha de nacimiento */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Fecha de nacimiento</Text>
-          <View style={[styles.dateInputContainer, styles.disabledContainer]}>
-            <Input
-              value={formData.fechaNacimiento}
-              editable={false}
-              placeholder="DD/MM/YYYY"
-              style={styles.input}
-              containerStyle={styles.inputContainer}
-            />
-          </View>
-        </View>
-
-        {/* Dirección */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Dirección *</Text>
-          <Input
-            value={formData.direccion}
-            onChangeText={text => setFormData({...formData, direccion: text})}
-            placeholder="Ingresa tu dirección"
-            style={styles.input}
-            containerStyle={styles.inputContainer}
-          />
-        </View>
-
-        {/* Género */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Género</Text>
-          <View style={[styles.genderInputContainer, styles.disabledContainer]}>
-            <Input
-              value={formData.genero}
-              editable={false}
-              placeholder="Género"
-              style={styles.input}
-              containerStyle={styles.inputContainer}
-            />
-          </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </>
   );
@@ -324,10 +360,22 @@ const styles = StyleSheet.create({
     minHeight: 0,
     justifyContent: 'flex-start',
   },
+  scrollView: {
+    width: '100%',
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: SCREEN_HEIGHT * 0.02,
+  },
   fieldContainer: {
     width: '100%',
     marginBottom: SCREEN_HEIGHT * 0.015,
     alignItems: 'flex-start',
+  },
+  addressFieldContainer: {
+    zIndex: 1500,
+    elevation: 1500,
   },
   label: {
     fontSize: SCREEN_WIDTH * 0.037,

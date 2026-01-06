@@ -1,4 +1,4 @@
-import React, {useMemo, useState, useCallback} from 'react';
+import React, {useMemo, useState, useCallback, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -18,6 +18,9 @@ import {
   PaymentStatus,
   getPurchaseById,
 } from '../../services/purchases';
+import CurrencySelector, {Currency} from '../../components/CurrencySelector';
+import {useLatestVesRate} from '../../hooks/useLatestVesRate';
+import {formatAmountByCurrency} from '../../utils/currency';
 import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -91,6 +94,42 @@ const PaymentInstallmentsScreen: React.FC = () => {
     new Set(),
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+
+  // Hook para obtener la tasa de cambio (solo se obtiene cuando se selecciona BS)
+  const {
+    rate: exchangeRate,
+    loading: isLoadingRate,
+    error: exchangeRateError,
+    refetch: refetchExchangeRate,
+  } = useLatestVesRate(false);
+
+  // Obtener tasa de cambio cuando se selecciona BS
+  // Usar useRef para rastrear el último valor de selectedCurrency y evitar loops
+  const prevCurrencyRef = useRef<Currency>('USD');
+
+  useEffect(() => {
+    // Solo hacer fetch si cambió de USD a BS, no en cada render
+    if (
+      selectedCurrency === 'BS' &&
+      prevCurrencyRef.current !== 'BS' &&
+      !isLoadingRate
+    ) {
+      refetchExchangeRate();
+    }
+    prevCurrencyRef.current = selectedCurrency;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCurrency]);
+
+  // Si falla el fetch de la tasa, volver automáticamente a USD
+  useEffect(() => {
+    if (selectedCurrency === 'BS' && exchangeRateError && !isLoadingRate) {
+      console.warn(
+        '[PaymentInstallmentsScreen] Error al obtener tasa de cambio, cambiando a USD',
+      );
+      setSelectedCurrency('USD');
+    }
+  }, [selectedCurrency, exchangeRateError, isLoadingRate]);
 
   // Get purchase ID from route params
   const purchaseId = useMemo(() => {
@@ -131,6 +170,29 @@ const PaymentInstallmentsScreen: React.FC = () => {
     );
     return [];
   }, [purchase]);
+
+  // Crear installments con montos convertidos según la moneda seleccionada
+  const installmentsWithCurrency = useMemo(() => {
+    return installments.map(installment => {
+      // Si está cargando la tasa y la moneda es BS, mantener el monto original para mostrar skeleton
+      const showSkeleton =
+        selectedCurrency === 'BS' && isLoadingRate && !exchangeRate;
+
+      return {
+        ...installment,
+        amount: installment.amount, // Mantener el monto original en USD
+        displayAmount: showSkeleton
+          ? null
+          : formatAmountByCurrency(
+              installment.amount,
+              selectedCurrency,
+              exchangeRate,
+            ),
+        currency: selectedCurrency,
+        showSkeleton,
+      };
+    });
+  }, [installments, selectedCurrency, exchangeRate, isLoadingRate]);
 
   // Check if there are any pass due payments
   const hasPassDuePayments = useMemo(() => {
@@ -326,6 +388,16 @@ const PaymentInstallmentsScreen: React.FC = () => {
         />
       }>
       <View style={styles.container}>
+        {/* Currency Selector */}
+        <View style={styles.currencySelectorContainer}>
+          <CurrencySelector
+            selectedCurrency={selectedCurrency}
+            onCurrencyChange={setSelectedCurrency}
+            disabled={isLoadingRate}
+            variant="standalone"
+          />
+        </View>
+
         {/* Plan Details Card */}
         <View style={styles.planCard}>
           <Text style={styles.planTitle}>{getPlanName()}</Text>
@@ -341,7 +413,7 @@ const PaymentInstallmentsScreen: React.FC = () => {
 
         {/* Installments List */}
         <View style={styles.installmentsContainer}>
-          {installments.map((item, index) => {
+          {installmentsWithCurrency.map((item, index) => {
             const isSelected = selectedPayments.has(item.id);
             // Check if previous payments are selected (for sequential validation)
             const canSelect =
@@ -398,6 +470,11 @@ const PaymentInstallmentsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  currencySelectorContainer: {
+    alignItems: 'flex-end',
+    marginBottom: SCREEN_WIDTH * 0.03,
+    marginRight: SCREEN_WIDTH * 0.05,
   },
   planCard: {
     backgroundColor: IVOO_COLORS.white,

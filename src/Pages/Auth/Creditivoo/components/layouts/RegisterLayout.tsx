@@ -43,8 +43,9 @@ const RegisterLayout: React.FC<RegisterLayoutProps> = ({
               paddingTop: contentPaddingTop,
             },
           ]}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          enabled={true}>
           {children}
         </KeyboardAvoidingView>
 

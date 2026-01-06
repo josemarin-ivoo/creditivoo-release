@@ -34,7 +34,8 @@ import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import CreditivooVerde from '../../svgs/CreditivooVerde';
 import {uploadProfilePicture} from '../../services/profile';
-import {Routes} from '../../../../../Utils/NavigationRoutes';
+
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -60,7 +61,7 @@ const ProfileScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
   const insets = useSafeAreaInsets();
-  const {user} = useIvoSelector(state => state.creditivoo.auth);
+  const {user} = useIvoSelector(state => state.auth);
   const [isUploading, setIsUploading] = useState(false);
   const [showPhotoOptionsModal, setShowPhotoOptionsModal] = useState(false);
   const [imageKey, setImageKey] = useState(0); // Para forzar re-render de la imagen
@@ -214,6 +215,72 @@ const ProfileScreen: React.FC = () => {
     }
   }, []);
 
+  // Solicitar permiso de galería
+  const requestPhotoLibraryPermission = useCallback(async () => {
+    try {
+      const photoPermission =
+        Platform.OS === 'android'
+          ? PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE
+          : PERMISSIONS.IOS.PHOTO_LIBRARY;
+
+      const checkResult = await check(photoPermission);
+
+      if (checkResult === RESULTS.GRANTED) {
+        return true;
+      }
+
+      if (
+        checkResult === RESULTS.BLOCKED ||
+        checkResult === RESULTS.UNAVAILABLE
+      ) {
+        Alert.alert(
+          'Permiso de Galería Requerido',
+          'Para seleccionar una foto de perfil, necesitamos acceso a tu galería. Por favor, otorga el permiso en la configuración de la app.',
+          [
+            {
+              text: 'Cancelar',
+              style: 'cancel',
+            },
+            {
+              text: 'Abrir Configuración',
+              onPress: () => {
+                openSettings();
+              },
+            },
+          ],
+        );
+        return false;
+      }
+
+      const requestResult = await request(photoPermission);
+
+      if (requestResult === RESULTS.GRANTED) {
+        return true;
+      } else {
+        Alert.alert(
+          'Permiso de Galería Requerido',
+          'Para seleccionar una foto de perfil, necesitamos acceso a tu galería. Por favor, otorga el permiso en la configuración de la app.',
+          [
+            {
+              text: 'Cancelar',
+              style: 'cancel',
+            },
+            {
+              text: 'Abrir Configuración',
+              onPress: () => {
+                openSettings();
+              },
+            },
+          ],
+        );
+        return false;
+      }
+    } catch (err) {
+      console.warn('[ProfileScreen] Error al solicitar permiso de galería:', err);
+      return false;
+    }
+  }, []);
+
   // Manejar subida de imagen
   const handleUploadImage = useCallback(
     async (imageUri: string) => {
@@ -261,7 +328,13 @@ const ProfileScreen: React.FC = () => {
   );
 
   // Manejar selección de imagen desde galería
-  const handleSelectFromGallery = useCallback(() => {
+  const handleSelectFromGallery = useCallback(async () => {
+    // Solicitar permiso de galería antes de abrir
+    const hasPermission = await requestPhotoLibraryPermission();
+    if (!hasPermission) {
+      return;
+    }
+
     const options = {
       mediaType: 'photo' as const,
       quality: 0.8 as const,
@@ -287,7 +360,7 @@ const ProfileScreen: React.FC = () => {
         await handleUploadImage(uri);
       }
     });
-  }, [handleUploadImage]);
+  }, [handleUploadImage, requestPhotoLibraryPermission]);
 
   // Manejar toma de foto desde cámara
   const handleTakePhoto = useCallback(async () => {

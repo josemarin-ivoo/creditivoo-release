@@ -1,19 +1,63 @@
-import React from 'react';
-import {View, StyleSheet, Text, Image, Dimensions} from 'react-native';
+import React, {useRef, useEffect} from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+  Image,
+  Dimensions,
+  BackHandler,
+} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {Button} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
-import {useIvoSelector} from '../../store/hooks';
-import {Routes} from '../../../../../Utils/NavigationRoutes';
+import {useIvoSelector} from '../../../../../redux/useIvo';
+
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const RegistrationSuccessScreen: React.FC = () => {
   const navigation = useNavigation();
-  const {isLoggedIn} = useIvoSelector(state => state.creditivoo.auth);
+  const {isLoggedIn} = useIvoSelector(state => state.auth);
+  const canNavigateRef = useRef(false);
+
+  // Prevenir navegación automática y hacia atrás desde esta pantalla
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        // Prevenir que el usuario vuelva atrás
+        return true;
+      },
+    );
+
+    // También prevenir navegación con el listener de React Navigation
+    const unsubscribe = navigation.addListener('beforeRemove', e => {
+      // Si ya se permitió la navegación programática, no prevenir
+      if (canNavigateRef.current) {
+        return;
+      }
+
+      // Verificar si la acción es un "back"
+      const action = e.data?.action as any;
+      const actionType = action?.type;
+
+      // Solo prevenir acciones de "back" (POP, GO_BACK)
+      // Permitir acciones de RESET o NAVIGATE que vienen de navegación programática
+      if (actionType === 'POP' || actionType === 'GO_BACK') {
+        e.preventDefault();
+      }
+    });
+
+    return () => {
+      backHandler.remove();
+      unsubscribe();
+    };
+  }, [navigation]);
 
   const handleContinue = () => {
+    // Marcar que permitimos la navegación programática
+    canNavigateRef.current = true;
     // Solo navegar a MainTabs si el usuario está autenticado
     if (isLoggedIn) {
       navigation.reset({
@@ -24,7 +68,7 @@ const RegistrationSuccessScreen: React.FC = () => {
       // Si no está autenticado, redirigir a login
       navigation.reset({
         index: 0,
-        routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}],
+        routes: [{name: SCREENS.LOGIN as never}],
       });
     }
   };
@@ -32,7 +76,6 @@ const RegistrationSuccessScreen: React.FC = () => {
   const logo = (
     <Image
       source={require('../../images/creditivo-logo-full.png')}
-      // source={require('../../images/creditivo-logo-full.png')}
       style={styles.logo}
       resizeMode="contain"
     />

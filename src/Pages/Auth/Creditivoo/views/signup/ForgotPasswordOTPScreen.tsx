@@ -6,15 +6,16 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  KeyboardAvoidingView,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {OtpInput} from 'react-native-otp-entry';
 import * as yup from 'yup';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_SPACING, IVOO_TYPOGRAPHY} from '../../styles';
-import {verifyOTP, resendOTP} from '../../services/otpVerification';
+import {forgotPasswordOtp} from '../../services/auth';
 import {AlertModal} from '../../components';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -30,22 +31,26 @@ const otpSchema = yup.object().shape({
     .matches(/^\d+$/, 'El código debe contener solo números'),
 });
 
-type OTPVerificationRouteParams = {
-  phoneNumber: string;
+type ForgotPasswordOTPRouteParams = {
+  email: string;
+  expiresInSeconds?: number;
+  cooldownSeconds?: number;
 };
 
-type OTPVerificationRouteProp = RouteProp<
-  {OTPVerification: OTPVerificationRouteParams},
-  'OTPVerification'
+type ForgotPasswordOTPRouteProp = RouteProp<
+  {ForgotPasswordOTP: ForgotPasswordOTPRouteParams},
+  'ForgotPasswordOTP'
 >;
 
-const OTPVerificationScreen: React.FC = () => {
+const ForgotPasswordOTPScreen: React.FC = () => {
   const navigation = useNavigation();
-  const route = useRoute<OTPVerificationRouteProp>();
-  const phoneNumber = route.params?.phoneNumber || '';
+  const route = useRoute<ForgotPasswordOTPRouteProp>();
+  const email = route.params?.email || '';
+  const initialExpiresIn = route.params?.expiresInSeconds || 600;
+  const initialCooldown = route.params?.cooldownSeconds || 60;
 
   const [otpCode, setOtpCode] = useState<string>('');
-  const [isValid, setIsValid] = useState<boolean>(false);
+  const [isOtpValid, setIsOtpValid] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
   const [isResending, setIsResending] = useState<boolean>(false);
@@ -55,44 +60,68 @@ const OTPVerificationScreen: React.FC = () => {
   const [alertType, setAlertType] = useState<'error' | 'warning' | 'info'>(
     'error',
   );
-  const [countdown, setCountdown] = useState<number>(60); // 60 segundos iniciales
+  const [countdown, setCountdown] = useState<number>(initialCooldown);
+  const [expiresCountdown, setExpiresCountdown] =
+    useState<number>(initialExpiresIn);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const expiresCountdownRef = useRef<NodeJS.Timeout | null>(null);
 
   // Iniciar cuenta regresiva cuando la pantalla se monta
   useEffect(() => {
-    // Iniciar cuenta regresiva
-    countdownRef.current = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          if (countdownRef.current) {
-            clearInterval(countdownRef.current);
-            countdownRef.current = null;
+    // Countdown para reenvío
+    if (countdown > 0) {
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            if (countdownRef.current) {
+              clearInterval(countdownRef.current);
+              countdownRef.current = null;
+            }
+            return 0;
           }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+          return prev - 1;
+        });
+      }, 1000);
+    }
 
-    // Limpiar intervalo al desmontar
+    // Countdown para expiración
+    if (expiresCountdown > 0) {
+      expiresCountdownRef.current = setInterval(() => {
+        setExpiresCountdown(prev => {
+          if (prev <= 1) {
+            if (expiresCountdownRef.current) {
+              clearInterval(expiresCountdownRef.current);
+              expiresCountdownRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    // Limpiar intervalos al desmontar
     return () => {
       if (countdownRef.current) {
         clearInterval(countdownRef.current);
         countdownRef.current = null;
       }
+      if (expiresCountdownRef.current) {
+        clearInterval(expiresCountdownRef.current);
+        expiresCountdownRef.current = null;
+      }
     };
   }, []);
 
-  const validateCode = async (code: string) => {
+  const validateOtpCode = async (code: string) => {
     try {
       await otpSchema.validate({code}, {abortEarly: false});
-      setIsValid(true);
+      setIsOtpValid(true);
       setError(null);
       return true;
     } catch (err: any) {
-      setIsValid(false);
+      setIsOtpValid(false);
       if (code.length === OTP_LENGTH) {
-        // Only show error if code is complete
         if (err.errors && err.errors.length > 0) {
           setError(err.errors[0]);
         } else {
@@ -107,58 +136,31 @@ const OTPVerificationScreen: React.FC = () => {
 
   const handleOtpChange = async (code: string) => {
     setOtpCode(code);
-    await validateCode(code);
+    await validateOtpCode(code);
   };
 
   const handleVerify = async () => {
-    const isValidCode = await validateCode(otpCode);
-    if (!isValidCode || !phoneNumber) {
+    const isValidOtp = await validateOtpCode(otpCode);
+
+    if (!isValidOtp || !email) {
       return;
     }
 
     setIsVerifying(true);
     setError(null);
 
-    try {
-      const response = await verifyOTP(phoneNumber, otpCode);
-
-      if (response.verified) {
-        if (response.isAlreadyVerified) {
-          console.log('Teléfono ya estaba verificado previamente');
-        } else {
-          console.log('OTP verificado exitosamente');
-        }
-        // Si hay un token, podrías guardarlo aquí
-        if (response.token) {
-          // TODO: Guardar token de autenticación
-          console.log('Token recibido:', response.token);
-        }
-        // Navigate to email input screen
-        (navigation as any).navigate('EmailInput');
-      } else {
-        setError(
-          'Código OTP inválido. Por favor, verifica e intenta de nuevo.',
-        );
-      }
-    } catch (err: any) {
-      const errorMessage =
-        err.message ||
-        'Error al verificar el código. Por favor, intenta de nuevo.';
-      setError(errorMessage);
-      setAlertTitle('Error');
-      setAlertMessage(errorMessage);
-      setAlertType('error');
-      setAlertVisible(true);
-      console.error('Error al verificar OTP:', err);
-    } finally {
-      setIsVerifying(false);
-    }
+    // Navegar a la pantalla de reset password con el código OTP
+    (navigation as any).navigate('ResetPassword', {
+      email,
+      otpCode,
+    });
+    setIsVerifying(false);
   };
 
   const handleResend = async () => {
-    if (!phoneNumber) {
+    if (!email) {
       setAlertTitle('Error');
-      setAlertMessage('No se encontró el número telefónico.');
+      setAlertMessage('No se encontró el correo electrónico.');
       setAlertType('error');
       setAlertVisible(true);
       return;
@@ -168,21 +170,30 @@ const OTPVerificationScreen: React.FC = () => {
     setError(null);
 
     try {
-      await resendOTP(phoneNumber);
+      const response = await forgotPasswordOtp(email);
       setOtpCode('');
-      setIsValid(false);
+      setIsOtpValid(false);
+
       setAlertTitle('Código reenviado');
       setAlertMessage(
-        'Se ha enviado un nuevo código OTP a tu número telefónico.',
+        'Se ha enviado un nuevo código OTP a tu correo electrónico.',
       );
       setAlertType('info');
       setAlertVisible(true);
 
       // Reiniciar cuenta regresiva
-      setCountdown(60);
+      setCountdown(response.cooldownSeconds || 60);
+      setExpiresCountdown(response.expiresInSeconds || 600);
+
+      // Limpiar intervalos anteriores
       if (countdownRef.current) {
         clearInterval(countdownRef.current);
       }
+      if (expiresCountdownRef.current) {
+        clearInterval(expiresCountdownRef.current);
+      }
+
+      // Reiniciar countdown de cooldown
       countdownRef.current = setInterval(() => {
         setCountdown(prev => {
           if (prev <= 1) {
@@ -196,7 +207,21 @@ const OTPVerificationScreen: React.FC = () => {
         });
       }, 1000);
 
-      console.log('OTP reenviado exitosamente a:', phoneNumber);
+      // Reiniciar countdown de expiración
+      expiresCountdownRef.current = setInterval(() => {
+        setExpiresCountdown(prev => {
+          if (prev <= 1) {
+            if (expiresCountdownRef.current) {
+              clearInterval(expiresCountdownRef.current);
+              expiresCountdownRef.current = null;
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      console.log('OTP reenviado exitosamente a:', email);
     } catch (err: any) {
       const errorMessage =
         err.message ||
@@ -227,95 +252,94 @@ const OTPVerificationScreen: React.FC = () => {
     }
   };
 
-  const content = (
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.scrollContent}
-      keyboardShouldPersistTaps="always"
-      showsVerticalScrollIndicator={false}
-      bounces={true}>
-      {/* Logo */}
-      <View style={styles.logoContainer}>
-        <Image
-          source={require('../../images/creditivo-logo-full.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
+  const logo = (
+    <Image
+      source={require('../../images/creditivo-logo-full.png')}
+      style={styles.logo}
+      resizeMode="contain"
+    />
+  );
 
+  const content = (
+    <>
       <Text style={styles.title}>Escribe el código</Text>
 
       <Text style={styles.subtitle}>
-        Ingresa el código de 6 digitos para validar tu número telefónico 📲
+        Ingresa el código de 6 dígitos para cambiar tu contraseña
       </Text>
 
-      <View style={styles.otpContainer}>
-        <OtpInput
-          numberOfDigits={OTP_LENGTH}
-          onTextChange={handleOtpChange}
-          autoFocus
-          theme={{
-            containerStyle: styles.otpInputContainer,
-            pinCodeContainerStyle: styles.otpInputBox,
-            pinCodeTextStyle: styles.otpInputText,
-            focusedPinCodeContainerStyle: styles.otpInputBoxFocused,
-          }}
-        />
-        {error && <Text style={styles.errorText}>{error}</Text>}
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.formArea}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+        <View style={styles.otpContainer}>
+          <OtpInput
+            numberOfDigits={OTP_LENGTH}
+            onTextChange={handleOtpChange}
+            autoFocus
+            theme={{
+              containerStyle: styles.otpInputContainer,
+              pinCodeContainerStyle: styles.otpInputBox,
+              pinCodeTextStyle: styles.otpInputText,
+              focusedPinCodeContainerStyle: styles.otpInputBoxFocused,
+            }}
+          />
+          {error && <Text style={styles.errorText}>{error}</Text>}
+        </View>
 
-      <View style={styles.resendContainer}>
-        {countdown === 0 && (
-          <Text style={styles.resendQuestion}>¿No recibiste el código?</Text>
-        )}
-        <TouchableOpacity
-          onPress={handleResend}
-          disabled={isResending || countdown > 0}
+        {/* Resend Code */}
+        <View style={styles.resendContainer}>
+          {countdown === 0 && (
+            <Text style={styles.resendQuestion}>¿No recibiste el código?</Text>
+          )}
+          <TouchableOpacity
+            onPress={handleResend}
+            disabled={isResending || countdown > 0}
+            style={[
+              styles.resendButton,
+              (isResending || countdown > 0) && styles.resendButtonDisabled,
+            ]}>
+            {isResending ? (
+              <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
+            ) : countdown > 0 ? (
+              <Text style={[styles.resendLink, styles.resendLinkDisabled]}>
+                Reenviar código ({countdown}s)
+              </Text>
+            ) : (
+              <Text style={styles.resendLink}>Reenviar código</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </>
+  );
+
+  const bottomAction = (
+    <TouchableOpacity
+      style={[styles.verifyButton, !isOtpValid && styles.verifyButtonDisabled]}
+      onPress={handleVerify}
+      disabled={!isOtpValid || isVerifying}
+      activeOpacity={0.8}>
+      {isVerifying ? (
+        <ActivityIndicator size="small" color={IVOO_COLORS.white} />
+      ) : (
+        <Text
           style={[
-            styles.resendButton,
-            (isResending || countdown > 0) && styles.resendButtonDisabled,
+            styles.verifyButtonText,
+            !isOtpValid && styles.verifyButtonTextDisabled,
           ]}>
-          {isResending ? (
-            <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
-          ) : countdown > 0 ? (
-            <Text style={[styles.resendLink, styles.resendLinkDisabled]}>
-              Reenviar código ({countdown}s)
-            </Text>
-          ) : (
-            <Text style={styles.resendLink}>Reenviar código</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Spacer to push button to bottom */}
-      <View style={styles.spacer} />
-
-      {/* Button */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={[styles.verifyButton, !isValid && styles.verifyButtonDisabled]}
-          onPress={handleVerify}
-          disabled={!isValid || isVerifying}
-          activeOpacity={0.8}>
-          {isVerifying ? (
-            <ActivityIndicator size="small" color={IVOO_COLORS.white} />
-          ) : (
-            <Text
-              style={[
-                styles.verifyButtonText,
-                !isValid && styles.verifyButtonTextDisabled,
-              ]}>
-              Verificar
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          Verificar
+        </Text>
+      )}
+    </TouchableOpacity>
   );
 
   return (
     <>
-      <RegisterLayout contentPaddingTop={0} logo={null} bottomAction={null}>
+      <RegisterLayout
+        contentPaddingTop={SCREEN_HEIGHT * 0.09}
+        logo={logo}
+        bottomAction={bottomAction}>
         {content}
       </RegisterLayout>
       <AlertModal
@@ -330,26 +354,9 @@ const OTPVerificationScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  logoContainer: {
-    marginTop: 0,
-    marginBottom: SCREEN_HEIGHT * 0.04,
-    alignItems: 'center',
-  },
   logo: {
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72 * 0.154,
-  },
-  scrollView: {
-    flex: 1,
-    width: '100%',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    width: '100%',
-    paddingTop: 0,
-    paddingBottom: SCREEN_HEIGHT * 0.1,
-    justifyContent: 'space-between',
   },
   title: {
     fontSize: SCREEN_WIDTH * 0.063,
@@ -366,13 +373,19 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     color: '#676464',
     textAlign: 'center',
-    marginBottom: SCREEN_HEIGHT * 0.06,
-    width: SCREEN_WIDTH * 0.75,
+    marginBottom: SCREEN_HEIGHT * 0.04,
+    width: SCREEN_WIDTH * 0.85,
+  },
+  formArea: {
+    width: SCREEN_WIDTH * 0.82,
+    alignItems: 'center',
+    flexShrink: 1,
   },
   otpContainer: {
     marginTop: SCREEN_HEIGHT * 0.02,
     alignItems: 'center',
     width: '100%',
+    marginBottom: SCREEN_HEIGHT * 0.04,
   },
   otpInputContainer: {
     gap: 14.7,
@@ -405,7 +418,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   resendContainer: {
-    marginTop: SCREEN_HEIGHT * 0.045,
+    marginTop: SCREEN_HEIGHT * 0.02,
     marginBottom: SCREEN_HEIGHT * 0.04,
     alignItems: 'center',
     width: '100%',
@@ -471,14 +484,6 @@ const styles = StyleSheet.create({
   verifyButtonTextDisabled: {
     color: IVOO_COLORS.grayMedium,
   },
-  spacer: {
-    minHeight: SCREEN_HEIGHT * 0.3,
-    flexGrow: 1,
-  },
-  buttonContainer: {
-    width: '100%',
-    alignItems: 'center',
-  },
 });
 
-export default OTPVerificationScreen;
+export default ForgotPasswordOTPScreen;

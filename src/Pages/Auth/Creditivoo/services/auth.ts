@@ -39,6 +39,7 @@ export interface UpdateMeRequest {
   address?: string;
   dob?: string;
   gender?: string;
+  profession?: string;
   enableFaceIdCheck?: boolean;
   enableBiometricCheck?: boolean;
 }
@@ -51,6 +52,35 @@ export interface ChangePasswordRequest {
 export interface ChangePasswordResponse {
   success: boolean;
   message: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface ForgotPasswordOtpResponse {
+  message: string;
+  expiresAt: string;
+  expiresInSeconds: number;
+  cooldownSeconds: number;
+  canResendAt: string;
+}
+
+export interface ResetPasswordOtpRequest {
+  email: string;
+  otpCode: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordOtpResponse {
+  user: User;
+  token: string;
+  refreshToken: string;
 }
 
 export interface RefreshTokenRequest {
@@ -383,6 +413,160 @@ export async function changePassword(
       const errorData = error.response.data as AuthErrorResponse;
       throw new Error(
         errorData.message || errorData.error || 'Error al cambiar contraseña',
+      );
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}
+
+/**
+ * Solicita recuperación de contraseña enviando un correo
+ * @param email - Email del usuario
+ */
+export async function forgotPassword(
+  email: string,
+): Promise<ForgotPasswordResponse> {
+  try {
+    console.log(
+      '[Auth Service] ===== SOLICITANDO RECUPERACIÓN DE CONTRASEÑA =====',
+    );
+    console.log('[Auth Service] Email:', email);
+
+    const response = await api.post<ForgotPasswordResponse>(
+      '/auth/forgot-password',
+      {
+        email,
+      },
+    );
+
+    console.log('[Auth Service] Correo de recuperación enviado exitosamente');
+
+    return response.data;
+  } catch (error: any) {
+    console.error(
+      '[Auth Service] Error al solicitar recuperación de contraseña:',
+      error,
+    );
+
+    if (error.response) {
+      const errorData = error.response.data as AuthErrorResponse;
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Error al enviar correo de recuperación',
+      );
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}
+
+// API Key para endpoints públicos (mismo que en otpVerification)
+const API_KEY = '5G7H9J2K8L1M4N6P';
+
+/**
+ * Solicita un código OTP de 6 dígitos para restablecer contraseña
+ * @param email - Email del usuario
+ */
+export async function forgotPasswordOtp(
+  email: string,
+): Promise<ForgotPasswordOtpResponse> {
+  try {
+    console.log(
+      '[Auth Service] ===== SOLICITANDO OTP PARA RESET PASSWORD =====',
+    );
+    console.log('[Auth Service] Email:', email);
+
+    const response = await api.post<ForgotPasswordOtpResponse>(
+      '/auth/forgot-password-otp',
+      {
+        email,
+      },
+      {
+        headers: {
+          'x-api-key': API_KEY,
+        },
+      },
+    );
+
+    console.log('[Auth Service] OTP de reset password enviado exitosamente');
+    console.log(
+      '[Auth Service] Expira en:',
+      response.data.expiresInSeconds,
+      'segundos',
+    );
+
+    return response.data;
+  } catch (error: any) {
+    console.error(
+      '[Auth Service] Error al solicitar OTP de reset password:',
+      error,
+    );
+
+    if (error.response?.status === 429) {
+      // Cooldown activo
+      const errorData = error.response.data as AuthErrorResponse;
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Por favor, espera antes de solicitar un nuevo código.',
+      );
+    }
+
+    if (error.response) {
+      const errorData = error.response.data as AuthErrorResponse;
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Error al enviar código de restablecimiento',
+      );
+    }
+
+    throw new Error('No se pudo conectar al servidor');
+  }
+}
+
+/**
+ * Restablece la contraseña usando código OTP
+ * @param data - Datos del reset (email, otpCode, newPassword)
+ */
+export async function resetPasswordOtp(
+  data: ResetPasswordOtpRequest,
+): Promise<ResetPasswordOtpResponse> {
+  try {
+    console.log('[Auth Service] ===== RESTABLECIENDO CONTRASEÑA CON OTP =====');
+    console.log('[Auth Service] Email:', data.email);
+    console.log('[Auth Service] OTP Code:', '*** (oculto)');
+    console.log('[Auth Service] New Password:', '*** (oculto)');
+
+    const response = await api.post<ResetPasswordOtpResponse>(
+      '/auth/reset-password-otp',
+      {
+        email: data.email,
+        otpCode: data.otpCode,
+        newPassword: data.newPassword,
+      },
+      {
+        headers: {
+          'x-api-key': API_KEY,
+        },
+      },
+    );
+
+    console.log('[Auth Service] Contraseña restablecida exitosamente');
+    console.log('[Auth Service] Token recibido:', !!response.data.token);
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[Auth Service] Error al restablecer contraseña:', error);
+
+    if (error.response) {
+      const errorData = error.response.data as AuthErrorResponse;
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          'Error al restablecer contraseña',
       );
     }
 

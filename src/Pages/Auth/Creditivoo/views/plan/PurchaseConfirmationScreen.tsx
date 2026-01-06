@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo} from 'react';
+import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -34,7 +34,9 @@ import {
 } from '../../services/megasoft';
 import {Payment, PaymentStatus} from '../../services/purchases';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-import { Routes } from '../../../../../Utils/NavigationRoutes';
+import CurrencySelector, {Currency} from '../../components/CurrencySelector';
+import {useLatestVesRate} from '../../hooks/useLatestVesRate';
+import {formatAmountByCurrency} from '../../utils/currency';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -67,6 +69,42 @@ const PurchaseConfirmationScreen: React.FC = () => {
   );
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+
+  // Hook para obtener la tasa de cambio (solo se obtiene cuando se selecciona BS)
+  const {
+    rate: exchangeRate,
+    loading: isLoadingRate,
+    error: exchangeRateError,
+    refetch: refetchExchangeRate,
+  } = useLatestVesRate(false);
+
+  // Obtener tasa de cambio cuando se selecciona BS
+  // Usar useRef para rastrear el último valor de selectedCurrency y evitar loops
+  const prevCurrencyRef = useRef<Currency>('USD');
+
+  useEffect(() => {
+    // Solo hacer fetch si cambió de USD a BS, no en cada render
+    if (
+      selectedCurrency === 'BS' &&
+      prevCurrencyRef.current !== 'BS' &&
+      !isLoadingRate
+    ) {
+      refetchExchangeRate();
+    }
+    prevCurrencyRef.current = selectedCurrency;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCurrency]);
+
+  // Si falla el fetch de la tasa, volver automáticamente a USD
+  useEffect(() => {
+    if (selectedCurrency === 'BS' && exchangeRateError && !isLoadingRate) {
+      console.warn(
+        '[PurchaseConfirmation] Error al obtener tasa de cambio, cambiando a USD',
+      );
+      setSelectedCurrency('USD');
+    }
+  }, [selectedCurrency, exchangeRateError, isLoadingRate]);
 
   const fetchData = useCallback(async () => {
     if (!purchaseId) {
@@ -122,7 +160,19 @@ const PurchaseConfirmationScreen: React.FC = () => {
       typeof amount === 'string'
         ? parseFloat(amount.replace(/[^0-9.-]/g, ''))
         : amount;
-    return `$${numericAmount.toFixed(2)}`;
+    return formatAmountByCurrency(
+      numericAmount,
+      selectedCurrency,
+      exchangeRate,
+    );
+  };
+
+  const getCurrencyPrefix = (): string => {
+    return selectedCurrency === 'BS' ? '' : 'USD ';
+  };
+
+  const showSkeleton = (): boolean => {
+    return selectedCurrency === 'BS' && isLoadingRate && !exchangeRate;
   };
 
   // Formatear fecha para mostrar en payments
@@ -448,7 +498,7 @@ const PurchaseConfirmationScreen: React.FC = () => {
           console.log(
             '[PurchaseConfirmation] Pago aprobado, navegando a PurchaseSuccess',
           );
-          (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, {
+          (navigation as any).navigate('PurchaseSuccess', {
             purchaseId: purchaseId,
           });
         }
@@ -605,6 +655,16 @@ const PurchaseConfirmationScreen: React.FC = () => {
       onBackPress={() => navigation.goBack()}
       scroll={false}>
       <View style={styles.container}>
+        {/* Currency Selector */}
+        <View style={styles.currencySelectorContainer}>
+          <CurrencySelector
+            selectedCurrency={selectedCurrency}
+            onCurrencyChange={setSelectedCurrency}
+            disabled={isLoadingRate}
+            variant="standalone"
+          />
+        </View>
+
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -617,13 +677,18 @@ const PurchaseConfirmationScreen: React.FC = () => {
             style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total:</Text>
-              <Text style={styles.summaryValue}>
-                {formatCurrency(
-                  paymentsFromRoute && paymentsFromRoute.length > 0
-                    ? getSelectedPaymentsTotal
-                    : totalAmount,
-                )}
-              </Text>
+              {showSkeleton() ? (
+                <View style={styles.amountSkeleton} />
+              ) : (
+                <Text style={styles.summaryValue}>
+                  {getCurrencyPrefix()}
+                  {formatCurrency(
+                    paymentsFromRoute && paymentsFromRoute.length > 0
+                      ? getSelectedPaymentsTotal
+                      : totalAmount,
+                  )}
+                </Text>
+              )}
             </View>
             <View style={styles.summaryDivider} />
             {paymentsFromRoute && paymentsFromRoute.length > 0 ? (
@@ -641,9 +706,14 @@ const PurchaseConfirmationScreen: React.FC = () => {
                 <Text style={styles.summaryLabel}>
                   Pagas el {initialPaymentPercentage.toFixed(0)}% hoy
                 </Text>
-                <Text style={styles.summaryValue}>
-                  {formatCurrency(initialPayment)}
-                </Text>
+                {showSkeleton() ? (
+                  <View style={styles.amountSkeletonSmall} />
+                ) : (
+                  <Text style={styles.summaryValue}>
+                    {getCurrencyPrefix()}
+                    {formatCurrency(initialPayment)}
+                  </Text>
+                )}
               </View>
             )}
           </LinearGradient>
@@ -674,9 +744,14 @@ const PurchaseConfirmationScreen: React.FC = () => {
                             : `Cuota ${installmentNumber}`}{' '}
                           - {formatPaymentDate(payment.paymentDate)}
                         </Text>
-                        <Text style={styles.paymentPlanValue}>
-                          {formatCurrency(payment.amount)}
-                        </Text>
+                        {showSkeleton() ? (
+                          <View style={styles.amountSkeletonSmall} />
+                        ) : (
+                          <Text style={styles.paymentPlanValue}>
+                            {getCurrencyPrefix()}
+                            {formatCurrency(payment.amount)}
+                          </Text>
+                        )}
                       </View>
                       {index < getSelectedPayments.length - 1 && (
                         <View style={styles.separator} />
@@ -688,18 +763,28 @@ const PurchaseConfirmationScreen: React.FC = () => {
                 <View style={styles.separator} />
                 <View style={styles.paymentPlanRow}>
                   <Text style={styles.paymentPlanLabelBold}>Total a pagar</Text>
-                  <Text style={styles.paymentPlanValue}>
-                    {formatCurrency(getSelectedPaymentsTotal)}
-                  </Text>
+                  {showSkeleton() ? (
+                    <View style={styles.amountSkeletonSmall} />
+                  ) : (
+                    <Text style={styles.paymentPlanValue}>
+                      {getCurrencyPrefix()}
+                      {formatCurrency(getSelectedPaymentsTotal)}
+                    </Text>
+                  )}
                 </View>
               </>
             ) : isPlanSubscription ? (
               // Para suscripci?n: solo mostrar "Membresia PLUS" con el monto
               <View style={styles.paymentPlanRow}>
                 <Text style={styles.paymentPlanLabelBold}>Membresia PLUS</Text>
-                <Text style={styles.paymentPlanValue}>
-                  {formatCurrency(totalAmount)}
-                </Text>
+                {showSkeleton() ? (
+                  <View style={styles.amountSkeletonSmall} />
+                ) : (
+                  <Text style={styles.paymentPlanValue}>
+                    {getCurrencyPrefix()}
+                    {formatCurrency(totalAmount)}
+                  </Text>
+                )}
               </View>
             ) : (
               // Para compras normales: mostrar inicial y cuotas
@@ -708,9 +793,14 @@ const PurchaseConfirmationScreen: React.FC = () => {
                   <Text style={styles.paymentPlanLabelBold}>
                     Hoy la inicial
                   </Text>
-                  <Text style={styles.paymentPlanValue}>
-                    {formatCurrency(initialPayment)}
-                  </Text>
+                  {showSkeleton() ? (
+                    <View style={styles.amountSkeletonSmall} />
+                  ) : (
+                    <Text style={styles.paymentPlanValue}>
+                      {getCurrencyPrefix()}
+                      {formatCurrency(initialPayment)}
+                    </Text>
+                  )}
                 </View>
                 {/* Separator */}
                 <View style={styles.separator} />
@@ -718,9 +808,14 @@ const PurchaseConfirmationScreen: React.FC = () => {
                   <Text style={styles.paymentPlanLabel}>
                     Después {installmentsCount} cuotas sin intereses de
                   </Text>
-                  <Text style={styles.paymentPlanValue}>
-                    {formatCurrency(installmentAmount)}
-                  </Text>
+                  {showSkeleton() ? (
+                    <View style={styles.amountSkeletonSmall} />
+                  ) : (
+                    <Text style={styles.paymentPlanValue}>
+                      {getCurrencyPrefix()}
+                      {formatCurrency(installmentAmount)}
+                    </Text>
+                  )}
                 </View>
               </>
             )}
@@ -815,6 +910,24 @@ const PurchaseConfirmationScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  currencySelectorContainer: {
+    alignItems: 'flex-end',
+    marginBottom: SCREEN_WIDTH * 0.03,
+    marginRight: SCREEN_WIDTH * 0.05,
+    marginTop: SCREEN_HEIGHT * 0.01,
+  },
+  amountSkeleton: {
+    width: SCREEN_WIDTH * 0.25,
+    height: SCREEN_WIDTH * 0.048 * 1.2,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+  },
+  amountSkeletonSmall: {
+    width: SCREEN_WIDTH * 0.2,
+    height: SCREEN_WIDTH * 0.042 * 1.2,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
   },
   scrollView: {
     flex: 1,

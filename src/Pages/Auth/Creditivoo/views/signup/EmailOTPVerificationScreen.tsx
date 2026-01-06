@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
 import {OtpInput} from 'react-native-otp-entry';
 import * as yup from 'yup';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_SPACING, IVOO_TYPOGRAPHY} from '../../styles';
-import {verifyEmailOTP, resendEmailOTP} from '../../services';
+import {verifyEmailOTP, resendEmailOTP} from '../../services/otpVerification';
 import {AlertModal} from '../../components';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -226,16 +227,22 @@ const EmailOTPVerificationScreen: React.FC = () => {
     }
   };
 
-  const logo = (
-    <Image
-      source={require('../../images/creditivo-logo-full.png')}
-      style={styles.logo}
-      resizeMode="contain"
-    />
-  );
-
   const content = (
-    <>
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="always"
+      showsVerticalScrollIndicator={false}
+      bounces={true}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../../images/creditivo-logo-full.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       <Text style={styles.title}>Escribe el código</Text>
 
       <Text style={styles.subtitle}>
@@ -279,35 +286,36 @@ const EmailOTPVerificationScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
-    </>
-  );
 
-  const bottomAction = (
-    <TouchableOpacity
-      style={[styles.verifyButton, !isValid && styles.verifyButtonDisabled]}
-      onPress={handleVerify}
-      disabled={!isValid || isVerifying}
-      activeOpacity={0.8}>
-      {isVerifying ? (
-        <ActivityIndicator size="small" color={IVOO_COLORS.white} />
-      ) : (
-        <Text
-          style={[
-            styles.verifyButtonText,
-            !isValid && styles.verifyButtonTextDisabled,
-          ]}>
-          Verificar
-        </Text>
-      )}
-    </TouchableOpacity>
+      {/* Spacer to push button to bottom */}
+      <View style={styles.spacer} />
+
+      {/* Button */}
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.verifyButton, !isValid && styles.verifyButtonDisabled]}
+          onPress={handleVerify}
+          disabled={!isValid || isVerifying}
+          activeOpacity={0.8}>
+          {isVerifying ? (
+            <ActivityIndicator size="small" color={IVOO_COLORS.white} />
+          ) : (
+            <Text
+              style={[
+                styles.verifyButtonText,
+                !isValid && styles.verifyButtonTextDisabled,
+              ]}>
+              Verificar
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 
   return (
     <>
-      <RegisterLayout
-        contentPaddingTop={SCREEN_HEIGHT * 0.09}
-        logo={logo}
-        bottomAction={bottomAction}>
+      <RegisterLayout contentPaddingTop={0} logo={null} bottomAction={null}>
         {content}
       </RegisterLayout>
       <AlertModal
@@ -322,9 +330,26 @@ const EmailOTPVerificationScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  logoContainer: {
+    marginTop: 0,
+    marginBottom: SCREEN_HEIGHT * 0.04,
+    alignItems: 'center',
+  },
   logo: {
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72 * 0.154,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 0,
+    paddingBottom: SCREEN_HEIGHT * 0.05,
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: SCREEN_WIDTH * 0.063,
@@ -445,6 +470,14 @@ const styles = StyleSheet.create({
   },
   verifyButtonTextDisabled: {
     color: IVOO_COLORS.grayMedium,
+  },
+  spacer: {
+    minHeight: SCREEN_HEIGHT * 0.2,
+    flexGrow: 1,
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
 });
 

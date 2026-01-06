@@ -6,18 +6,18 @@ import {
   Image,
   Linking,
   Dimensions,
-  Platform,
-  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import * as yup from 'yup';
 import {Button, Input, Checkbox, AlertModal} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
-import {SCREENS} from '@shared-constants';
-import {sendEmailOTP} from '../../services';
-import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+// import {SCREENS} from '@shared-constants'; // No se usa actualmente
+// import {sendEmailOTP} from '../../services/otpVerification'; // Comentado para debug
+import {useIvoDispatch} from '../../../../../redux/useIvo';
 import {setEmail as setEmailInStore} from '../../store-creditivoo';
+import {sendEmailOTP} from '../../services/otpVerification';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -84,9 +84,11 @@ const EmailInputScreen: React.FC = () => {
       );
 
       setIsLoading(true);
-      
+
       // Enviar OTP al correo electrónico
       const trimmedEmail = email.trim();
+
+      // Código real (comentado para debug):
       const otpResponse = await sendEmailOTP(trimmedEmail);
 
       // Si el email ya está verificado, significa que ya existe un usuario
@@ -153,16 +155,22 @@ const EmailInputScreen: React.FC = () => {
     Linking.openURL('https://ivoo.app/commercial-policy');
   };
 
-  const logo = (
-    <Image
-      source={require('../../images/creditivo-logo-full.png')}
-      style={styles.logo}
-      resizeMode="contain"
-    />
-  );
-
   const content = (
-    <>
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="always"
+      showsVerticalScrollIndicator={false}
+      bounces={true}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../../images/creditivo-logo-full.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       <Text style={styles.title}>Ingresa tu correo</Text>
 
       <Text style={styles.subtitle}>
@@ -170,10 +178,7 @@ const EmailInputScreen: React.FC = () => {
         validarlo 📩
       </Text>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.formArea}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+      <View style={styles.formArea}>
         <Input
           placeholder="ivitoo@gmail.com"
           value={email}
@@ -198,25 +203,26 @@ const EmailInputScreen: React.FC = () => {
             </Text>
           </Text>
         </View>
-      </KeyboardAvoidingView>
-    </>
-  );
+      </View>
 
-  const bottomAction = (
-    <Button
-      onPress={handleContinue}
-      title={isLoading ? 'Enviando...' : 'Continuar'}
-      disabled={!isValid || isLoading}
-      style={styles.continueButton}
-    />
+      {/* Spacer to push button to bottom */}
+      <View style={styles.spacer} />
+
+      {/* Button */}
+      <View style={styles.buttonContainer}>
+        <Button
+          onPress={handleContinue}
+          title={isLoading ? 'Enviando...' : 'Continuar'}
+          disabled={!isValid || isLoading}
+          style={styles.continueButton}
+        />
+      </View>
+    </ScrollView>
   );
 
   return (
     <>
-      <RegisterLayout
-        contentPaddingTop={SCREEN_HEIGHT * 0.09}
-        logo={logo}
-        bottomAction={bottomAction}>
+      <RegisterLayout contentPaddingTop={0} logo={null} bottomAction={null}>
         {content}
       </RegisterLayout>
       <AlertModal
@@ -231,9 +237,26 @@ const EmailInputScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  logoContainer: {
+    marginTop: 0,
+    marginBottom: SCREEN_HEIGHT * 0.04,
+    alignItems: 'center',
+  },
   logo: {
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72 * 0.154,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 0,
+    paddingBottom: SCREEN_HEIGHT * 0.05,
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: SCREEN_WIDTH * 0.063,
@@ -254,9 +277,11 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.85,
   },
   formArea: {
-    width: SCREEN_WIDTH * 0.75, // Same width as RegisterScreen
+    width: SCREEN_WIDTH * 0.75,
+    maxWidth: 302,
     alignItems: 'center',
     flexShrink: 1,
+    alignSelf: 'center',
   },
   inputWrapper: {
     width: '100%',
@@ -264,8 +289,10 @@ const styles = StyleSheet.create({
   policyContainer: {
     flexDirection: 'row',
     marginTop: SCREEN_HEIGHT * 0.03,
-    width: SCREEN_WIDTH * 0.75, // Same width as formArea
+    width: SCREEN_WIDTH * 0.75,
+    maxWidth: 302,
     flexShrink: 1,
+    alignSelf: 'center',
   },
   checkbox: {
     marginRight: SCREEN_WIDTH * 0.024,
@@ -280,6 +307,16 @@ const styles = StyleSheet.create({
   policyLink: {
     textDecorationLine: 'underline',
     color: '#828282',
+  },
+  spacer: {
+    minHeight: SCREEN_HEIGHT * 0.1,
+    flexGrow: 1,
+  },
+  buttonContainer: {
+    width: SCREEN_WIDTH * 0.75,
+    maxWidth: 302,
+    alignItems: 'center',
+    alignSelf: 'center',
   },
   continueButton: {},
 });

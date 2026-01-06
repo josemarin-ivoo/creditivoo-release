@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -169,68 +170,94 @@ const SelfieRequest: React.FC = () => {
     }
   };
 
-  const logo = (
-    <Image
-      source={require('../../images/creditivo-logo-full.png')}
-      style={styles.logo}
-      resizeMode="contain"
-    />
-  );
-
   const content = (
-    <>
-      <Text style={styles.title}>Validación de identidad</Text>
-
-      <Text style={styles.instruction}>
-        Coloca tu rostro dentro del cuadrante y mira directamente a la cámara
-      </Text>
-
-      <View style={styles.idCardContainer}>
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="always"
+      showsVerticalScrollIndicator={false}
+      bounces={true}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
         <Image
-          source={require('../../images/kyc/face-id-placeholder.png')}
-          style={styles.idCardImage}
+          source={require('../../images/creditivo-logo-full.png')}
+          style={styles.logo}
           resizeMode="contain"
         />
       </View>
 
-      <Text style={styles.lightInstruction}>
-        Asegúrate de que haya buena luz.{'\n'}
-        Evita reflejos y sombras
-      </Text>
-    </>
-  );
+      {isUploading ? (
+        <View style={styles.uploadingContainer}>
+          <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+          <Text style={styles.uploadingText}>Subiendo imagen...</Text>
+        </View>
+      ) : (
+        <>
+          <Text style={styles.title}>Validación de identidad</Text>
 
-  const bottomAction = (
-    <Button
-      onPress={handleTakePhoto}
-      title={isUploading ? 'Subiendo...' : 'Tomar foto'}
-      disabled={isUploading}
-    />
+          <Text style={styles.instruction}>
+            Coloca tu rostro dentro del cuadrante y mira directamente a la
+            cámara
+          </Text>
+
+          <View style={styles.idCardContainer}>
+            <Image
+              source={require('../../images/kyc/face-id-placeholder.png')}
+              style={styles.idCardImage}
+              resizeMode="contain"
+            />
+          </View>
+
+          <Text style={styles.lightInstruction}>
+            Asegúrate de que haya buena luz.{'\n'}
+            Evita reflejos y sombras
+          </Text>
+        </>
+      )}
+
+      {/* Spacer to push button to bottom */}
+      <View style={styles.spacer} />
+
+      {/* Button */}
+      <View style={styles.buttonContainer}>
+        <Button
+          onPress={handleTakePhoto}
+          title={isUploading ? 'Subiendo...' : 'Tomar foto'}
+          disabled={isUploading}
+        />
+      </View>
+    </ScrollView>
   );
 
   return (
     <>
-      <RegisterLayout
-        contentPaddingTop={SCREEN_HEIGHT * 0.04}
-        logo={logo}
-        bottomAction={bottomAction}>
-        {isUploading ? (
-          <View style={styles.uploadingContainer}>
-            <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
-            <Text style={styles.uploadingText}>Subiendo imagen...</Text>
-          </View>
-        ) : (
-          content
-        )}
+      <RegisterLayout contentPaddingTop={0} logo={null} bottomAction={null}>
+        {content}
       </RegisterLayout>
     </>
   );
 };
 
 const styles = StyleSheet.create({
+  logoContainer: {
+    marginTop: 0,
+    marginBottom: SCREEN_HEIGHT * 0.04,
+    alignItems: 'center',
+  },
   logo: {
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72 * 0.154,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 0,
+    justifyContent: 'space-between',
   },
 
   title: {
@@ -240,7 +267,7 @@ const styles = StyleSheet.create({
     color: IVOO_COLORS.black,
     textAlign: 'center',
     marginTop: SCREEN_HEIGHT * 0.015,
-    marginBottom: SCREEN_HEIGHT * 0.018,
+    marginBottom: SCREEN_HEIGHT * 0.01,
     width: SCREEN_WIDTH * 0.9,
   },
 
@@ -250,7 +277,7 @@ const styles = StyleSheet.create({
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.regular,
     color: '#6E717C',
     textAlign: 'center',
-    marginBottom: SCREEN_HEIGHT * 0.05,
+    marginBottom: SCREEN_HEIGHT * 0.03,
     width: SCREEN_WIDTH * 0.75,
     alignSelf: 'center',
   },
@@ -262,7 +289,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginBottom: SCREEN_HEIGHT * 0.07,
+    marginBottom: SCREEN_HEIGHT * 0.04,
   },
   idCardImage: {
     width: '100%',
@@ -283,13 +310,22 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: SCREEN_HEIGHT * 0.4,
+    minHeight: SCREEN_HEIGHT * 0.2,
   },
   uploadingText: {
     marginTop: SCREEN_WIDTH * 0.04,
     fontSize: SCREEN_WIDTH * 0.042,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
     color: IVOO_COLORS.textSecondary,
+  },
+  spacer: {
+    flexGrow: 1,
+  },
+  buttonContainer: {
+    width: SCREEN_WIDTH * 0.75,
+    maxWidth: 302,
+    alignItems: 'center',
+    alignSelf: 'center',
   },
 });
 

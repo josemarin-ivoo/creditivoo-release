@@ -19,6 +19,9 @@ export interface Installment {
   amount: number;
   status: 'approved' | 'pending' | 'pass_due';
   gemsReward?: number; // Gems earned by paying in advance
+  displayAmount?: string | null; // Formatted amount with currency
+  currency?: 'USD' | 'BS';
+  showSkeleton?: boolean; // Show skeleton loader while loading
 }
 
 interface InstallmentItemProps {
@@ -45,6 +48,10 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
 
   const formatCurrency = (amount: number): string => {
     return `$${amount.toFixed(2)}`;
+  };
+
+  const getCurrencyPrefix = (): string => {
+    return installment.currency === 'BS' ? '' : 'USD ';
   };
 
   const getInstallmentLabel = (): string => {
@@ -160,10 +167,16 @@ const InstallmentItem: React.FC<InstallmentItemProps> = ({
       </View>
 
       <View style={styles.rightSection}>
-        <Text
-          style={[styles.amountText, isDisabledState && styles.textDisabled]}>
-          {formatCurrency(installment.amount)}
-        </Text>
+        {installment.showSkeleton ? (
+          <View style={styles.amountSkeleton} />
+        ) : (
+          <Text
+            style={[styles.amountText, isDisabledState && styles.textDisabled]}>
+            {installment.displayAmount
+              ? `${getCurrencyPrefix()}${installment.displayAmount}`
+              : formatCurrency(installment.amount)}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -270,6 +283,12 @@ const styles = StyleSheet.create({
   },
   textDisabled: {
     opacity: 0.7,
+  },
+  amountSkeleton: {
+    width: SCREEN_WIDTH * 0.25,
+    height: SCREEN_WIDTH * 0.042 * 1.2,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
   },
 });
 

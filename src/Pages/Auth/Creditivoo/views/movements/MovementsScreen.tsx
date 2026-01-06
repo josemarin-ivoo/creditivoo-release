@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo} from 'react';
+import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -21,7 +21,9 @@ import {getPurchaseById, PurchaseResponse} from '../../services/purchases';
 import HomeCreditCard from '../home/HomeCreditCard';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import {useIvoSelector} from '../../../../../redux/useIvo';
-import { Routes } from '../../../../../Utils/NavigationRoutes';
+import CurrencySelector, {Currency} from '../../components/CurrencySelector';
+import {useLatestVesRate} from '../../hooks/useLatestVesRate';
+import {formatAmountByCurrency} from '../../utils/currency';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -63,11 +65,6 @@ const getDateKey = (dateString: string): string => {
   }
 };
 
-// Helper function to format currency
-const formatCurrency = (amount: number): string => {
-  return `$${Math.abs(amount).toFixed(2)}`;
-};
-
 // Helper function to get icon for movement type
 const getMovementIcon = (type: string): string => {
   switch (type) {
@@ -105,14 +102,23 @@ const MovementsScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+
+  // Hook para obtener la tasa de cambio (solo se obtiene cuando se selecciona BS)
+  const {
+    rate: exchangeRate,
+    loading: isLoadingRate,
+    error: exchangeRateError,
+    refetch: refetchExchangeRate,
+  } = useLatestVesRate(false);
 
   // Obtener estado de purchases del store
   const {hasPurchasePendingInvoice, hasPurchaseInProgress} = useIvoSelector(
-    state => state.creditivoo.purchase,
+    state => state.purchase,
   );
 
   // Obtener usuario del store
-  const {user} = useIvoSelector(state => state.creditivoo.auth);
+  const {user} = useIvoSelector(state => state.auth);
 
   const hasNextPayment = !!creditInfo?.nextPayment;
 
@@ -185,6 +191,37 @@ const MovementsScreen: React.FC = () => {
     }, [fetchCreditInfo]),
   );
 
+  // Obtener tasa de cambio cuando se selecciona BS
+  // Usar useRef para rastrear el último valor de selectedCurrency y evitar loops
+  const prevCurrencyRef = useRef<Currency>('USD');
+
+  useEffect(() => {
+    // Solo hacer fetch si cambió de USD a BS, no en cada render
+    if (
+      selectedCurrency === 'BS' &&
+      prevCurrencyRef.current !== 'BS' &&
+      !isLoadingRate
+    ) {
+      refetchExchangeRate();
+    }
+    prevCurrencyRef.current = selectedCurrency;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCurrency]);
+
+  // Si falla el fetch de la tasa, volver automáticamente a USD
+  useEffect(() => {
+    if (selectedCurrency === 'BS' && exchangeRateError && !isLoadingRate) {
+      console.warn(
+        '[MovementsScreen] Error al obtener tasa de cambio, cambiando a USD',
+      );
+      setSelectedCurrency('USD');
+    }
+  }, [selectedCurrency, exchangeRateError, isLoadingRate]);
+
+  const handleCurrencyChange = (currency: Currency) => {
+    setSelectedCurrency(currency);
+  };
+
   const handleRequestCredit = () => {
     (navigation as any).navigate('IdentityVerificator');
   };
@@ -196,7 +233,7 @@ const MovementsScreen: React.FC = () => {
       );
 
       // Navigate to payment installments screen with full purchase data
-      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+      (navigation as any).navigate('PaymentInstallments', {
         purchase: purchaseDetails,
       });
     } catch (err: any) {
@@ -237,6 +274,19 @@ const MovementsScreen: React.FC = () => {
     const iconColor = getMovementColor(item.type);
     const isDebit = item.amount < 0;
 
+    // Mostrar skeleton loader si está cargando la tasa y la moneda es BS
+    const showSkeleton =
+      selectedCurrency === 'BS' && isLoadingRate && !exchangeRate;
+
+    // Usar utilidades centralizadas para convertir y formatear
+    const formattedAmount = formatAmountByCurrency(
+      item.amount,
+      selectedCurrency,
+      exchangeRate,
+    );
+
+    const currencyPrefix = selectedCurrency === 'BS' ? '' : 'USD ';
+
     return (
       <View>
         <View style={styles.movementItem}>
@@ -259,9 +309,14 @@ const MovementsScreen: React.FC = () => {
             </View>
           </View>
           <View style={styles.movementRight}>
-            <Text style={styles.movementAmount}>
-              {isDebit ? '-' : ''} USD {formatCurrency(item.amount)}
-            </Text>
+            {showSkeleton ? (
+              <View style={styles.amountSkeleton} />
+            ) : (
+              <Text style={styles.movementAmount}>
+                {isDebit ? '-' : ''} {currencyPrefix}
+                {formattedAmount}
+              </Text>
+            )}
           </View>
         </View>
         {!isLast && <View style={styles.separator} />}
@@ -367,8 +422,24 @@ const MovementsScreen: React.FC = () => {
             },
           ]}>
           {shouldShowCreditCard && (
-            <Text style={styles.movementsTitle}>Movimientos</Text>
+            <View style={styles.titleContainer}>
+              <Text style={styles.movementsTitle}>Movimientos</Text>
+              {/* <CurrencySelector
+                selectedCurrency={selectedCurrency}
+                onCurrencyChange={handleCurrencyChange}
+                disabled={isLoadingRate}
+              /> */}
+            </View>
           )}
+          {/* {!shouldShowCreditCard && (
+            <CurrencySelector
+              selectedCurrency={selectedCurrency}
+              onCurrencyChange={handleCurrencyChange}
+              disabled={isLoadingRate}
+              variant="standalone"
+              style={styles.currencySelectorStandalone}
+            />
+          )} */}
           <View style={styles.movementsParentContainer}>
             <FlatList
               data={flatListData}
@@ -430,13 +501,23 @@ const styles = StyleSheet.create({
     flex: 1,
     maxHeight: SCREEN_HEIGHT * 0.7, // Limitar altura máxima para permitir scroll
   },
+  titleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SCREEN_WIDTH * 0.01,
+    marginBottom: SCREEN_HEIGHT * 0.015,
+  },
   movementsTitle: {
     fontSize: SCREEN_WIDTH * 0.037,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.textPrimary,
-    paddingHorizontal: SCREEN_WIDTH * 0.01,
+    flex: 1,
+  },
+  currencySelectorStandalone: {
     marginBottom: SCREEN_HEIGHT * 0.015,
+    marginRight: SCREEN_WIDTH * 0.05,
   },
   dateHeader: {
     fontSize: SCREEN_WIDTH * 0.035,
@@ -496,6 +577,12 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.textPrimary,
+  },
+  amountSkeleton: {
+    width: SCREEN_WIDTH * 0.25,
+    height: SCREEN_WIDTH * 0.038 * 1.2,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
   },
   emptyState: {
     flex: 1,

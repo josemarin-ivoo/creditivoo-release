@@ -565,6 +565,26 @@ const Route = () => {
          options={{headerShown: false}}
        />
        <Stack.Screen
+          name={Routes.NAVIGATION_TO_PRODUCTLIST}
+          component={ProductList}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.NAVIGATION_TO_PRODUCTDETAILS}
+          component={ProductDetails}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.NAVIGATION_TO_CARDDETAILS}
+          component={CardDetails}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.NAVIGATION_TO_CATEGORYDETAIL}
+          component={CategoryDetail}
+          options={{headerShown: false}}
+        />
+       <Stack.Screen
           name={Routes.NAVIGATION_REGISTER}
           component={CreditivooRegister}
           options={{headerShown: false}}

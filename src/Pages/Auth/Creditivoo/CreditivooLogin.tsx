@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -41,10 +41,14 @@ const LoginScreen: React.FC = () => {
   const [biometryType, setBiometryType] = useState<string | undefined>(undefined);
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
 
-  const checkSensor = React.useCallback(async () => {
+  // 1. CARGA DE CREDENCIALES Y SENSOR
+  const checkSensor = useCallback(async () => {
     try {
+      // Intentamos recuperar credenciales guardadas para la persistencia del input
       const credentials = await AuthStorage.getCredentials();
-      if (credentials?.email) setEmail(credentials.email);
+      if (credentials?.email) {
+        setEmail(credentials.email);
+      }
       
       const rnBiometrics = new ReactNativeBiometrics();
       const {available, biometryType} = await rnBiometrics.isSensorAvailable();
@@ -52,29 +56,28 @@ const LoginScreen: React.FC = () => {
       setIsSensorAvailable(available);
       setBiometryType(biometryType); 
     } catch (error) {
+      console.log('[Login] Error al cargar sensor/credenciales:', error);
       setIsSensorAvailable(false);
     }
   }, []);
 
   useEffect(() => { checkSensor(); }, [checkSensor]);
-  useFocusEffect(React.useCallback(() => { checkSensor(); }, [checkSensor]));
+  useFocusEffect(useCallback(() => { checkSensor(); }, [checkSensor]));
 
-  // FUNCIÓN CORREGIDA PARA ICONOS EN IOS
+  // 2. LÓGICA DE ICONO BIOMÉTRICO (CORREGIDO IOS)
   const getBiometricIcon = () => {
     if (Platform.OS === 'ios') {
       if (biometryType === BiometryTypes.FaceID) {
-        // 'face-recognition' es el nombre estándar en MaterialCommunityIcons para FaceID
         return { name: 'face-recognition', type: IconType.MaterialCommunityIcons };
       }
-      // Para TouchID usamos fingerprint
       return { name: 'fingerprint', type: IconType.MaterialIcons };
     }
-    // Android por defecto usa fingerprint
     return { name: 'fingerprint', type: IconType.MaterialIcons };
   };
 
   const biometricIcon = getBiometricIcon();
 
+  // 3. LOGIN BIOMÉTRICO
   const handleBiometricLogin = async () => {
     try {
       const credentials = await AuthStorage.getCredentials();
@@ -98,21 +101,28 @@ const LoginScreen: React.FC = () => {
         navigation.reset({ index: 0, routes: [{name: 'MainTabs' as never}] });
       }
     } catch (err) {
-      setAlertMessage('Error en la autenticación');
+      setAlertMessage('Error en la autenticación biométrica');
       setAlertVisible(true);
     } finally {
       setIsBiometricLoading(false);
     }
   };
 
+  // 4. LOGIN MANUAL (CON PERSISTENCIA CORREGIDA)
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password.trim()) {
       setAlertMessage('Por favor, completa todos los campos');
       setAlertVisible(true);
       return;
     }
     try {
-      await dispatch(login({email: email.trim(), password})).unwrap();
+      // Realizar el login en el servidor
+      await dispatch(login({email: trimmedEmail, password})).unwrap();
+      
+      // SI EL LOGIN ES EXITOSO, GUARDAMOS LAS CREDENCIALES PARA LA PRÓXIMA VEZ
+      await AuthStorage.saveCredentials(trimmedEmail, password);
+      
       navigation.reset({ index: 0, routes: [{name: 'MainTabs' as never}] });
     } catch (err: any) {
       setAlertMessage(err?.message || 'Error al iniciar sesión');
@@ -137,7 +147,7 @@ const LoginScreen: React.FC = () => {
 
           <View style={styles.formContainer}>
             
-            {/* CAMPO USUARIO */}
+            {/* CAMPO USUARIO / EMAIL */}
             <View style={styles.inputWrapper}>
               <Input
                 placeholder="Usuario"
@@ -147,6 +157,7 @@ const LoginScreen: React.FC = () => {
                 inputStyle={styles.inputText}
                 placeholderTextColor="#A0A0A0"
                 autoCapitalize="none"
+                autoCorrect={false}
               />
               {isSensorAvailable && (
                 <TouchableOpacity 
@@ -207,18 +218,39 @@ const LoginScreen: React.FC = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <AlertModal visible={alertVisible} title="Atención" message={alertMessage} onClose={() => setAlertVisible(false)} />
+      <AlertModal 
+        visible={alertVisible} 
+        title="Atención" 
+        message={alertMessage} 
+        onClose={() => setAlertVisible(false)} 
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF' },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 30, alignItems: 'center', paddingTop: 20 },
-  welcomeText: { fontSize: 28, color: IVOO_COLORS.primary, marginBottom: 25, marginTop: 40 },
+  scrollContent: { 
+    flexGrow: 1, 
+    paddingHorizontal: 30, 
+    alignItems: 'center', 
+    paddingTop: 20,
+    paddingBottom: 40 
+  },
+  welcomeText: { 
+    fontSize: 28, 
+    color: IVOO_COLORS.primary, 
+    marginBottom: 25, 
+    marginTop: 40,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interSemiBold 
+  },
   logoContainer: { width: SCREEN_WIDTH * 0.6, height: 45, marginBottom: 15 },
   logo: { width: '100%', height: '100%' },
-  illustrationContainer: { width: SCREEN_WIDTH * 0.45, height: SCREEN_WIDTH * 0.45, marginBottom: -15 },
+  illustrationContainer: { 
+    width: SCREEN_WIDTH * 0.45, 
+    height: SCREEN_WIDTH * 0.45, 
+    marginBottom: -15 
+  },
   illustration: { width: '100%', height: '100%' },
   formContainer: { width: '100%' },
   inputWrapper: {
@@ -232,20 +264,29 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     backgroundColor: 'transparent',
   },
-  inputText: { color: '#1C1C1E', fontSize: 16, paddingRight: 50 }, // Aumentado padding para que el texto no choque con el icono
+  inputText: { 
+    color: '#1C1C1E', 
+    fontSize: 16, 
+    paddingRight: 55 // Espacio suficiente para que el texto no toque el icono de la derecha
+  }, 
   iconInside: {
     position: 'absolute',
-    right: 5,
+    right: 0,
     zIndex: 99,
     padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 40,
+    minWidth: 45,
   },
-  loginButton: { marginTop: 15, borderRadius: 12, height: 50, backgroundColor: IVOO_COLORS.primary },
+  loginButton: { 
+    marginTop: 15, 
+    borderRadius: 12, 
+    height: 50, 
+    backgroundColor: IVOO_COLORS.primary 
+  },
   forgotBtn: { marginTop: 15, alignItems: 'center' },
   forgotText: { color: IVOO_COLORS.primary, fontSize: 14 },
-  regContainer: { marginTop: 40, alignItems: 'center', marginBottom: 20 },
+  regContainer: { marginTop: 40, alignItems: 'center' },
   regText: { color: IVOO_COLORS.primary, fontSize: 15 },
 });
 

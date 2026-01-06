@@ -12,6 +12,14 @@ import {
 } from '../../services/auth';
 import {RevisionResponse} from '../../services/credit';
 import {setPurchases} from '../purchase-slice';
+import {
+  requestNotificationPermission,
+  getFCMToken,
+  registerFCMToken,
+  removeFCMToken,
+  setupTokenRefreshListener,
+  cleanupTokenRefreshListener,
+} from '../../services/fcm';
 
 // User type based on what's returned from /auth/me
 export interface User {
@@ -33,6 +41,7 @@ export interface User {
   dob?: string | null;
   address?: string | null;
   gender?: string | null;
+  profession?: string | null;
   enableFaceIdCheck?: boolean;
   enableBiometricCheck?: boolean;
   document?: string | null;
@@ -229,6 +238,7 @@ export const login = createAsyncThunk(
         dob: (response.user as any).dob || null,
         address: (response.user as any).address || null,
         gender: (response.user as any).gender || null,
+        profession: (response.user as any).profession || null,
         enableFaceIdCheck:
           (response.user as any).enableFaceIdCheck === true ? true : false,
         enableBiometricCheck:
@@ -266,6 +276,36 @@ export const login = createAsyncThunk(
         isPlusUser: (response.user as any)?.isPlusUser ?? null,
       };
       await AuthStorage.saveUser(userData as any);
+
+      // Registrar FCM token después de login exitoso
+      try {
+        console.log(
+          '[IvoAuthSlice] Iniciando registro de FCM token después de login',
+        );
+        const hasPermission = await requestNotificationPermission();
+        console.log('[IvoAuthSlice] Permisos concedidos:', hasPermission);
+        if (hasPermission) {
+          const fcmToken = await getFCMToken();
+          console.log(
+            '[IvoAuthSlice] FCM token obtenido:',
+            fcmToken ? 'Sí' : 'No',
+          );
+          if (fcmToken) {
+            await registerFCMToken(fcmToken);
+            // Configurar listener para rotación de tokens
+            setupTokenRefreshListener();
+          } else {
+            console.warn('[IvoAuthSlice] No se pudo obtener FCM token');
+          }
+        } else {
+          console.warn(
+            '[IvoAuthSlice] Permisos de notificaciones no concedidos',
+          );
+        }
+      } catch (error) {
+        console.error('[IvoAuthSlice] Error al registrar FCM token:', error);
+        // No interrumpir el flujo de login si falla FCM
+      }
 
       // Guardar credenciales si el usuario tiene biometría habilitada
       if (
@@ -351,6 +391,14 @@ export const login = createAsyncThunk(
 
 // Async thunk to logout
 export const logout = createAsyncThunk('auth/logout', async (_, {dispatch}) => {
+  // Limpiar listener de FCM y eliminar token antes de limpiar datos
+  try {
+    cleanupTokenRefreshListener();
+    await removeFCMToken();
+  } catch (error) {
+    console.error('[IvoAuthSlice] Error al limpiar FCM:', error);
+    // No interrumpir el flujo de logout si falla FCM
+  }
   await AuthStorage.clearAuthData();
   // Limpiar purchases al hacer logout
   dispatch(
@@ -396,6 +444,7 @@ export const fetchMe = createAsyncThunk(
         dob: (response.user as any).dob || null,
         address: (response.user as any).address || null,
         gender: (response.user as any).gender || null,
+        profession: (response.user as any).profession || null,
         enableFaceIdCheck:
           (response.user as any).enableFaceIdCheck === true ? true : false,
         enableBiometricCheck:
@@ -479,6 +528,8 @@ export const fetchMe = createAsyncThunk(
         console.error('[IvoAuthSlice] Error al ejecutar logout:', logoutError);
         // Fallback: limpiar AuthStorage manualmente
         try {
+          // Eliminar FCM token antes de limpiar datos
+          await removeFCMToken();
           await AuthStorage.clearAuthData();
         } catch (clearError) {
           console.error('[IvoAuthSlice] Error al limpiar datos:', clearError);
@@ -525,6 +576,7 @@ export const updateUserProfile = createAsyncThunk(
         dob: (response.user as any).dob || null,
         address: (response.user as any).address || null,
         gender: (response.user as any).gender || null,
+        profession: (response.user as any).profession || null,
         enableFaceIdCheck:
           (response.user as any).enableFaceIdCheck === true ? true : false,
         enableBiometricCheck:

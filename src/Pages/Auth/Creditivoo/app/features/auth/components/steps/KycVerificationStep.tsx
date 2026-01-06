@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {Text, useTheme} from '@ui-kitten/components';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
+// import ButtonK from '@shared-components/button/ButtonK';
 import ButtonK from '../../../../../shared/components/button/ButtonK';
 import {useToast} from 'react-native-toast-notifications';
 // import {createKycSession, checkKycStatus} from '@services/api/kyc';
@@ -374,6 +375,8 @@ const KycVerificationStep: React.FC<KycVerificationStepProps> = ({
           }
         />
       </View>
+      {/* Spacer to ensure button is visible on iOS */}
+      <View style={styles.spacer} />
 
       <Modal
         visible={showWebView}
@@ -430,7 +433,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonContainer: {
-    marginTop: 'auto',
+    marginTop: 32,
+    marginBottom: 16,
+  },
+  spacer: {
+    height: Platform.OS === 'ios' ? 40 : 20,
   },
   webViewContainer: {
     flex: 1,

@@ -6,24 +6,28 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  Platform,
-  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {Button, Input, AlertModal} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
-// import {useIvoDispatch, useIvoSelector} from '../../store-creditivoo/hooks';
+import {useIvoDispatch, useIvoSelector} from '../../../../../redux/useIvo';
 import {
   registerUser,
   setPassword as setPasswordInStore,
   clearRegisterData,
   updateAuth,
-} from '../../store-creditivoo';
+} from '../../store';
 import {User} from '../../store-creditivoo/slices/auth-slice';
-// import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
-import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
+import {
+  requestNotificationPermission,
+  getFCMToken,
+  registerFCMToken,
+  setupTokenRefreshListener,
+} from '../../services/fcm';
+
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 interface PasswordRequirement {
@@ -35,7 +39,7 @@ const PasswordScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
   const {phoneNumber, email, isLoading, error} = useIvoSelector(
-    state => state.creditivoo.register,
+    state => state.register,
   );
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -104,8 +108,6 @@ const PasswordScreen: React.FC = () => {
       return;
     }
 
-    
-
     if (!phoneNumber || !email) {
       setAlertTitle('Error');
       setAlertMessage(
@@ -148,19 +150,62 @@ const PasswordScreen: React.FC = () => {
           phone: result.user.phone || '',
           name: result.user.name || '',
           lastname: result.user.lastname || '',
+          fullname:
+            result.user.fullname ||
+            `${result.user.name || ''} ${result.user.lastname || ''}`.trim() ||
+            result.user.email,
           username: result.user.username || result.user.email,
-          document: result.user.document || '',
-          dob: result.user.dob || '',
+          document: result.user.document || null,
+          dob: result.user.dob || null,
           role: result.user.role || 'user',
-          isEmailVerified: result.user.isEmailVerified || false,
-          kycVerifications: result.user.kycVerifications,
+          hasActiveCredit: false,
+          creditLimit: 0,
+          creditUsed: 0,
+          creditAvailable: 0,
+          creditStatus: '',
+          pendingPayment: null,
+          overduePayment: null,
         };
-        dispatch(
+        // Actualizar estado de autenticación (esto guarda el token en AuthStorage)
+        await dispatch(
           updateAuth({
             token: result.token,
             user: userData,
           }),
-        );
+        ).unwrap();
+
+        // Registrar FCM token después de que el token esté guardado en AuthStorage
+        try {
+          console.log(
+            '[PasswordScreen] Iniciando registro de FCM token después de registro',
+          );
+          const hasPermission = await requestNotificationPermission();
+          console.log('[PasswordScreen] Permisos concedidos:', hasPermission);
+          if (hasPermission) {
+            const fcmToken = await getFCMToken();
+            console.log(
+              '[PasswordScreen] FCM token obtenido:',
+              fcmToken ? 'Sí' : 'No',
+            );
+            if (fcmToken) {
+              await registerFCMToken(fcmToken);
+              // Configurar listener para rotación de tokens
+              setupTokenRefreshListener();
+            } else {
+              console.warn('[PasswordScreen] No se pudo obtener FCM token');
+            }
+          } else {
+            console.warn(
+              '[PasswordScreen] Permisos de notificaciones no concedidos',
+            );
+          }
+        } catch (fcmError) {
+          console.error(
+            '[PasswordScreen] Error al registrar FCM token:',
+            fcmError,
+          );
+          // No interrumpir el flujo de registro si falla FCM
+        }
       } else {
         console.warn(
           '[PasswordScreen] No se recibió token o usuario en la respuesta',
@@ -188,16 +233,22 @@ const PasswordScreen: React.FC = () => {
     }
   };
 
-  const logo = (
-    <Image
-      source={require('../../images/creditivo-logo-full.png')}
-      style={styles.logo}
-      resizeMode="contain"
-    />
-  );
-
   const content = (
-    <>
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      keyboardShouldPersistTaps="always"
+      showsVerticalScrollIndicator={false}
+      bounces={true}>
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../../images/creditivo-logo-full.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
       <Text style={styles.title}>Escribe tu contraseña</Text>
 
       <Text style={styles.subtitle}>
@@ -205,10 +256,7 @@ const PasswordScreen: React.FC = () => {
         fecha de cumpleaños 🤓
       </Text>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.formArea}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+      <View style={styles.formArea}>
         <View style={styles.passwordInputWrapper}>
           <Input
             placeholder="••••••••"
@@ -259,25 +307,26 @@ const PasswordScreen: React.FC = () => {
             </View>
           ))}
         </View>
-      </KeyboardAvoidingView>
-    </>
-  );
+      </View>
 
-  const bottomAction = (
-    <Button
-      onPress={handleContinue}
-      title={isLoading ? 'Registrando...' : 'Continuar'}
-      disabled={!isPasswordValid || isLoading}
-      style={styles.continueButton}
-    />
+      {/* Spacer to push button to bottom */}
+      <View style={styles.spacer} />
+
+      {/* Button */}
+      <View style={styles.buttonContainer}>
+        <Button
+          onPress={handleContinue}
+          title={isLoading ? 'Registrando...' : 'Continuar'}
+          disabled={!isPasswordValid || isLoading}
+          style={styles.continueButton}
+        />
+      </View>
+    </ScrollView>
   );
 
   return (
     <>
-      <RegisterLayout
-        contentPaddingTop={SCREEN_HEIGHT * 0.09}
-        logo={logo}
-        bottomAction={bottomAction}>
+      <RegisterLayout contentPaddingTop={0} logo={null} bottomAction={null}>
         {content}
       </RegisterLayout>
       <AlertModal
@@ -292,9 +341,26 @@ const PasswordScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  logoContainer: {
+    marginTop: 0,
+    marginBottom: SCREEN_HEIGHT * 0.04,
+    alignItems: 'center',
+  },
   logo: {
     width: SCREEN_WIDTH * 0.72,
     height: SCREEN_WIDTH * 0.72 * 0.154,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 0,
+    paddingBottom: SCREEN_HEIGHT * 0.05,
+    justifyContent: 'space-between',
   },
   title: {
     fontSize: SCREEN_WIDTH * 0.063,
@@ -315,9 +381,11 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.85,
   },
   formArea: {
-    width: SCREEN_WIDTH * 0.75, // Same width as RegisterScreen
+    width: SCREEN_WIDTH * 0.75,
+    maxWidth: 302,
     alignItems: 'center',
     flexShrink: 1,
+    alignSelf: 'center',
   },
   passwordInputWrapper: {
     position: 'relative',
@@ -364,6 +432,16 @@ const styles = StyleSheet.create({
     letterSpacing: SCREEN_WIDTH * 0.0016,
     color: '#676464',
     flex: 1,
+  },
+  spacer: {
+    minHeight: SCREEN_HEIGHT * 0.3,
+    flexGrow: 1,
+  },
+  buttonContainer: {
+    width: SCREEN_WIDTH * 0.75,
+    maxWidth: 302,
+    alignItems: 'center',
+    alignSelf: 'center',
   },
   continueButton: {},
 });

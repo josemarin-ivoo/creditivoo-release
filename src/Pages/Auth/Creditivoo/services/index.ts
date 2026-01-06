@@ -14,3 +14,4 @@ export * from './points';
 export * from './profile';
 export * from './megasoft';
 export * from './terms';
+export * from './fcm';

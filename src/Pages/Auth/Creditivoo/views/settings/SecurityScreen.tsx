@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Platform,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import ReactNativeBiometrics from 'react-native-biometrics';
@@ -27,10 +28,9 @@ interface SecurityOption {
 const SecurityScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
-  const {user, isLoading} = useIvoSelector((state: any) => state.creditivoo.auth);
+  const {user, isLoading} = useIvoSelector((state: any) => state.auth);
 
-  const [faceIdEnabled, setFaceIdEnabled] = useState(false);
-  const [biometricIdEnabled, setBiometricIdEnabled] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
 
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
@@ -51,22 +51,15 @@ const SecurityScreen: React.FC = () => {
   // Actualizar los valores locales cuando cambie el usuario del store
   useEffect(() => {
     if (user) {
-      // Solo establecer true si el valor está explícitamente definido como true
-      setFaceIdEnabled(
-        user.enableFaceIdCheck !== undefined && user.enableFaceIdCheck !== null
-          ? user.enableFaceIdCheck
-          : false,
-      );
-      setBiometricIdEnabled(
-        user.enableBiometricCheck !== undefined &&
-          user.enableBiometricCheck !== null
-          ? user.enableBiometricCheck
-          : false,
+      // En iOS usar enableFaceIdCheck, en Android usar enableBiometricCheck
+      const field =
+        Platform.OS === 'ios' ? 'enableFaceIdCheck' : 'enableBiometricCheck';
+      const value = user[field];
+      setBiometricEnabled(
+        value !== undefined && value !== null ? value : false,
       );
     } else {
-      // Si no hay usuario, establecer en false
-      setFaceIdEnabled(false);
-      setBiometricIdEnabled(false);
+      setBiometricEnabled(false);
     }
   }, [user]);
 
@@ -102,7 +95,7 @@ const SecurityScreen: React.FC = () => {
         // Log para debug
         console.log('[Security] Tipo de biometría detectado:', {
           biometryType,
-          optionId,
+          platform: Platform.OS,
           available,
         });
 
@@ -110,10 +103,10 @@ const SecurityScreen: React.FC = () => {
         // No podemos forzar Face ID vs Touch ID, la librería decide según el dispositivo
         // Solo logueamos para debug
         console.log(
-          `[Security] Tipo de biometría disponible: ${biometryType}, Opción seleccionada: ${optionId}`,
+          `[Security] Tipo de biometría disponible: ${biometryType}, Plataforma: ${Platform.OS}`,
         );
 
-        await proceedWithBiometricAuth(rnBiometrics, optionId);
+        await proceedWithBiometricAuth(rnBiometrics);
       } catch (error) {
         console.error('[Security] Error activando biometría:', error);
         return;
@@ -122,14 +115,10 @@ const SecurityScreen: React.FC = () => {
 
     if (!value) {
       try {
-        if (optionId === 'faceId') {
-          setFaceIdEnabled(false);
-          await saveSecuritySetting('enableFaceIdCheck', false);
-        } else if (optionId === 'biometricId') {
-          setBiometricIdEnabled(false);
-          await saveSecuritySetting('enableBiometricCheck', false);
-        }
-
+        const field =
+          Platform.OS === 'ios' ? 'enableFaceIdCheck' : 'enableBiometricCheck';
+        setBiometricEnabled(false);
+        await saveSecuritySetting(field, false);
         console.log('[Security] Biometría desactivada.');
       } catch (error) {
         console.error('[Security] Error desactivando biometría:', error);
@@ -139,7 +128,6 @@ const SecurityScreen: React.FC = () => {
 
   const proceedWithBiometricAuth = async (
     rnBiometrics: ReactNativeBiometrics,
-    optionId: string,
   ) => {
     try {
       // Verificar si existen las claves criptográficas, si no, crearlas
@@ -163,9 +151,9 @@ const SecurityScreen: React.FC = () => {
         }
       }
 
-      // Personalizar el mensaje según la opción seleccionada
+      // Personalizar el mensaje según la plataforma
       const promptMessage =
-        optionId === 'faceId'
+        Platform.OS === 'ios'
           ? 'Confirma tu identidad con Face ID'
           : 'Confirma tu identidad con tu huella';
 
@@ -180,13 +168,10 @@ const SecurityScreen: React.FC = () => {
         return;
       }
 
-      if (optionId === 'faceId') {
-        setFaceIdEnabled(true);
-        await saveSecuritySetting('enableFaceIdCheck', true);
-      } else if (optionId === 'biometricId') {
-        setBiometricIdEnabled(true);
-        await saveSecuritySetting('enableBiometricCheck', true);
-      }
+      const field =
+        Platform.OS === 'ios' ? 'enableFaceIdCheck' : 'enableBiometricCheck';
+      setBiometricEnabled(true);
+      await saveSecuritySetting(field, true);
 
       console.log('[Security] Biometría activada exitosamente.');
     } catch (error) {
@@ -209,11 +194,7 @@ const SecurityScreen: React.FC = () => {
         }),
       ).unwrap();
     } catch (error: any) {
-      if (field === 'enableFaceIdCheck') {
-        setFaceIdEnabled(!value);
-      } else {
-        setBiometricIdEnabled(!value);
-      }
+      setBiometricEnabled(!value);
       console.error(
         '[SecurityScreen] Error al actualizar configuración:',
         error,
@@ -222,8 +203,11 @@ const SecurityScreen: React.FC = () => {
   };
 
   const options: SecurityOption[] = [
-    {id: 'faceId', title: 'Face ID', type: 'toggle'},
-    {id: 'biometricId', title: 'Biometric ID', type: 'toggle'},
+    {
+      id: 'biometric',
+      title: Platform.OS === 'ios' ? 'Face ID' : 'Biométrica',
+      type: 'toggle',
+    },
     {
       id: 'googleAuthenticator',
       title: 'Google Authenticator',
@@ -253,9 +237,7 @@ const SecurityScreen: React.FC = () => {
               </View>
               {option.type === 'toggle' ? (
                 <Switch
-                  value={
-                    option.id === 'faceId' ? faceIdEnabled : biometricIdEnabled
-                  }
+                  value={biometricEnabled}
                   onValueChange={value => handleToggleChange(option.id, value)}
                   disabled={isLoading}
                   trackColor={{
