@@ -37,7 +37,6 @@ import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import CurrencySelector, {Currency} from '../../components/CurrencySelector';
 import {useLatestVesRate} from '../../hooks/useLatestVesRate';
 import {formatAmountByCurrency} from '../../utils/currency';
-import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -583,7 +582,7 @@ const PurchaseConfirmationScreen: React.FC = () => {
       });
 
       // Navegar a la pantalla de éxito
-      (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, {
+      (navigation as any).navigate('PurchaseSuccess', {
         purchaseId: purchaseId,
       });
     } catch (error: any) {
@@ -846,30 +845,31 @@ const PurchaseConfirmationScreen: React.FC = () => {
               </Text>
             )}
           </TouchableOpacity>
-          {/* Solo mostrar botón de pago en tienda si NO hay payments seleccionados */}
-          {!(paymentsFromRoute && paymentsFromRoute.length > 0) && (
-            <TouchableOpacity
-              style={[
-                styles.storePaymentButton,
-                (isCreatingOrder ||
-                  isProcessingPayment ||
-                  isVerifyingPayment) &&
-                  styles.storePaymentButtonDisabled,
-              ]}
-              onPress={handleStorePayment}
-              activeOpacity={0.8}
-              disabled={
-                isCreatingOrder || isProcessingPayment || isVerifyingPayment
-              }>
-              {isCreatingOrder ? (
-                <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
-              ) : (
-                <Text style={styles.storePaymentButtonText}>
-                  Pago en tienda
-                </Text>
-              )}
-            </TouchableOpacity>
-          )}
+          {/* Solo mostrar botón de pago en tienda si NO hay payments seleccionados y no es suscripción */}
+          {!(paymentsFromRoute && paymentsFromRoute.length > 0) &&
+            !isPlanSubscription && (
+              <TouchableOpacity
+                style={[
+                  styles.storePaymentButton,
+                  (isCreatingOrder ||
+                    isProcessingPayment ||
+                    isVerifyingPayment) &&
+                    styles.storePaymentButtonDisabled,
+                ]}
+                onPress={handleStorePayment}
+                activeOpacity={0.8}
+                disabled={
+                  isCreatingOrder || isProcessingPayment || isVerifyingPayment
+                }>
+                {isCreatingOrder ? (
+                  <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
+                ) : (
+                  <Text style={styles.storePaymentButtonText}>
+                    Pago en tienda
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
         </View>
       </View>
 

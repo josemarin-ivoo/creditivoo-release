@@ -75,6 +75,7 @@ import ForgotPasswordScreen from './src/Pages/Auth/Creditivoo/views/signup/Forgo
 import ForgotPasswordOTPScreen from './src/Pages/Auth/Creditivoo/views/signup/ForgotPasswordOTPScreen';
 import ResetPasswordScreen from './src/Pages/Auth/Creditivoo/views/signup/ResetPasswordScreen';
 // import SplashScreen from './src/Pages/Auth/Creditivoo/views/splash/SplashScreen';
+import IvitooChatScreen from './src/Pages/Auth/Creditivoo/views/help/IvitooChatScreen';
 import ChangePasswordScreen from './src/Pages/Auth/Creditivoo/views/settings/ChangePasswordScreen';
 
 // import CreditivooLogin from './src/Pages/Auth/Creditivoo/CreditivooLogin'; // revisar a donde va a abrir 
@@ -337,7 +338,7 @@ const Route = () => {
         {/* end BY JAMP */}
 
           {/**"WishlistStack"*/}
-          <Tab.Screen
+          {/* <Tab.Screen
             name={Routes.WISHLISTSTACK}
             component={WishlistStack}
             options={{
@@ -374,7 +375,7 @@ const Route = () => {
                 Helper.HandleVibration();
               },
             })}
-          />
+          /> */}
           {/**"ProfileStack"*/}
           <Tab.Screen
             name={Routes.PROFILESTACK}
@@ -784,6 +785,13 @@ const Route = () => {
           component={ResetPasswordScreen}
           options={{headerShown: false}}
         />
+
+        <Stack.Screen
+          name={Routes.NAVIGATION_IVITOOCHAT}
+          component={IvitooChatScreen}
+          options={{headerShown: false}}
+        />
+
         {/* ¡CORRECCIÓN CLAVE: AÑADIR GUESTLOGIN! */}
         <Stack.Screen
         name={Routes.GUESTLOGIN}
@@ -890,6 +898,13 @@ const Route = () => {
         <Stack.Screen
           name={Routes.NAVIGATION_to_ACCOUNTSUCCESS}
           component={AccountSuccess}
+          options={{headerShown: false}}
+        />
+
+        {/**"wishtlist" */}
+        <Stack.Screen
+          name={Routes.WISHTLIST}
+          component={WishtList}
           options={{headerShown: false}}
         />
         {/**"AccountSuccess"  */}

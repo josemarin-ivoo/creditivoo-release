@@ -17,6 +17,7 @@ import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_SPACING, IVOO_TYPOGRAPHY} from '../../styles';
 import {forgotPasswordOtp} from '../../services/auth';
 import {AlertModal} from '../../components';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -150,7 +151,7 @@ const ForgotPasswordOTPScreen: React.FC = () => {
     setError(null);
 
     // Navegar a la pantalla de reset password con el código OTP
-    (navigation as any).navigate('ResetPassword', {
+    (navigation as any).navigate(Routes.NAVIGATION_RESET_PASSWORD, {
       email,
       otpCode,
     });

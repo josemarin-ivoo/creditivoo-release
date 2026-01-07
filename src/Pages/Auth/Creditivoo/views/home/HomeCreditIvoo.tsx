@@ -1,7 +1,6 @@
 import React, {useState, useCallback, useEffect} from 'react';
 import {
   View,
-  Alert,
   StyleSheet,
   StatusBar,
   TouchableOpacity,
@@ -12,7 +11,10 @@ import {
   Image,
   ImageBackground,
   Platform,
+  Modal,
+  Alert,
 } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import HomeHelpIvooAdvisor from './HomeHelpIvooAdvisor';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
@@ -22,6 +24,7 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import HomeCreditCard from './HomeCreditCard';
 import QuickActions from './QuickActions';
+import {Button} from '../../components';
 import {useIvoDispatch, useIvoSelector} from '../../../../../redux/useIvo';
 import {fetchMe} from '../../store-creditivoo/slices/auth-slice';
 import {getCreditInfo, CreditInfo} from '../../services/credit';
@@ -44,8 +47,6 @@ import {
   setNewPasswordQuery,
 } from '../../../../../Queries/queries';
 
-
-
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const HomeCreditIvoo: React.FC = () => {
@@ -54,12 +55,10 @@ const HomeCreditIvoo: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [hasShownChatModal, setHasShownChatModal] = useState(false);
 
   const [GethomeInfo, { loading, error, data: homeData }] = useLazyQuery(homeInfo);
-  // const [GethomeInfo, {loading, error, data}] = useLazyQuery(homeInfo);
-
-
-  
   // Obtener usuario del store
   const {user} = useIvoSelector(state => state.creditivoo.auth);
 
@@ -116,6 +115,19 @@ const HomeCreditIvoo: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchCreditInfo, GethomeInfo, dispatch]);
 
+  // Mostrar modal de chat si se cumplen las condiciones (solo una vez por sesión)
+  useEffect(() => {
+    if (
+      !isPlusUser &&
+      hasActiveCredit &&
+      !hasShownChatModal &&
+      creditInfo !== null
+    ) {
+      setShowChatModal(true);
+      setHasShownChatModal(true);
+    }
+  }, [isPlusUser, hasActiveCredit, hasShownChatModal, creditInfo]);
+
   // Hacer fetch de crédito cuando la pantalla recibe foco (pero no fetchMe)
   useFocusEffect(
     useCallback(() => {
@@ -137,7 +149,7 @@ const HomeCreditIvoo: React.FC = () => {
   }, [dispatch, fetchCreditInfo]);
 
   const handleRequestCredit = () => {
-    (navigation as any).navigate('IdentityVerificator');
+    (navigation as any).navigate(Routes.NAVIGATION_IDVERIFICATION);
   };
 
   const handlePayPress = async (purchaseId: number) => {
@@ -260,6 +272,11 @@ const HomeCreditIvoo: React.FC = () => {
     (navigation as any).navigate(Routes.NAVIGATION_NOTIFICATIONS);
   };
 
+  const handleCloseChatModal = () => {
+    setShowChatModal(false);
+  };
+
+
   const handleGoToSales = useCallback(() => {
 
     const option = homeData?.homeSection?.section1?.[0]?.children?.[0];
@@ -296,9 +313,6 @@ const HomeCreditIvoo: React.FC = () => {
       Alert.alert('Error', `navigate falló: ${String(e?.message ?? e)}`);
     }
   }, [homeData, navigation]);
-
-
-
 
 
   return (
@@ -363,13 +377,22 @@ const HomeCreditIvoo: React.FC = () => {
                 )}
               </View>
             ) : (
-              <View style={styles.profilePicturePlaceholder}>
-                <Icon
-                  name="person"
-                  type={IconType.MaterialIcons}
-                  size={SCREEN_WIDTH * 0.04}
-                  color={IVOO_COLORS.white}
-                />
+              <View style={styles.profilePictureContainer}>
+                <View style={styles.profilePicturePlaceholder}>
+                  <Icon
+                    name="person"
+                    type={IconType.MaterialIcons}
+                    size={SCREEN_WIDTH * 0.04}
+                    color={IVOO_COLORS.white}
+                  />
+                </View>
+                {isPlusUser && (
+                  <Image
+                    source={require('../../images/home/crown.png')}
+                    style={styles.crownIcon}
+                    resizeMode="contain"
+                  />
+                )}
               </View>
             )}
             <Text style={styles.greetingText}>
@@ -442,12 +465,34 @@ const HomeCreditIvoo: React.FC = () => {
 
           <View style={styles.sectionsContainer}>
             <Text style={styles.sectionTitle}>Novedades</Text>
-            <ImageBackground
-              source={require('../../images/home/placeholders/main-banner-placeholder.png')}
-              style={styles.bannerContainer}
-              imageStyle={styles.bannerImage}
-              resizeMode="cover"
-            />
+            {!isPlusUser && hasActiveCredit ? (
+              <TouchableOpacity
+                onPress={() => {
+                  (navigation as any).navigate('PlanSelection', {
+                    groupId: 0,
+                    isPlusPlan: true,
+                  });
+                }}
+                activeOpacity={1}
+                style={[
+                  styles.bannerContainer,
+                  styles.bannerContainerWithPadding,
+                ]}>
+                <FastImage
+                  key="plus-cta-gif"
+                  source={require('../../images/home/plus-cta.gif')}
+                  style={styles.bannerImageFull}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              </TouchableOpacity>
+            ) : (
+              <ImageBackground
+                source={require('../../images/home/placeholders/main-banner-placeholder.png')}
+                style={styles.bannerContainer}
+                imageStyle={styles.bannerImage}
+                resizeMode="cover"
+              />
+            )}
 
             <View style={styles.bottomRow}>
               <View style={styles.halfColumn}>
@@ -468,7 +513,6 @@ const HomeCreditIvoo: React.FC = () => {
                   </Text> */}
                 </TouchableOpacity>
               </View>
-              
 
               <View style={styles.halfColumn}>
                 <Text style={styles.sectionTitle}>Ayuda</Text>
@@ -494,31 +538,53 @@ const HomeCreditIvoo: React.FC = () => {
           </Text>
         </View> */}
       </ScrollView>
-      
+
+      {/* Modal promocional para usuarios no Plus con crédito activo */}
+      <Modal
+        visible={showChatModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseChatModal}>
+        <View style={styles.chatModalOverlay}>
+          <View style={styles.chatModalContent}>
+            <TouchableOpacity
+              style={styles.chatModalCloseButton}
+              onPress={handleCloseChatModal}>
+              <Icon
+                name="x"
+                type={IconType.Feather}
+                size={16}
+                color={IVOO_COLORS.white}
+              />
+            </TouchableOpacity>
+            <Image
+              source={require('../../images/home/plus-banner.png')}
+              style={styles.chatModalBannerImage}
+              resizeMode="contain"
+            />
+            <View style={styles.chatModalButtonContainer}>
+              <Button
+                title="Suscríbete"
+                onPress={() => {
+                  handleCloseChatModal();
+                  (navigation as any).navigate('PlanSelection', {
+                    groupId: 0, // No se usa cuando isPlusPlan es true
+                    isPlusPlan: true,
+                  });
+                }}
+                style={styles.chatModalSubscribeButton}
+                textStyle={styles.chatModalSubscribeButtonText}
+                width="100%"
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-
-  timerOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  timerText: {
-    fontSize: 14,
-    color: '#000',
-    fontFamily: IVOO_TYPOGRAPHY.fonts.interSemiBold,
-    marginRight: 8,
-  },
   safeArea: {
     flex: 1,
     backgroundColor: IVOO_COLORS.white,
@@ -593,7 +659,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: SCREEN_WIDTH * 0.06,
     height: SCREEN_WIDTH * 0.06,
-    zIndex: -10,
+    zIndex: 0,
   },
   profilePicturePlaceholder: {
     width: SCREEN_WIDTH * 0.08,
@@ -602,6 +668,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1,
+    position: 'relative',
   },
   greetingText: {
     fontSize: SCREEN_WIDTH * 0.038,
@@ -652,8 +720,21 @@ const styles = StyleSheet.create({
     borderRadius: 0, // Sin border radius para full width
     overflow: 'hidden',
   },
+  bannerContainerWithPadding: {
+    borderRadius: 10,
+    marginLeft: 0,
+    marginRight: 0,
+    width: '100%',
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
+  },
   bannerImage: {
     borderRadius: 0, // Sin border radius para full width
+  },
+  bannerImageFull: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
   },
   bottomRow: {
     flexDirection: 'row',
@@ -754,6 +835,66 @@ const styles = StyleSheet.create({
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     textAlign: 'center',
     marginBottom: SCREEN_HEIGHT * 0.01,
+  },
+  chatModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  chatModalContent: {
+    width: '100%',
+    maxWidth: SCREEN_WIDTH * 0.9,
+    height: SCREEN_HEIGHT * 0.75,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+    position: 'relative',
+  },
+  chatModalCloseButton: {
+    position: 'absolute',
+    top: SCREEN_HEIGHT * 0.015,
+    right: SCREEN_WIDTH * 0.064,
+    zIndex: 10,
+    padding: SCREEN_WIDTH * 0.015,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 15,
+    width: SCREEN_WIDTH * 0.08,
+    height: SCREEN_WIDTH * 0.08,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatModalBannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  chatModalButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: SCREEN_WIDTH * 0.1,
+    paddingBottom: SCREEN_HEIGHT * 0.02,
+    paddingTop: SCREEN_HEIGHT * 0.015,
+    zIndex: 10,
+  },
+  chatModalSubscribeButton: {
+    shadowColor: 'transparent',
+    shadowOffset: {width: 0, height: 0},
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  chatModalSubscribeButtonText: {
+    fontSize: SCREEN_WIDTH * 0.048,
   },
 });
 

@@ -8,8 +8,8 @@ const { width } = Dimensions.get('window');
 export const NewFeatureOverlay = ({ visible, onClose, appTheme }) => {
   if (!visible) return null;
 
-  const totalTabs = 6;
-  const tabIndex = 3; 
+  const totalTabs = 5;
+  const tabIndex = 4; 
   const tabWidth = width / totalTabs;
   // El centro exacto del espacio del Tab
   const tabCenter = (tabWidth * tabIndex) + (tabWidth / 2);
@@ -24,9 +24,10 @@ export const NewFeatureOverlay = ({ visible, onClose, appTheme }) => {
         {/* Tooltip */}
         <View style={styles.tooltipContainer}>
           <View style={styles.bubble}>
-            <Text style={styles.tooltipText}>
-              Mira la nueva función <Text style={styles.boldText}>CREDITIVOO</Text> que tiene la ivoo-app
+            <Text style={[styles.tooltipText, styles.titleText]}>
+              ¡Compra hoy y paga después!
             </Text>
+            <Text style={styles.tooltipText}>Ya puedes usar <Text style={styles.boldText}>CREDITIVOO</Text> para pagar tus compras en cuotas desde la app.</Text>
             <TouchableOpacity onPress={onClose} style={styles.button}>
               <Text style={styles.buttonText}>¡ENTENDIDO!</Text>
             </TouchableOpacity>
@@ -53,6 +54,13 @@ export const NewFeatureOverlay = ({ visible, onClose, appTheme }) => {
 };
 
 const styles = StyleSheet.create({
+
+  titleText: {
+    fontWeight: 'bold',
+    fontSize: 18,      // Un poco más grande para resaltar
+    marginBottom: 8,   // Esto genera el "salto de línea" con espacio visual
+  },
+  
   overlayBackground: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.8)', // Un poco más oscuro para resaltar más
@@ -64,14 +72,14 @@ const styles = StyleSheet.create({
     height: 70,
     borderRadius: 35,
     borderWidth: 3,
-    borderColor: '#7CFC00',
+    borderColor: '#0add73',
     // ELIMINAMOS EL BACKGROUND WHITE
     backgroundColor: 'transparent', 
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
     // Mantenemos la sombra para dar sensación de luz sobre el ícono
-    shadowColor: '#7CFC00',
+    shadowColor: '#0add73',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
     shadowRadius: 10,
@@ -97,8 +105,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tooltipText: { color: '#333', fontSize: 16, textAlign: 'center' },
-  boldText: { fontWeight: 'bold', color: '#00A650' },
-  button: { marginTop: 15, backgroundColor: '#00A650', paddingVertical: 10, paddingHorizontal: 25, borderRadius: 25 },
+  boldText: { fontWeight: 'bold', color: '#0add73' },
+  button: { marginTop: 15, backgroundColor: '#0add73', paddingVertical: 10, paddingHorizontal: 25, borderRadius: 25 },
   buttonText: { color: 'white', fontWeight: 'bold' },
   arrow: {
     position: 'absolute',

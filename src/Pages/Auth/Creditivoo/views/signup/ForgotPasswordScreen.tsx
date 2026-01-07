@@ -17,6 +17,7 @@ import {Input, AlertModal} from '../../components';
 import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {forgotPasswordOtp} from '../../services/auth';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -56,7 +57,7 @@ const ForgotPasswordScreen: React.FC = () => {
       const otpResponse = await forgotPasswordOtp(trimmedEmail);
       setIsLoading(false);
 
-      (navigation as any).navigate('ForgotPasswordOTP', {
+      (navigation as any).navigate(Routes.NAVIGATION_FORGOT_OTPPASSWORD, {
         email: trimmedEmail,
         expiresInSeconds: otpResponse.expiresInSeconds,
         cooldownSeconds: otpResponse.cooldownSeconds,

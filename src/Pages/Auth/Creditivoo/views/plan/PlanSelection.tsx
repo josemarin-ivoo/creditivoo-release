@@ -46,7 +46,9 @@ const PlanSelection: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [isPlusPlan, setIsPlusPlan] = useState(false);
+  const [isPlusPlan, setIsPlusPlan] = useState(
+    isPlusPlanParam === true ? true : false,
+  );
   const [isUpdating, setIsUpdating] = useState(false);
   const [updatingPlanId, setUpdatingPlanId] = useState<number | null>(null);
   const [isInsufficientCredit, setIsInsufficientCredit] = useState(false);
@@ -63,6 +65,11 @@ const PlanSelection: React.FC = () => {
           const isPlusUser = await getIsPlusUser();
           // Si el usuario ya es Plus, no mostrar el card de suscripción
           setIsPlusPlan(!isPlusUser);
+          // Si es Plus Plan, no necesitamos cargar planes, así que marcamos como no cargando
+          if (!isPlusUser) {
+            setIsLoading(false);
+            setError(null);
+          }
         } catch (err: any) {
           console.error(
             '[PlanSelection] Error al verificar si usuario es Plus:',
@@ -109,10 +116,11 @@ const PlanSelection: React.FC = () => {
       if (isPlusPlan) {
         setIsLoading(false);
         setRefreshing(false);
+        setError(null);
         return;
       }
 
-      if (!groupId) {
+      if (!groupId || groupId === 0) {
         setError('ID de grupo no válido');
         setIsLoading(false);
         return;
@@ -220,11 +228,6 @@ const PlanSelection: React.FC = () => {
       setIsUpdating(false);
       setUpdatingPlanId(null);
     }
-  };
-
-  const handleCustomAmount = () => {
-    console.log('[PlanSelection] Monto personalizado');
-    // TODO: Navegar a pantalla de monto personalizado
   };
 
   const handleSubscribe = async () => {
@@ -335,17 +338,12 @@ const PlanSelection: React.FC = () => {
           // Mostrar tarjeta PLAN PLUS cuando isPlusPlan es true
           <View style={styles.content}>
             <View style={styles.plusPlanCard}>
-              {/* Header con gradiente */}
-              <LinearGradient
-                colors={['#52e665', '#b1c0d8', '#fea9fe']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
-                style={styles.plusPlanHeader}>
-                <View style={styles.plusPlanHeaderContent}>
-                  <Text style={styles.plusPlanLabel}>PLAN</Text>
-                  <Text style={styles.plusPlanTitle}>PLUS</Text>
-                </View>
-              </LinearGradient>
+              {/* Header con imagen */}
+              <Image
+                source={require('../../images/plans/plus-card-header.png')}
+                style={styles.plusPlanHeader}
+                resizeMode="cover"
+              />
 
               {/* Contenido principal */}
               <View style={styles.plusPlanContent}>
@@ -746,12 +744,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(110, 113, 124, 0.2)',
   },
   plusPlanHeader: {
-    paddingTop: SCREEN_HEIGHT * 0.03,
-    paddingBottom: SCREEN_HEIGHT * 0.015,
-    paddingHorizontal: SCREEN_WIDTH * 0.05,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    width: '100%',
+    height: SCREEN_HEIGHT * 0.15,
   },
   plusPlanHeaderContent: {
     alignItems: 'center',
@@ -791,7 +785,7 @@ const styles = StyleSheet.create({
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
     color: IVOO_COLORS.black,
-    marginBottom: 1,
+    marginBottom: -SCREEN_HEIGHT * 0.005,
   },
   plusPlanInitialLabel: {
     fontSize: SCREEN_WIDTH * 0.055,
@@ -805,7 +799,7 @@ const styles = StyleSheet.create({
   benefitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SCREEN_HEIGHT * 0.015,
+    marginBottom: SCREEN_HEIGHT * 0.008,
   },
   benefitIcon: {
     marginRight: SCREEN_WIDTH * 0.03,

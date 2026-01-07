@@ -9,8 +9,8 @@ import {
   ViewStyle,
   Animated,
   PanResponder,
-  TouchableOpacity,
   TouchableWithoutFeedback,
+  TouchableOpacity,
 } from 'react-native';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../styles';
 
@@ -22,6 +22,7 @@ interface IvitooAdvisorProps {
   staticMode?: boolean;
   showBubble?: boolean;
   imageOnLeft?: boolean;
+  onPress?: () => void; // Propiedad añadida para manejar la navegación externa
 }
 
 const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
@@ -30,6 +31,7 @@ const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
   staticMode = false,
   showBubble = false,
   imageOnLeft = false,
+  onPress,
 }) => {
   const [isBubbleVisible, setIsBubbleVisible] = useState(showBubble || !staticMode);
   const pan = useRef(new Animated.ValueXY()).current;
@@ -44,12 +46,21 @@ const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
     return () => pan.removeListener(id);
   }, [pan, val, staticMode]);
 
+  // Manejador centralizado: Si hay un onPress externo (navegación), lo ejecuta.
+  // Si no, mantiene el comportamiento original de alternar el globo.
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      setIsBubbleVisible(prev => !prev);
+    }
+  };
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => !staticMode,
       onMoveShouldSetPanResponder: (_, gestureState) => {
         if (staticMode) return false;
-        // Solo activamos el movimiento si el usuario arrastra más de 5px
         return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
       },
       onPanResponderGrant: () => {
@@ -64,15 +75,13 @@ const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
         if (staticMode) return;
         pan.flattenOffset();
         
-        // Si el desplazamiento es mínimo, lo tratamos como un tap
+        // Si es un toque (no arrastre), ejecutamos handlePress
         if (Math.abs(gestureState.dx) < 5 && Math.abs(gestureState.dy) < 5) {
-          setIsBubbleVisible(prev => !prev);
+          handlePress();
         }
       },
     }),
   ).current;
-
-  const toggleBubble = () => setIsBubbleVisible(prev => !prev);
 
   const imageComponent = (
     <Image
@@ -99,7 +108,7 @@ const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
     return (
       <TouchableOpacity 
         activeOpacity={0.9} 
-        onPress={toggleBubble} 
+        onPress={handlePress} 
         style={[styles.staticContainer, containerStyle]}>
         {imageOnLeft ? (
           <>{imageComponent}{bubbleComponent}</>
@@ -120,7 +129,7 @@ const IvitooAdvisor: React.FC<IvitooAdvisorProps> = ({
         {transform: pan.getTranslateTransform()},
       ]}>
       {bubbleComponent}
-      <TouchableWithoutFeedback onPress={toggleBubble}>
+      <TouchableWithoutFeedback onPress={handlePress}>
         <View>
           {imageComponent}
         </View>

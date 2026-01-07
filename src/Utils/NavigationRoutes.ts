@@ -109,6 +109,7 @@ export enum Routes {
   NAVIGATION_FORGOT_PASSWORD = 'ForgotPasswordScreen',
   NAVIGATION_FORGOT_OTPPASSWORD = 'ForgotPasswordOTPScreen',
   NAVIGATION_RESET_PASSWORD = 'ResetPasswordScreen',
+  NAVIGATION_IVITOOCHAT = 'IvitooChatScreen',
   // TAB
   //END JAMP 02-12-2025
 

@@ -19,7 +19,7 @@ import {
   setPassword as setPasswordInStore,
   clearRegisterData,
   updateAuth,
-} from '../../store';
+} from '../../store-creditivoo';
 import {User} from '../../store-creditivoo/slices/auth-slice';
 import {
   requestNotificationPermission,

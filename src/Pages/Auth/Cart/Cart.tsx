@@ -592,21 +592,42 @@ const Cart = () => {
 
   const Header = () => {
     return (
-        <View style={headerstyles.headerContainer}>
-          <View style={headerstyles.titleContainer}>
-            <Text style={[commonStyle.h5,
-              commonStyle.fontBold, {color: appTheme.text}]}>{translate('cart.lbl_cart_title')}</Text>
-          </View>
-          {/*<TouchableHighlight onPress={()=>{}} underlayColor="transparent">
-            <ProgressiveImage
-                source={appTheme.ic_share_new}
-                style={{width: 24, height: 24, marginRight: 20}}
-                resizeMode="stretch"
-            />
-          </TouchableHighlight>*/}
+      <View style={headerstyles.headerContainer}>
+        <View style={headerstyles.titleContainer}>
+          <Text
+            style={[
+              commonStyle.h5,
+              commonStyle.fontBold,
+              { color: (appTheme as any).text },
+            ]}
+          >
+            {translate('cart.lbl_cart_title')}
+          </Text>
         </View>
+
+        {/* ✅ Botón Wishlist */}
+        <TouchableOpacity
+          onPress={() => {
+            Helper.HandleVibration();
+            (navigation as any).navigate(Routes.WISHTLIST);
+          }}
+          style={headerstyles.wishlistBtn}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Image
+            source={
+              (appTheme as any)?.type === 'green'
+                ? ResImage.ic_wishlist_white
+                : ResImage.ic_wishlist_green
+            }
+            style={{ width: 22, height: 22 }}
+            resizeMode="stretch"
+          />
+        </TouchableOpacity>
+      </View>
     );
   };
+    
 
   return (
     <View
@@ -1086,7 +1107,7 @@ const headerstyles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 10,
     height: 60,
     marginTop: Platform.OS === 'ios' ? 60 : 20,
@@ -1095,13 +1116,11 @@ const headerstyles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  iconContainer: {
+  wishlistBtn: {
     position: 'absolute',
-    right: 10,
+    right: 12,
+    padding: 6,
+    borderRadius: 16,
   },
 });
 

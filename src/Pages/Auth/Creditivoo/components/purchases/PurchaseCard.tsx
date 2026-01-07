@@ -29,6 +29,7 @@ export interface Purchase {
     | 'PENDING_INVOICE'
     | 'IN_PROGRESS';
   formattedDate?: string;
+  isForPlanSubscription?: boolean;
 }
 
 interface PurchaseCardProps {
@@ -135,7 +136,11 @@ const PurchaseCard: React.FC<PurchaseCardProps> = ({
                 {isLoading ? (
                   <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
                 ) : (
-                  <Text style={styles.detailsButtonText}>Ver detalles</Text>
+                  <Text style={styles.detailsButtonText}>
+                    {purchase.isForPlanSubscription
+                      ? 'Suscripción Plan Plus'
+                      : 'Ver detalles'}
+                  </Text>
                 )}
               </TouchableOpacity>
             )}

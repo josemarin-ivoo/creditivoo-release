@@ -19,7 +19,6 @@ import {
   getPurchaseById,
   PurchaseResponse,
 } from '../../services/purchases';
-import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -107,6 +106,8 @@ const mapPurchaseResponseToPurchase = (
     formattedDate: formatDate(purchaseResponse.createdAt),
     // Pasar el tenant directamente desde la respuesta del API
     tenant: purchaseResponse.tenant || undefined,
+    // Incluir isForPlanSubscription si existe en la respuesta
+    isForPlanSubscription: purchaseResponse.isForPlanSubscription || false,
   };
 };
 
@@ -182,6 +183,11 @@ const MyPurchasesScreen: React.FC = () => {
   };
 
   const handlePurchasePress = async (purchase: Purchase) => {
+    // Si es una suscripción al Plan Plus, no hacer nada
+    if (purchase.isForPlanSubscription) {
+      return;
+    }
+
     if (loadingPurchaseId) {
       return; // Evitar múltiples llamadas
     }
@@ -207,7 +213,7 @@ const MyPurchasesScreen: React.FC = () => {
       );
 
       // Navigate to payment installments screen with full purchase data
-      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+      (navigation as any).navigate('PaymentInstallments', {
         purchase: purchaseDetails,
       });
     } catch (err: any) {
@@ -250,7 +256,7 @@ const MyPurchasesScreen: React.FC = () => {
       );
 
       // Navigate to payment installments screen with full purchase data
-      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+      (navigation as any).navigate('PaymentInstallments', {
         purchase: purchaseDetails,
       });
     } catch (err: any) {
@@ -259,7 +265,7 @@ const MyPurchasesScreen: React.FC = () => {
         err,
       );
       // Fallback: navigate with basic purchase data
-      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+      (navigation as any).navigate('PaymentInstallments', {
         purchase,
       });
     } finally {

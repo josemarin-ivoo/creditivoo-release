@@ -294,18 +294,7 @@ export async function getPurchaseById(
  */
 export async function getCreditInfo(): Promise<CreditInfo> {
   try {
-    console.log('[Credit Service] ===== GET CREDIT INFO =====');
-    console.log(
-      '[Credit Service] Endpoint:',
-      api.defaults.baseURL + '/credit/me',
-    );
-
     const response = await api.get<CreditInfoResponse>('/credit/me');
-
-    console.log(
-      '[Credit Service] Información de crédito obtenida:',
-      response.data?.data,
-    );
 
     return response.data.data;
   } catch (error: any) {

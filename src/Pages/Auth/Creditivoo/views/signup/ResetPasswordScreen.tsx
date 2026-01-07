@@ -19,6 +19,7 @@ import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import {useIvoDispatch} from '../../../../../redux/useIvo';
 import {updateAuth} from '../../store-creditivoo';
 import {User} from '../../store-creditivoo/slices/auth-slice';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -429,29 +430,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
     width: '100%',
-    marginTop: SCREEN_HEIGHT * 0.05,
+    marginTop: SCREEN_HEIGHT * 0.07,
+    alignItems: 'center',
+    // La sombra se aplica a un contenedor externo para evitar el sangrado blanco
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   unifiedButton: {
     flexDirection: 'row',
-    width: SCREEN_WIDTH * 0.82,
+    width: '100%',
     height: 50,
     borderRadius: 25,
-    overflow: 'hidden',
-    backgroundColor: IVOO_COLORS.white,
-    borderWidth: 1,
+    overflow: 'hidden', // Corta los botones hijos perfectamente
+    borderWidth: 1.5,
     borderColor: IVOO_COLORS.primary,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    backgroundColor: IVOO_COLORS.white,
+    
   },
   cancelButton: {
     flex: 1,

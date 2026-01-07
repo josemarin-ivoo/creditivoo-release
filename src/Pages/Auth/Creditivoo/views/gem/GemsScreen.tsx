@@ -8,8 +8,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
@@ -25,12 +23,16 @@ import {
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
+// Helper function to format date from YYYY-MM-DD to DD/MM/YYYY
 const formatDate = (dateString: string): string => {
   const [year, month, day] = dateString.split('-');
   return `${day}/${month}/${year}`;
 };
 
+// Helper function to map API icon to component iconType
 const mapIconToIconType = (icon: string): 'clock' | 'card' => {
+  // hourglass, bills -> clock
+  // gem, star -> card
   if (icon === 'hourglass' || icon === 'bills') {
     return 'clock';
   }
@@ -52,17 +54,23 @@ const GemsScreen: React.FC = () => {
         setIsLoading(true);
       }
       setError(null);
+      console.log('[GemsScreen] Obteniendo información de gemas...');
       const data = await getPointsInfo();
+      console.log('[GemsScreen] Información de gemas obtenida:', data);
       setPointsData(data);
     } catch (err: any) {
-      console.error('[GemsScreen] Error:', err);
-      setError(err.message || 'Error al cargar gemas');
+      console.error('[GemsScreen] Error al obtener información de gemas:', err);
+      setError(err.message || 'Error al cargar la información de gemas');
     } finally {
-      if (showRefreshing) setRefreshing(false);
-      else setIsLoading(false);
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
     }
   }, []);
 
+  // Recargar cuando la pantalla recibe foco (incluye el montaje inicial)
   useFocusEffect(
     useCallback(() => {
       fetchPointsData();
@@ -73,8 +81,12 @@ const GemsScreen: React.FC = () => {
     fetchPointsData(true);
   }, [fetchPointsData]);
 
+  // Map API transactions to component format
   const transactions = useMemo((): GemTransaction[] => {
-    if (!pointsData?.recentTransactions) return [];
+    if (!pointsData?.recentTransactions) {
+      return [];
+    }
+
     return pointsData.recentTransactions.map((tx: PointsTransaction) => ({
       id: tx.id.toString(),
       amount: tx.amount,
@@ -84,264 +96,299 @@ const GemsScreen: React.FC = () => {
     }));
   }, [pointsData]);
 
-  const handleBackPress = () => navigation.goBack();
-  const handleHowToEarnPress = () => (navigation as any).navigate('HowToEarnGems');
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
+  const handleHowToEarnPress = () => {
+    (navigation as any).navigate('HowToEarnGems');
+  };
+
   const renderTransaction = ({item}: {item: GemTransaction}) => (
     <GemTransactionCard transaction={item} />
   );
 
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyStateText}>
+        No tienes transacciones de gemas aún
+      </Text>
+    </View>
+  );
+
   if (isLoading && !refreshing) {
     return (
-      <CurvedHeaderLayout title="Gemas" showBackButton onBackPress={handleBackPress}>
+      <CurvedHeaderLayout
+        title="Gemas"
+        showBackButton={true}
+        onBackPress={handleBackPress}
+        scroll={true}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={IVOO_COLORS.primary} />
+          <Text style={styles.loadingText}>
+            Cargando información de gemas...
+          </Text>
+        </View>
+      </CurvedHeaderLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <CurvedHeaderLayout
+        title="Gemas"
+        showBackButton={true}
+        onBackPress={handleBackPress}
+        scroll={true}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => fetchPointsData()}
+            activeOpacity={0.7}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </TouchableOpacity>
         </View>
       </CurvedHeaderLayout>
     );
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={{flex: 1}}>
-        <CurvedHeaderLayout
-          title="Gemas"
-          showBackButton={true}
-          onBackPress={handleBackPress}
-          scroll={true}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[IVOO_COLORS.primary]}
-            />
-          }>
-          
-          <View style={styles.parentCard}>
-            
-            {/* Card Interno Superior que contiene el gradiente */}
-            <View style={styles.statsBalanceCard}>
-              <LinearGradient
-                colors={['#A9FD45', '#D1B4F4', '#F4AFF4']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}
-                style={styles.fullGradientContainer}>
-                
-                {/* Header: Título GEMAS */}
-                <View style={styles.headerTitleContainer}>
-                  <Text style={styles.titleText}>GEMAS</Text>
-                </View>
+    <CurvedHeaderLayout
+      title="Gemas"
+      showBackButton={true}
+      onBackPress={handleBackPress}
+      scroll={true}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[IVOO_COLORS.primary]}
+          tintColor={IVOO_COLORS.primary}
+        />
+      }>
+      {/* Main Gems Card */}
+      <View style={styles.mainCard}>
+        {/* GEMAS Title with Gradient */}
+        <LinearGradient
+          colors={['#52e665', '#b1c0d8', '#fea9fe']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.titleGradient}>
+          <Text style={styles.titleText}>GEMAS</Text>
+        </LinearGradient>
 
-                {/* BODY TIPO VIDRIO (Glassmorphism) */}
-                <View style={styles.glassContainer}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>Total ganadas:</Text>
-                    <View style={styles.statValueContainer}>
-                      <Text style={styles.statValue}>{pointsData?.totalPoints || 0}</Text>
-                      <GemIcon width={24} height={24} />
-                    </View>
-                  </View>
-
-                  <View style={styles.glassDivider} />
-
-                  <View style={styles.statItem}>
-                    <Text style={styles.statLabel}>Pendientes:</Text>
-                    <View style={styles.statValueContainer}>
-                      <Text style={styles.statValue}>{pointsData?.currentPoints || 0}</Text>
-                      <GemIcon width={24} height={24} />
-                    </View>
-                  </View>
-                </View>
-              </LinearGradient>
-            </View>
-
-            {/* Sección de Historial */}
-            <View style={styles.transactionsSection}>
-              <Text style={styles.sectionTitle}>Transacciones recientes:</Text>
-              <FlatList
-                data={transactions}
-                renderItem={renderTransaction}
-                keyExtractor={item => item.id}
-                scrollEnabled={false}
-                ListEmptyComponent={
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyStateText}>No hay transacciones aún</Text>
-                  </View>
-                }
+        {/* Stats Section */}
+        <LinearGradient
+          colors={['#F0FDF4', '#F0F9FF', '#FDF2F8']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Total ganadas:</Text>
+            <View style={styles.statValueContainer}>
+              <Text style={styles.statValue}>
+                {pointsData?.totalPoints || 0}
+              </Text>
+              <GemIcon
+                width={SCREEN_WIDTH * 0.07}
+                height={SCREEN_WIDTH * 0.07}
               />
             </View>
           </View>
 
-          {/* TEXTO INFORMATIVO */}
-          <View style={styles.footerContainer}>
-            <Text style={styles.infoText}>
-              Tus gemas crecen según tu comportamiento en Creditivoo. Se acreditan
-              automáticamente cuando completas acciones que aportan a tu progreso.
-            </Text>
+          <View style={styles.divider} />
 
-            <TouchableOpacity
-              style={styles.howToEarnButton}
-              onPress={handleHowToEarnPress}
-              activeOpacity={0.7}>
-              <Text style={styles.howToEarnText}>¿Cómo puedo ganar gemas?</Text>
-            </TouchableOpacity>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Pendientes:</Text>
+            <View style={styles.statValueContainer}>
+              <Text style={styles.statValue}>
+                {pointsData?.currentPoints || 0}
+              </Text>
+              <GemIcon
+                width={SCREEN_WIDTH * 0.07}
+                height={SCREEN_WIDTH * 0.07}
+              />
+            </View>
           </View>
-        </CurvedHeaderLayout>
+        </LinearGradient>
+
+        {/* Recent Transactions */}
+        <View style={styles.transactionsSection}>
+          <Text style={styles.sectionTitle}>Transacciones recientes:</Text>
+          {transactions.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <FlatList
+              data={transactions}
+              renderItem={renderTransaction}
+              keyExtractor={item => item.id}
+              scrollEnabled={false}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
       </View>
-    </TouchableWithoutFeedback>
+
+      {/* Info Text */}
+      <Text style={styles.infoText}>
+        Tus gemas crecen según tu comportamiento en Creditivoo. Se acreditan
+        automáticamente cuando completas acciones que aportan a tu progreso.
+      </Text>
+
+      {/* How to Earn Link */}
+      <TouchableOpacity
+        style={styles.howToEarnButton}
+        onPress={handleHowToEarnPress}
+        activeOpacity={0.7}>
+        <Text style={styles.howToEarnText}>¿Cómo puedo ganar gemas?</Text>
+      </TouchableOpacity>
+    </CurvedHeaderLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  parentCard: {
-    backgroundColor: 'white',
-    borderRadius: 24,
-    padding: 16,
-    marginHorizontal: 15,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#F0F0F0',
-  },
-  statsBalanceCard: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 25,
-  },
-  fullGradientContainer: {
-    width: '100%',
-    paddingBottom: 5,
-    paddingTop: 5,
-  },
-  headerTitleContainer: {
-    paddingVertical: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 5,
-  },
-
   mainCard: {
     backgroundColor: IVOO_COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    marginHorizontal: 15,
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: '#EFEFEF', // Borde muy suave en lugar de sombra
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: SCREEN_WIDTH * 0.05,
+    marginHorizontal: SCREEN_WIDTH * 0.01,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   titleGradient: {
-    paddingVertical: 12,
+    paddingVertical: SCREEN_WIDTH * 0.04,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
     alignItems: 'center',
     justifyContent: 'center',
   },
   titleText: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: 'black',
-    letterSpacing: 2,
-  },
-
-  glassContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 0,
-    // marginTop: '-5',
-    paddingVertical: 18,
-    paddingHorizontal: 10,
-    width:'100%',
-    borderRadius: 10,
-    // Fondo blanco con transparencia para efecto cristal
-    backgroundColor: 'rgba(255, 255, 255, 0.45)', 
-    // Borde muy fino y claro para simular el canto del vidrio
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
-    // Sombra muy suave para despegarlo del fondo
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    fontSize: SCREEN_WIDTH * 0.065,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+    letterSpacing: 1,
   },
   statsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 20,
-    paddingHorizontal: 10,
+    paddingVertical: SCREEN_WIDTH * 0.05,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
   },
   statItem: {
     flex: 1,
-    paddingLeft: 10,
-  },
-  glassDivider: {
-    width: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    height: '70%',
+    alignItems: 'center',
   },
   divider: {
-    width: 1.5,
-    backgroundColor: 'rgba(0,0,0,0.15)', // Divisor semi-transparente para que combine con el fondo
-    height: '80%',
+    width: 1,
+    backgroundColor: '#D1D5DB',
+    marginHorizontal: SCREEN_WIDTH * 0.04,
   },
   statLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(0, 0, 0, 0.5)',
-    marginBottom: 2,
-    // textTransform: 'uppercase',
+    fontSize: SCREEN_WIDTH * 0.035,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: '#6B7280',
+    marginBottom: SCREEN_WIDTH * 0.015,
+    textAlign: 'center',
   },
   statValueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   statValue: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: 'black',
-    marginRight: 5,
+    fontSize: SCREEN_WIDTH * 0.08,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+    marginRight: SCREEN_WIDTH * 0.015,
   },
   transactionsSection: {
-    marginTop: 5,
-    paddingHorizontal: 5,
+    marginTop: SCREEN_WIDTH * 0.04,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    paddingBottom: SCREEN_WIDTH * 0.04,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 15,
-  },
-  footerContainer: {
-    paddingHorizontal: 30,
-    marginTop: 25,
-    alignItems: 'center',
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.textPrimary,
+    marginBottom: SCREEN_WIDTH * 0.03,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: SCREEN_WIDTH * 0.037,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-    color: '#444',
+    color: IVOO_COLORS.textPrimary,
+    lineHeight: SCREEN_WIDTH * 0.055,
+    marginBottom: SCREEN_WIDTH * 0.04,
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 25,
+    paddingHorizontal: SCREEN_WIDTH * 0.02,
   },
   howToEarnButton: {
-    paddingVertical: 10,
+    alignSelf: 'center',
+    paddingVertical: SCREEN_WIDTH * 0.02,
   },
   howToEarnText: {
-    fontSize: 18,
+    fontSize: SCREEN_WIDTH * 0.045,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
-    color: '#00D37F', // Color verde de la imagen
-    fontWeight: '700',
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 50,
-  },
-  emptyContainer: {
-    paddingVertical: 30,
     alignItems: 'center',
+    paddingVertical: SCREEN_WIDTH * 0.2,
+  },
+  loadingText: {
+    marginTop: SCREEN_WIDTH * 0.04,
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.textSecondary || '#6E717C',
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SCREEN_WIDTH * 0.2,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  errorText: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: '#E74C3C',
+    textAlign: 'center',
+    marginBottom: SCREEN_WIDTH * 0.04,
+  },
+  retryButton: {
+    backgroundColor: IVOO_COLORS.primary,
+    paddingHorizontal: SCREEN_WIDTH * 0.06,
+    paddingVertical: SCREEN_WIDTH * 0.03,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: SCREEN_WIDTH * 0.04,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.white,
+  },
+  emptyState: {
+    paddingVertical: SCREEN_WIDTH * 0.08,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyStateText: {
-    fontSize: 15,
-    color: '#999',
+    fontSize: SCREEN_WIDTH * 0.037,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.grayMedium,
+    textAlign: 'center',
   },
 });
 

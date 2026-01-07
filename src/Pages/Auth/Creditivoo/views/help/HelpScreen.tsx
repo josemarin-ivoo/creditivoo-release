@@ -14,6 +14,7 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import {IvitooAdvisor} from '../../components';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 if (
   Platform.OS === 'android' &&
@@ -82,7 +83,9 @@ const HelpScreen: React.FC = () => {
       showBackButton={true}
       onBackPress={handleBackPress}
       scroll={true}
-      floatingComponent={<IvitooAdvisor />}>
+      floatingComponent={<IvitooAdvisor 
+      onPress={() => navigation.navigate(Routes.NAVIGATION_IVITOOCHAT as never)} 
+    />}>
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Preguntas frecuentes</Text>
 

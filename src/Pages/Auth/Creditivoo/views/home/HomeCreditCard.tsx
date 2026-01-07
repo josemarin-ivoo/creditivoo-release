@@ -183,8 +183,8 @@ const HomeCreditCard: React.FC<HomeCreditCardProps> = ({
       <View style={styles.mainCardTopRow}>
         {!hasCredit && (
           <View style={styles.mainCardTextContainer}>
-            <Text style={styles.mainCardTitle}>Solicita aquí tu línea de</Text>
-            <Text style={styles.mainCardTitleBold}>CreditIvoo disponible</Text>
+            <Text style={styles.mainCardTitle}>Activa aquí tu línea</Text>
+            <Text style={styles.mainCardTitleBold}>CreditIvoo</Text>
           </View>
         )}
 

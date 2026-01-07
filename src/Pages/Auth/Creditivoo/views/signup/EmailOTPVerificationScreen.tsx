@@ -16,6 +16,7 @@ import RegisterLayout from '../../components/layouts/RegisterLayout';
 import {IVOO_COLORS, IVOO_SPACING, IVOO_TYPOGRAPHY} from '../../styles';
 import {verifyEmailOTP, resendEmailOTP} from '../../services/otpVerification';
 import {AlertModal} from '../../components';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -134,7 +135,7 @@ const EmailOTPVerificationScreen: React.FC = () => {
           console.log('Token recibido:', response.token);
         }
         // Navigate to password screen after successful validation
-        (navigation as any).navigate('Password');
+        (navigation as any).navigate(Routes.NAVIGATION_RESET_PASSWORD);
       } else {
         setError(
           'Código OTP inválido. Por favor, verifica e intenta de nuevo.',
