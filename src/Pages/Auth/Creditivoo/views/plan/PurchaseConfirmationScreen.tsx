@@ -37,6 +37,7 @@ import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import CurrencySelector, {Currency} from '../../components/CurrencySelector';
 import {useLatestVesRate} from '../../hooks/useLatestVesRate';
 import {formatAmountByCurrency} from '../../utils/currency';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -582,7 +583,7 @@ const PurchaseConfirmationScreen: React.FC = () => {
       });
 
       // Navegar a la pantalla de éxito
-      (navigation as any).navigate('PurchaseSuccess', {
+      (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, {
         purchaseId: purchaseId,
       });
     } catch (error: any) {
