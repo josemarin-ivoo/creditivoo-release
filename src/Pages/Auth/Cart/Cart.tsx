@@ -598,14 +598,15 @@ const Cart = () => {
             style={[
               commonStyle.h5,
               commonStyle.fontBold,
-              { color: (appTheme as any).text },
+              { color: (appTheme as any)?.text ?? '#000' },
             ]}
+            numberOfLines={1}
           >
             {translate('cart.lbl_cart_title')}
           </Text>
         </View>
 
-        {/* ✅ Botón Wishlist */}
+        {/* ✅ Botón Wishlist (derecha) */}
         <TouchableOpacity
           onPress={() => {
             Helper.HandleVibration();
@@ -613,6 +614,7 @@ const Cart = () => {
           }}
           style={headerstyles.wishlistBtn}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.8}
         >
           <Image
             source={
@@ -620,7 +622,7 @@ const Cart = () => {
                 ? ResImage.ic_wishlist_white
                 : ResImage.ic_wishlist_green
             }
-            style={{ width: 22, height: 22 }}
+            style={headerstyles.wishlistIcon}
             resizeMode="stretch"
           />
         </TouchableOpacity>
@@ -1121,6 +1123,10 @@ const headerstyles = StyleSheet.create({
     right: 12,
     padding: 6,
     borderRadius: 16,
+  },
+  wishlistIcon: {
+    width: 22,
+    height: 22,
   },
 });
 

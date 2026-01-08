@@ -907,6 +907,12 @@ const Route = () => {
           component={WishtList}
           options={{headerShown: false}}
         />
+        {/** "ProductDetails" */}
+        <Stack.Screen
+          name={Routes.NAVIGATION_TO_PRODUCTDETAILS}
+          component={ProductDetails}
+          options={{headerShown: false}}
+        />
         {/**"AccountSuccess"  */}
       </Stack.Navigator>
     );
