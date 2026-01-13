@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   iconWrapper: {
     width: SCREEN_WIDTH * 0.15,
     height: SCREEN_WIDTH * 0.15,
-    borderRadius: SCREEN_WIDTH * 0.02,
+    borderRadius: SCREEN_WIDTH * 0.03, // Aumentamos un poco para que sea más armónico
     backgroundColor: IVOO_COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -102,13 +102,16 @@ const styles = StyleSheet.create({
 
     ...Platform.select({
       ios: {
-        shadowColor: '#00000025',
-        shadowOffset: {width: 0, height: 8},
-        shadowOpacity: 0.18,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
         shadowRadius: 6,
       },
       android: {
-        elevation: 2,
+        elevation: 7,
+        // ESTO ES LO MÁS IMPORTANTE:
+        shadowColor: '#000', // Fuerza a que la sombra sea negra y no grisácea/manchada
+        overflow: 'hidden',   // Corta cualquier residuo del renderizado fuera del borde
       },
     }),
   },

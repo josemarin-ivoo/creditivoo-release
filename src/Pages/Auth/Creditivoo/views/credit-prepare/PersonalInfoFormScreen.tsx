@@ -96,6 +96,19 @@ const PersonalInfoFormScreen: React.FC = () => {
     profesion: '',
   });
 
+  const Ocupaciones = [
+  { label: 'Profesional independiente', value: 'Profesional independiente' },
+  { label: 'Negocio Propio', value: 'Negocio Propio' },
+  { label: 'Emprendedor', value: 'Emprendedor' },
+  { label: 'Estudiante', value: 'estudiante' },
+  { label: 'Freelance', value: 'Freelance' },
+  { label: 'Jubilado', value: 'Jubilado' },
+  { label: 'Pensionado', value: 'Pensionado' },
+  { label: 'Ama de Casa', value: 'Ama de Casa' },
+  { label: 'Desempleado', value: 'Desempleado' },
+
+];
+
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
 
@@ -268,9 +281,10 @@ const PersonalInfoFormScreen: React.FC = () => {
 
           {/* Profesión */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Profesión * </Text>
+            <Text style={styles.label}>Ocupacion * </Text>
             <ProfessionSelector
-              value={formData.profesion}
+              value={formData.profesion} 
+              data={Ocupaciones}        
               onSelect={profession =>
                 setFormData({...formData, profesion: profession})
               }

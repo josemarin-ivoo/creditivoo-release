@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../styles';
-import {professions} from '../utils/professions';
+// Mantenemos la importación original por si decides revertir
+import {professions as defaultProfessions} from '../utils/professions';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 export interface Profession {
-  id: number;
+  id: number | string; // Permitimos string para tus nuevos IDs si fuera necesario
   nombre: string;
 }
 
@@ -27,6 +28,8 @@ interface ProfessionSelectorProps {
   error?: boolean;
   placeholder?: string;
   containerStyle?: any;
+  // NUEVA PROP: Permite recibir los datos desde afuera
+  data?: { label: string; value: string }[]; 
 }
 
 const ProfessionSelector: React.FC<ProfessionSelectorProps> = ({
@@ -35,34 +38,39 @@ const ProfessionSelector: React.FC<ProfessionSelectorProps> = ({
   error = false,
   placeholder = 'Selecciona tu profesión',
   containerStyle,
+  data, // Recibimos la nueva prop
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filtrar profesiones basado en la búsqueda
+  // --- LÓGICA MODIFICADA PARA SOPORTAR DATOS ESTÁTICOS ---
   const filteredProfessions = useMemo(() => {
-    console.log(
-      '[ProfessionSelector] Professions array length:',
-      professions?.length || 0,
-    );
-    if (!professions || professions.length === 0) {
-      console.warn('[ProfessionSelector] Professions array is empty!');
-      return [];
-    }
-    if (!searchQuery.trim()) {
-      console.log(
-        '[ProfessionSelector] Returning all professions:',
-        professions.length,
-      );
-      return professions;
-    }
+    // 1. Priorizamos la prop 'data' si viene del padre, si no usamos el archivo de utilidades
+    const sourceData = data 
+      ? data.map((item, index) => ({ id: index, nombre: item.label })) 
+      : (defaultProfessions || []);
+
+    if (sourceData.length === 0) return [];
+    
+    if (!searchQuery.trim()) return sourceData;
+
     const query = searchQuery.toLowerCase().trim();
-    const filtered = professions.filter(profession =>
+    return sourceData.filter(profession =>
       profession.nombre.toLowerCase().includes(query),
     );
-    console.log('[ProfessionSelector] Filtered professions:', filtered.length);
-    return filtered;
-  }, [searchQuery]);
+  }, [searchQuery, data]);
+  // -------------------------------------------------------
+
+  /* // LÓGICA ORIGINAL COMENTADA (DINÁMICA)
+  const filteredProfessionsOriginal = useMemo(() => {
+    if (!professions || professions.length === 0) return [];
+    if (!searchQuery.trim()) return professions;
+    const query = searchQuery.toLowerCase().trim();
+    return professions.filter(profession =>
+      profession.nombre.toLowerCase().includes(query),
+    );
+  }, [searchQuery]); 
+  */
 
   const handleSelectProfession = (profession: Profession) => {
     onSelect(profession.nombre);
@@ -199,124 +207,29 @@ const ProfessionSelector: React.FC<ProfessionSelectorProps> = ({
   );
 };
 
+// ... (Los estilos se mantienen igual que en tu archivo original)
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
+  container: { width: '100%' },
+  inputContainer: { width: '100%', backgroundColor: '#F9FAFC', borderWidth: 1, borderColor: 'rgba(110, 113, 124, 0.31)', borderRadius: 10, paddingHorizontal: 16, minHeight: SCREEN_HEIGHT * 0.065, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  inputError: { borderColor: IVOO_COLORS.error },
+  inputText: { flex: 1, fontSize: SCREEN_WIDTH * 0.04, fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular, color: IVOO_COLORS.textPrimary, marginRight: 8 },
+  inputPlaceholder: { color: '#B4B4B4' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: IVOO_COLORS.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: SCREEN_HEIGHT * 0.85, minHeight: SCREEN_HEIGHT * 0.5, paddingBottom: Platform.OS === 'ios' ? 34 : 20 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  modalTitle: { fontSize: SCREEN_WIDTH * 0.048, fontFamily: IVOO_TYPOGRAPHY.fonts.interBold, color: IVOO_COLORS.textPrimary, flex: 1 },
+  closeButton: { padding: 4 },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFC', borderRadius: 10, marginHorizontal: 20, marginTop: 16, marginBottom: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: 'rgba(110, 113, 124, 0.31)', minHeight: SCREEN_HEIGHT * 0.055 },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: SCREEN_WIDTH * 0.04, color: IVOO_COLORS.textPrimary, paddingVertical: 0 },
+  clearButton: { padding: 4, marginLeft: 4 },
+  professionsList: { flex: 1, width: '100%' },
+  professionsListContent: { paddingBottom: 10 },
+  professionItem: { paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  professionItemText: { fontSize: SCREEN_WIDTH * 0.04, color: IVOO_COLORS.textPrimary },
+  emptyContainer: { paddingVertical: 40, alignItems: 'center' },
+  emptyText: { fontSize: SCREEN_WIDTH * 0.038, color: IVOO_COLORS.grayMedium },
   modalOverlayTouchable: {},
-  inputContainer: {
-    width: '100%',
-    backgroundColor: '#F9FAFC',
-    borderWidth: 1,
-    borderColor: 'rgba(110, 113, 124, 0.31)',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    minHeight: SCREEN_HEIGHT * 0.065,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  inputError: {
-    borderColor: IVOO_COLORS.error,
-  },
-  inputText: {
-    flex: 1,
-    fontSize: SCREEN_WIDTH * 0.04,
-    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-    fontWeight: IVOO_TYPOGRAPHY.fontWeight.regular,
-    color: IVOO_COLORS.textPrimary,
-    marginRight: 8,
-  },
-  inputPlaceholder: {
-    color: '#B4B4B4',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: IVOO_COLORS.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: SCREEN_HEIGHT * 0.85,
-    minHeight: SCREEN_HEIGHT * 0.5,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  modalTitle: {
-    fontSize: SCREEN_WIDTH * 0.048,
-    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
-    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
-    color: IVOO_COLORS.textPrimary,
-    flex: 1,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFC',
-    borderRadius: 10,
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(110, 113, 124, 0.31)',
-    minHeight: SCREEN_HEIGHT * 0.055,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: SCREEN_WIDTH * 0.04,
-    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-    color: IVOO_COLORS.textPrimary,
-    paddingVertical: 0,
-  },
-  clearButton: {
-    padding: 4,
-    marginLeft: 4,
-  },
-  professionsList: {
-    flex: 1,
-    width: '100%',
-  },
-  professionsListContent: {
-    paddingBottom: 10,
-  },
-  professionItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  professionItemText: {
-    fontSize: SCREEN_WIDTH * 0.04,
-    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-    color: IVOO_COLORS.textPrimary,
-  },
-  emptyContainer: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: SCREEN_WIDTH * 0.038,
-    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-    color: IVOO_COLORS.grayMedium,
-  },
 });
 
 export default ProfessionSelector;

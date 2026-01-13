@@ -12,7 +12,7 @@ import {
   ImageBackground,
   Platform,
   Modal,
-  Alert,
+  Alert
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import HomeHelpIvooAdvisor from './HomeHelpIvooAdvisor';
@@ -23,6 +23,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import HomeCreditCard from './HomeCreditCard';
+import HomeGemsCard from './HomeGemsCard';
 import QuickActions from './QuickActions';
 import {Button} from '../../components';
 import {useIvoDispatch, useIvoSelector} from '../../../../../redux/useIvo';
@@ -33,19 +34,12 @@ import {
   getPurchasesByUserId,
   PurchaseResponse,
 } from '../../services/purchases';
-import { Routes } from '../../../../../Utils/NavigationRoutes';
-import {useLazyQuery, useQuery} from '@apollo/client';
 import {
-  homeInfo,
-  getLatestPendingOrder,
-  homeSections,
-  userWishlist,
-  storeConfig,
-  customerAddressList,
-  getAppReleaseInfo,
-  sendLocationToServer,
-  setNewPasswordQuery,
-} from '../../../../../Queries/queries';
+  getPointsInfo,
+  PointsTransaction,
+  PointsData,
+} from '../../services/points';
+// import {GemTransactionCard, GemTransaction} from '../../components/gems';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -58,9 +52,14 @@ const HomeCreditIvoo: React.FC = () => {
   const [showChatModal, setShowChatModal] = useState(false);
   const [hasShownChatModal, setHasShownChatModal] = useState(false);
 
-  const [GethomeInfo, { loading, error, data: homeData }] = useLazyQuery(homeInfo);
+  // Para las gemas
+  const [pointsData, setPointsData] = useState<PointsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+    // const [refreshing, setRefreshing] = useState(false);
+
   // Obtener usuario del store
-  const {user} = useIvoSelector(state => state.creditivoo.auth);
+  const {user, isLoggedIn, token} = useIvoSelector(state => state.creditivoo.auth);
 
   // Obtener la URL de la foto de perfil
   const profilePictureUrl = (user as any)?.profilePictureUrl || null;
@@ -85,6 +84,34 @@ const HomeCreditIvoo: React.FC = () => {
   // Si no hay crédito ni compras activas, las quick actions deben estar más abajo
   const hasNoCreditOrPurchases = !hasActiveCredit && !hasActivePurchases;
 
+
+  //Para las gemas:
+  const fetchPointsData = useCallback(async (showRefreshing = false) => {
+      try {
+        if (showRefreshing) {
+          setRefreshing(true);
+        } else {
+          setIsLoading(true);
+        }
+        setError(null);
+        console.log('[GemsScreen] Obteniendo información de gemas...');
+        const data = await getPointsInfo();
+        console.log('[GemsScreen] Información de gemas obtenida:', data);
+        setPointsData(data);
+      } catch (err: any) {
+        console.error('[GemsScreen] Error al obtener información de gemas:', err);
+        setError(err.message || 'Error al cargar la información de gemas');
+      } finally {
+        if (showRefreshing) {
+          setRefreshing(false);
+        } else {
+          setIsLoading(false);
+        }
+      }
+    }, []);
+
+
+
   const fetchCreditInfo = useCallback(async () => {
     try {
       const data = await getCreditInfo();
@@ -101,10 +128,11 @@ const HomeCreditIvoo: React.FC = () => {
   // Fetch inicial al montar el componente (solo una vez)
   useEffect(() => {
     fetchCreditInfo();
-
-    GethomeInfo();
     // Hacer fetchMe() al montar para asegurar datos actualizados al abrir la app
     // Esto solo se ejecuta una vez al montar, no en cada focus
+    fetchPointsData();
+
+
     dispatch(fetchMe()).catch(error => {
       console.error(
         '[HomeCreditIvoo] Error al obtener datos del usuario:',
@@ -113,11 +141,16 @@ const HomeCreditIvoo: React.FC = () => {
     });
     // Solo se ejecuta una vez al montar
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchCreditInfo, GethomeInfo, dispatch]);
+  }, []);
 
   // Mostrar modal de chat si se cumplen las condiciones (solo una vez por sesión)
   useEffect(() => {
+    // Verificar que el usuario esté autenticado antes de mostrar el modal
+    // Esto evita que el modal aparezca durante el proceso de logout
     if (
+      isLoggedIn &&
+      !!token &&
+      user &&
       !isPlusUser &&
       hasActiveCredit &&
       !hasShownChatModal &&
@@ -125,14 +158,29 @@ const HomeCreditIvoo: React.FC = () => {
     ) {
       setShowChatModal(true);
       setHasShownChatModal(true);
+    } else if (!isLoggedIn || !token || !user) {
+      // Cerrar el modal si el usuario se desautentica
+      setShowChatModal(false);
     }
-  }, [isPlusUser, hasActiveCredit, hasShownChatModal, creditInfo]);
+
+    
+  }, [
+    isLoggedIn,
+    token,
+    user,
+    isPlusUser,
+    hasActiveCredit,
+    hasShownChatModal,
+    creditInfo,
+  ]);
 
   // Hacer fetch de crédito cuando la pantalla recibe foco (pero no fetchMe)
   useFocusEffect(
+  
     useCallback(() => {
       fetchCreditInfo();
-    }, [fetchCreditInfo]),
+      fetchPointsData();
+    }, [fetchCreditInfo, fetchPointsData]),
   );
 
   const onRefresh = useCallback(async () => {
@@ -149,7 +197,7 @@ const HomeCreditIvoo: React.FC = () => {
   }, [dispatch, fetchCreditInfo]);
 
   const handleRequestCredit = () => {
-    (navigation as any).navigate(Routes.NAVIGATION_IDVERIFICATION);
+    (navigation as any).navigate('IdentityVerificator');
   };
 
   const handlePayPress = async (purchaseId: number) => {
@@ -168,7 +216,7 @@ const HomeCreditIvoo: React.FC = () => {
       );
 
       // Navigate to payment installments screen with full purchase data
-      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+      (navigation as any).navigate('PaymentInstallments', {
         purchase: purchaseDetails,
       });
     } catch (err: any) {
@@ -181,38 +229,47 @@ const HomeCreditIvoo: React.FC = () => {
   };
 
   const handleQuickAction = async (action: string) => {
+
+    console.log(user)
     switch (action) {
       case 'cuotas':
         // Obtener la primera compra disponible y navegar a installments
         try {
-          if (!user?.id) {
-            console.error(
-              '[HomeCreditIvoo] No se puede obtener compras: usuario no encontrado',
-            );
+          
+          if (!user || !user.id) {
+            console.log('[HomeCreditIvoo] Esperando datos del usuario...');
             return;
           }
 
-          console.log(
-            '[HomeCreditIvoo] Obteniendo compras para navegar a cuotas',
-          );
-          const purchases = await getPurchasesByUserId(user.id);
+          console.log('[HomeCreditIvoo] Consultando compras para el usuario:', user.id);
+
+
+          const purchases = await getPurchasesByUserId(user.id).catch(err => {
+            // Si es 404, retornamos array vacío en lugar de lanzar error
+            if (err.response?.status === 404) return [];
+              throw err;
+            });
 
           // Filtrar compras que no estén completadas
-          const availablePurchases = purchases.filter(
+          const availablePurchases = (purchases || []).filter(
             purchase =>
-              purchase.status !== 'COMPLETED' &&
-              purchase.status !== 'completed',
+              purchase.status?.toUpperCase() !== 'COMPLETED'
           );
-
           if (availablePurchases.length === 0) {
-            console.log(
-              '[HomeCreditIvoo] No hay compras disponibles para pagar cuotas',
-            );
-            // Si no hay compras disponibles, navegar a MyPurchases
-            (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
-            return;
-          }
+            // No hay cuotas: Mandamos a la vista con el estado vacío
+            (navigation as any).navigate('MyPurchases', { 
+              showEmptyState: true,
+              emptyMessage: 'No tienes cuotas pendientes para pagar en este momento.'
+            });
+          } else {
+            // Hay cuotas: Seguimos el flujo normal
+            const firstPurchase = availablePurchases[0];
+            const purchaseDetails = await getPurchaseById(Number(firstPurchase.id));
 
+            (navigation as any).navigate('PaymentInstallments', {
+              purchase: purchaseDetails,
+            });
+          }
           // Seleccionar la primera compra disponible
           const firstPurchase = availablePurchases[0];
           console.log(
@@ -228,7 +285,7 @@ const HomeCreditIvoo: React.FC = () => {
           );
 
           // Navegar a PaymentInstallments con la compra seleccionada
-          (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+          (navigation as any).navigate('PaymentInstallments', {
             purchase: purchaseDetails,
           });
         } catch (error: any) {
@@ -237,17 +294,21 @@ const HomeCreditIvoo: React.FC = () => {
             error,
           );
           // En caso de error, navegar a MyPurchases como fallback
-          (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
+          (navigation as any).navigate('PaymentInstallments', { 
+              emptyMessage: 'Aún no tienes cuotas pendientes para pagar',
+              fromQuickAction: 'cuotas'
+            }
+          );
         }
         break;
       case 'compras':
-        (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
+        (navigation as any).navigate('MyPurchases');
         break;
       case 'movimientos':
-        (navigation as any).navigate(Routes.NAVIGATION_MOVEMENTS);
+        (navigation as any).navigate('Movements');
         break;
       case 'puntos':
-        (navigation as any).navigate(Routes.NAVIGATION_GEMS);
+        (navigation as any).navigate('Gems');
         break;
       default:
         console.log('Quick Action', action);
@@ -258,62 +319,23 @@ const HomeCreditIvoo: React.FC = () => {
   const handleProfilePress = () => {
     // Try to navigate to Profile tab first, if that doesn't work, use parent navigator
     try {
-      (navigation as any).navigate(Routes.NAVIGATION_PROFILE);
+      (navigation as any).navigate(SCREENS.PROFILE);
     } catch (error) {
       // If navigation fails, try using parent navigator
       const parent = (navigation as any).getParent();
       if (parent) {
-        parent.navigate(Routes.NAVIGATION_PROFILE);
+        parent.navigate(SCREENS.PROFILE);
       }
     }
   };
 
   const handleNotificationPress = () => {
-    (navigation as any).navigate(Routes.NAVIGATION_NOTIFICATIONS);
+    (navigation as any).navigate(SCREENS.NOTIFICATIONS);
   };
 
   const handleCloseChatModal = () => {
     setShowChatModal(false);
   };
-
-
-  const handleGoToSales = useCallback(() => {
-
-    const option = homeData?.homeSection?.section1?.[0]?.children?.[0];
-
-    
-
-    if (!option) {
-      Alert.alert('Sales', 'No hay data aún. homeInfo no cargó section1/children.');
-      return;
-    }
-
-    const headerOption = {
-      // Esto emula el "props" que Sales manda como headerOption
-      data: {
-        ...option,
-        current_date: option?.current_date ?? new Date().toISOString(),
-      },
-      themeName: option?.text_color,
-      id: option?.id,
-      imgName: option?.icon,
-      saleType: option?.name,
-      theme: option?.category_background_css ?? '#FFE5DA,#FFCDF1',
-    };
-
-    
-
-    try {
-      (navigation as any).navigate(Routes.NAVIGATION_TO_PRODUCTLIST, {
-        headerOption,
-        id: option?.id,
-      });
-    } catch (e: any) {
-      
-      Alert.alert('Error', `navigate falló: ${String(e?.message ?? e)}`);
-    }
-  }, [homeData, navigation]);
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -461,6 +483,22 @@ const HomeCreditIvoo: React.FC = () => {
                 : SCREEN_HEIGHT * 0.2,
             },
           ]}>
+          <View style={{ width: '100%', paddingHorizontal: 0, marginTop: -35, zIndex:10 }}>
+            <HomeGemsCard 
+                gemsAmount={pointsData?.totalPoints || 0} // Asegúrate que 'gems' exista en tu modelo de usuario
+                onPress={() => (navigation as any).navigate('Gems')}
+                onAddPress={() => console.log('Añadir gemas')}
+            />
+
+
+
+          </View>
+          <View style={styles.sectionHeader}>
+            <View style={styles.line} />
+            <Text style={styles.sectionTitle}>Mi Actividad</Text>
+            <View style={styles.line} />
+          </View>
+          
           <QuickActions onActionPress={handleQuickAction} />
 
           <View style={styles.sectionsContainer}>
@@ -497,21 +535,13 @@ const HomeCreditIvoo: React.FC = () => {
             <View style={styles.bottomRow}>
               <View style={styles.halfColumn}>
                 <Text style={styles.sectionTitle}>Descuentos</Text>
-                <TouchableOpacity
-                  onPress={handleGoToSales}
-                  disabled={loading}
-                  style={styles.discountCard}
-                  // style={styles.discountCard}
-                >
+                <View style={styles.discountCard}>
                   <Image
                     source={require('../../images/home/placeholders/discuounts-placeholder.png')}
                     style={styles.discountImage}
                     resizeMode="cover"
                   />
-                  {/* <Text style={{ color: 'white', fontWeight: '700' }}>
-                    {loading ? 'Cargando...' : 'Ir a Sales'}
-                  </Text> */}
-                </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.halfColumn}>
@@ -585,6 +615,28 @@ const HomeCreditIvoo: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+
+
+  sectionHeader: {
+    flexDirection: 'row',     // Alinea línea - texto - línea en fila
+    alignItems: 'center',     // Centra verticalmente los elementos
+    marginVertical: 20,       // Espacio respecto a la tarjeta de gemas y botones
+    paddingHorizontal: 20,    // Margen lateral
+  },
+
+  line: {
+    flex: 1,                  // Hace que las líneas ocupen todo el espacio disponible
+    height: 1,                // Grosor de la línea
+    backgroundColor: '#E0E0E0', // Color gris suave para no saturar el diseño
+  },
+  sectionTitle: {
+    marginHorizontal: 15,     // Espacio entre las líneas y el texto
+    fontSize: 14,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    color: '#666',            // Color de texto que combina con los iconos de abajo
+    textTransform: 'uppercase', // Opcional, para un toque más profesional
+    letterSpacing: 1,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: IVOO_COLORS.white,
@@ -704,14 +756,14 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: SCREEN_HEIGHT * 0.01,
   },
-  sectionTitle: {
-    fontSize: SCREEN_WIDTH * 0.038,
-    letterSpacing: IVOO_TYPOGRAPHY.letterSpacing.wide,
-    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
-    color: '#000',
-    marginBottom: SCREEN_HEIGHT * 0.01,
-    marginTop: SCREEN_HEIGHT * 0.015,
-  },
+  // sectionTitle: {
+  //   fontSize: SCREEN_WIDTH * 0.038,
+  //   letterSpacing: IVOO_TYPOGRAPHY.letterSpacing.wide,
+  //   fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+  //   color: '#000',
+  //   marginBottom: SCREEN_HEIGHT * 0.01,
+  //   marginTop: SCREEN_HEIGHT * 0.015,
+  // },
   bannerContainer: {
     width: SCREEN_WIDTH, // Full width de la pantalla
     height: SCREEN_HEIGHT * 0.18,

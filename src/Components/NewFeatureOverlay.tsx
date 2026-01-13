@@ -9,7 +9,7 @@ export const NewFeatureOverlay = ({ visible, onClose, appTheme }) => {
   if (!visible) return null;
 
   const totalTabs = 5;
-  const tabIndex = 4; 
+  const tabIndex = 3; 
   const tabWidth = width / totalTabs;
   // El centro exacto del espacio del Tab
   const tabCenter = (tabWidth * tabIndex) + (tabWidth / 2);
