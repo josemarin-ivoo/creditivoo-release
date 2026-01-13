@@ -7,6 +7,7 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 import {SCREENS} from '@shared-constants';
 import {useIvoSelector, useIvoDispatch} from '../../../../../redux/useIvo';
 import {fetchMe} from '../../store-creditivoo/slices/auth-slice';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -41,7 +42,7 @@ const CreditConfirmationScreen: React.FC = () => {
       // Si no está autenticado, redirigir a login
       navigation.reset({
         index: 0,
-        routes: [{name: SCREENS.LOGIN as never}],
+        routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}],
       });
     }
   };

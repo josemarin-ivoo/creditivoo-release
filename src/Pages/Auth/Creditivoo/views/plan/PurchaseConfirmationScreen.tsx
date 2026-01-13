@@ -9,6 +9,7 @@ import {
   ScrollView,
   Modal,
   Alert,
+  TextInput,
 } from 'react-native';
 import {WebView} from 'react-native-webview';
 import {
@@ -31,6 +32,7 @@ import {
   createPaymentOrder,
   createMultiplePaymentsOrder,
   verifyPaymentOrder,
+  createTestPaymentOrder,
 } from '../../services/megasoft';
 import {Payment, PaymentStatus} from '../../services/purchases';
 import Icon, {IconType} from 'react-native-dynamic-vector-icons';
@@ -69,7 +71,10 @@ const PurchaseConfirmationScreen: React.FC = () => {
   );
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isCreatingTestOrder, setIsCreatingTestOrder] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+  const [showTestAmountModal, setShowTestAmountModal] = useState(false);
+  const [testAmount, setTestAmount] = useState<string>('50.0');
 
   // Hook para obtener la tasa de cambio (solo se obtiene cuando se selecciona BS)
   const {
@@ -585,18 +590,76 @@ const PurchaseConfirmationScreen: React.FC = () => {
       (navigation as any).navigate('PurchaseSuccess', {
         purchaseId: purchaseId,
       });
-    } catch (error: any) {
+    } catch (storePaymentError: any) {
       console.error(
         '[PurchaseConfirmation] Error al procesar pago en tienda:',
-        error,
+        storePaymentError,
       );
       Alert.alert(
         'Error',
-        error.message || 'No se pudo procesar el pago en tienda',
+        storePaymentError.message || 'No se pudo procesar el pago en tienda',
       );
     } finally {
       setIsCreatingOrder(false);
     }
+  };
+
+  const handleTestPurchase = () => {
+    console.log('[PurchaseConfirmation] Probar compra seleccionado');
+    // Mostrar modal para ingresar el monto
+    setShowTestAmountModal(true);
+  };
+
+  const handleConfirmTestAmount = async () => {
+    const amount = parseFloat(testAmount);
+
+    // Validar que el monto sea válido
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Error', 'Por favor ingresa un monto válido mayor a 0');
+      return;
+    }
+
+    // Cerrar el modal
+    setShowTestAmountModal(false);
+
+    try {
+      setIsCreatingTestOrder(true);
+
+      // Usar el endpoint de prueba con el monto ingresado
+      console.log(
+        `[PurchaseConfirmation] Creando orden de pago de prueba con amount: ${amount}`,
+      );
+
+      const response = await createTestPaymentOrder(amount);
+
+      console.log('[PurchaseConfirmation] Orden de prueba creada');
+      console.log('[PurchaseConfirmation] Payment URL:', response.paymentUrl);
+      console.log('[PurchaseConfirmation] Referencia:', response.referencia);
+
+      // Abrir WebView con la URL de pago
+      console.log(
+        '[PurchaseConfirmation] Abriendo WebView para pago de prueba',
+      );
+      setPaymentUrl(response.paymentUrl);
+      setPaymentReferencia(response.referencia);
+      setIsProcessingPayment(true);
+    } catch (err: any) {
+      console.error(
+        '[PurchaseConfirmation] Error al crear orden de pago de prueba:',
+        err,
+      );
+      Alert.alert(
+        'Error',
+        err.message || 'No se pudo crear la orden de pago de prueba',
+      );
+    } finally {
+      setIsCreatingTestOrder(false);
+    }
+  };
+
+  const handleCancelTestAmount = () => {
+    setShowTestAmountModal(false);
+    setTestAmount('50.0'); // Resetear al valor por defecto
   };
 
   if (isLoading) {
@@ -824,7 +887,30 @@ const PurchaseConfirmationScreen: React.FC = () => {
 
         {/* Confirm Button - Fixed at bottom */}
         <View style={styles.buttonContainer}>
-          {/* Pago en tienda Button */}
+          {/* Botón de Probar compra */}
+          <TouchableOpacity
+            style={[
+              styles.testPurchaseButton,
+              (isCreatingOrder ||
+                isProcessingPayment ||
+                isVerifyingPayment ||
+                isCreatingTestOrder) &&
+                styles.testPurchaseButtonDisabled,
+            ]}
+            onPress={handleTestPurchase}
+            activeOpacity={0.8}
+            disabled={
+              isCreatingOrder ||
+              isProcessingPayment ||
+              isVerifyingPayment ||
+              isCreatingTestOrder
+            }>
+            {isCreatingTestOrder ? (
+              <ActivityIndicator size="small" color={IVOO_COLORS.primary} />
+            ) : (
+              <Text style={styles.testPurchaseButtonText}>Probar megasoft</Text>
+            )}
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={[
@@ -872,6 +958,61 @@ const PurchaseConfirmationScreen: React.FC = () => {
             )}
         </View>
       </View>
+
+      {/* Modal para ingresar monto de prueba */}
+      <Modal
+        visible={showTestAmountModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTestAmountModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Ingresar monto de prueba</Text>
+              <TouchableOpacity
+                onPress={() => setShowTestAmountModal(false)}
+                style={styles.modalCloseButton}>
+                <Icon
+                  name="x"
+                  type={IconType.Feather}
+                  size={20}
+                  color={IVOO_COLORS.black}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.modalLabel}>Monto (USD)</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={testAmount}
+                onChangeText={setTestAmount}
+                placeholder="50.0"
+                keyboardType="decimal-pad"
+                autoFocus
+              />
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonCancel]}
+                onPress={handleCancelTestAmount}>
+                <Text style={styles.modalButtonCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonConfirm]}
+                onPress={handleConfirmTestAmount}
+                disabled={isCreatingTestOrder}>
+                {isCreatingTestOrder ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.modalButtonConfirmText}>Confirmar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* WebView Modal for MegaSoft Payment */}
       <Modal
@@ -1091,6 +1232,27 @@ const styles = StyleSheet.create({
   confirmButtonDisabled: {
     opacity: 0.6,
   },
+  testPurchaseButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 22,
+    paddingVertical: SCREEN_HEIGHT * 0.018,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    borderWidth: 2,
+    borderColor: IVOO_COLORS.primary,
+    marginBottom: SCREEN_HEIGHT * 0.01,
+  },
+  testPurchaseButtonDisabled: {
+    opacity: 0.6,
+  },
+  testPurchaseButtonText: {
+    fontSize: SCREEN_WIDTH * 0.045,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
+  },
   webViewContainer: {
     flex: 1,
     backgroundColor: IVOO_COLORS.white,
@@ -1116,6 +1278,95 @@ const styles = StyleSheet.create({
   },
   webView: {
     flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  modalContent: {
+    backgroundColor: IVOO_COLORS.white,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: SCREEN_WIDTH * 0.9,
+    padding: SCREEN_WIDTH * 0.05,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.02,
+  },
+  modalTitle: {
+    fontSize: SCREEN_WIDTH * 0.048,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+  },
+  modalCloseButton: {
+    padding: SCREEN_WIDTH * 0.01,
+  },
+  modalBody: {
+    marginBottom: SCREEN_HEIGHT * 0.02,
+  },
+  modalLabel: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.black,
+    marginBottom: SCREEN_HEIGHT * 0.01,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(110, 113, 124, 0.3)',
+    borderRadius: 12,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.black,
+    backgroundColor: '#F9FAFC',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: SCREEN_WIDTH * 0.03,
+    marginTop: SCREEN_HEIGHT * 0.01,
+  },
+  modalButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: IVOO_COLORS.primary,
+  },
+  modalButtonConfirm: {
+    backgroundColor: IVOO_COLORS.primary,
+  },
+  modalButtonCancelText: {
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
+  },
+  modalButtonConfirmText: {
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: '#FFFFFF',
   },
 });
 

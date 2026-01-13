@@ -77,7 +77,7 @@ const ProfileScreen: React.FC = () => {
 
   const handleLogout = async () => {
     await dispatch(logout());
-    navigation.reset({index: 0, routes: [{name: SCREENS.LOGIN as never}]});
+    navigation.reset({index: 0, routes: [{name: Routes.NAVIGATION_CREDITIVOO as never}]});
   };
 
   const displayName = user?.name ? `${user.name} ${user.lastname || ''}` : user?.email || 'Usuario';

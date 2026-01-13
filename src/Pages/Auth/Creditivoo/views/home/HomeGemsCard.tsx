@@ -5,147 +5,161 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Image,
+  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import Icon, { IconType } from 'react-native-dynamic-vector-icons';
-import { IVOO_COLORS, IVOO_TYPOGRAPHY } from '../../styles';
+import Icon, {IconType} from 'react-native-dynamic-vector-icons';
+import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+
+// Overlap visual SOLO Android (iOS NO usa negativos)
+const INTERNAL_OVERLAP = Platform.OS === 'android' ? -35 : 0;
 
 interface HomeGemsCardProps {
   gemsAmount?: number | string;
+  subtitle?: string;
   onPress?: () => void;
   onAddPress?: () => void;
 }
 
 const HomeGemsCard: React.FC<HomeGemsCardProps> = ({
   gemsAmount = '0',
+  subtitle,
   onPress,
   onAddPress,
 }) => {
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.container}>
-      <LinearGradient
-        colors={['#0ADD73', '#0ADD73']} // Degradado verde de la marca
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.gradient}
-      >
-        {/* Lado Izquierdo: Texto informativo */}
-        <View style={styles.leftContent}>
-          <Text style={styles.title}>COMPRA HOY DESDE</Text>
-          <Text style={styles.subtitle}>0% DE INICIAL</Text>
-        </View>
+    <View style={styles.outerWrapper}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        style={styles.touchWrapper}>
+        <LinearGradient
+          colors={['#0ADD73', '#0ADD73']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.gradient}>
+          {/* LEFT */}
+          <View style={styles.leftContent}>
+            <Text style={styles.title}>COMPRA HOY DESDE</Text>
+            <Text style={styles.subtitle}>0% DE INICIAL</Text>
+          </View>
 
-        {/* Lado Derecho: Cuadro de Gemas */}
-        <View style={styles.gemsBadge}>
-          <View style={styles.gemsInfo}>
-            <Text style={styles.gemsLabel}>GEMAS:</Text>
+          {/* RIGHT */}
+          <View style={styles.gemsBadge}>
+            <Text style={styles.gemsLabel}>GEMAS</Text>
+
             <View style={styles.amountRow}>
               <Text style={styles.gemsAmount}>{gemsAmount}</Text>
-              {/* <Image 
-                source={require('../../images/gems/gem-icon.png')} // Asegúrate de tener este icono
-                style={styles.gemIcon}
-                resizeMode="contain"
-              /> */}
-              {/* Botón de añadir (+) */}
-                <TouchableOpacity 
-                    style={styles.addButton} 
-                    onPress={onAddPress}
-                >
-                    <Icon 
-                    name="add-circle" 
-                    type={IconType.Ionicons} 
-                    size={22} 
-                    color="#00D66B" 
-                    />
-                </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={onAddPress}
+                activeOpacity={0.7}>
+                <Icon
+                  name="add-circle"
+                  type={IconType.Ionicons}
+                  size={22}
+                  color="#00D66B"
+                />
+              </TouchableOpacity>
             </View>
           </View>
-          
-          
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    borderRadius: 15,
-    overflow: 'hidden',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    marginVertical: 10,
-    
-    
+  /* 🔐 Wrapper que absorbe el overlap */
+  outerWrapper: {
+    marginTop: INTERNAL_OVERLAP,
+    paddingTop: Platform.OS === 'android' ? 35 : 0,
   },
+
+  touchWrapper: {
+    borderRadius: 15,
+    backgroundColor: 'transparent',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 7,
+        overflow: 'hidden',
+      },
+    }),
+  },
+
   gradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 15,
+    borderRadius: 15,
   },
+
   leftContent: {
     flex: 1,
   },
+
   title: {
     color: '#000',
-    fontSize: SCREEN_WIDTH * 0.050,
+    fontSize: SCREEN_WIDTH * 0.05,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: '900',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
+
   subtitle: {
     color: '#FFF',
-    fontSize: SCREEN_WIDTH * 0.050,
+    fontSize: SCREEN_WIDTH * 0.05,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: '900',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
+
   gemsBadge: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 12,
     minWidth: 100,
-    // Centra el contenedor interno si el badge tiene un tamaño fijo
-    justifyContent: 'center',
     alignItems: 'center',
-  },
-  gemsInfo: {
-   alignItems: 'center', 
     justifyContent: 'center',
   },
+
   gemsLabel: {
     fontSize: 12,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     color: '#000',
-    textAlign: 'center', // Centra el texto dentro de su propia caja
     marginBottom: 2,
   },
+
   amountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', 
+    justifyContent: 'center',
   },
+
   gemsAmount: {
     fontSize: 18,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     color: '#000',
     marginRight: 4,
   },
-  gemIcon: {
-    width: 16,
-    height: 16,
-  },
+
   addButton: {
     padding: 2,
-  }
+  },
 });
 
 export default HomeGemsCard;

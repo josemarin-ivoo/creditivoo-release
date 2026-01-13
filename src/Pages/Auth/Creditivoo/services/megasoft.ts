@@ -1,7 +1,8 @@
 import api from './api';
 
 export interface CreatePaymentOrderRequest {
-  purchaseId: number;
+  purchaseId?: number;
+  amount?: number; // Para pagos de prueba
 }
 
 export interface CreatePaymentOrderResponse {
@@ -53,7 +54,7 @@ export interface VerifyPaymentOrderResponse {
 /**
  * Crea una orden de pago con MegaSoft y retorna una URL para usar en WebView.
  * Endpoint: POST /api/megasoft/payment-order
- * @param request - Datos de la orden de pago
+ * @param request - Datos de la orden de pago (purchaseId para compras o amount para pagos de prueba)
  */
 export async function createPaymentOrder(
   request: CreatePaymentOrderRequest,
@@ -91,6 +92,17 @@ export async function createPaymentOrder(
 
     throw new Error('No se pudo conectar al servidor');
   }
+}
+
+/**
+ * Crea una orden de pago de prueba con MegaSoft usando un monto fijo.
+ * Endpoint: POST /api/megasoft/payment-order
+ * @param amount - Monto fijo en USD para el pago de prueba (default: 50.0)
+ */
+export async function createTestPaymentOrder(
+  amount: number = 50.0,
+): Promise<CreatePaymentOrderResponse> {
+  return createPaymentOrder({amount});
 }
 
 /**

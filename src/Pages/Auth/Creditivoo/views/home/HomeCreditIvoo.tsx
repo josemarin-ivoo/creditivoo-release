@@ -430,14 +430,14 @@ const HomeCreditIvoo: React.FC = () => {
             onPress={handleNotificationPress}>
             <Icon name="bell" type={IconType.Feather} size={20} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
+          {/* <TouchableOpacity style={styles.headerIcon}>
             <Icon
               name="help-circle"
               type={IconType.Feather}
               size={20}
               color="white"
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
       </View>
       <HomeCreditCard
@@ -485,17 +485,17 @@ const HomeCreditIvoo: React.FC = () => {
                 : SCREEN_HEIGHT * 0.2,
             },
           ]}>
-          <View style={{ width: '100%', paddingHorizontal: 0, marginTop: -35, zIndex:10 }}>
-            <HomeGemsCard 
+          <View style={{ width: '100%' }}>
+            <HomeGemsCard
               gemsAmount={pointsData?.totalPoints || 0}
-              // Añadimos esta prop nueva (asegúrate de que HomeGemsCard la reciba)
-              subtitle={isPlusUser ? "Tus gemas acumuladas" : "Gana gemas con tus compras"} 
+              subtitle={
+                isPlusUser
+                  ? 'Tus gemas acumuladas'
+                  : 'Gana gemas con tus compras'
+              }
               onPress={() => (navigation as any).navigate('Gems')}
               onAddPress={() => console.log('Añadir gemas')}
             />
-
-
-
           </View>
           <View style={styles.sectionHeader}>
             <View style={styles.line} />
@@ -510,7 +510,7 @@ const HomeCreditIvoo: React.FC = () => {
             {!isPlusUser && hasActiveCredit ? (
               <TouchableOpacity
                 onPress={() => {
-                  (navigation as any).navigate('PlanSelection', {
+                  (navigation as any).navigate(Routes.NAVIGATION_PLANSELECTION, {
                     groupId: 0,
                     isPlusPlan: true,
                   });
@@ -528,6 +528,7 @@ const HomeCreditIvoo: React.FC = () => {
                 />
               </TouchableOpacity>
             ) : (
+
               <ImageBackground
                 source={require('../../images/home/placeholders/main-banner-placeholder.png')}
                 style={styles.bannerContainer}
@@ -796,6 +797,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    marginTop: 30,
   },
   halfColumn: {
     width: '48%',

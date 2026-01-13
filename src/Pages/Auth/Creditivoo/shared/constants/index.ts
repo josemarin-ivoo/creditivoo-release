@@ -1,7 +1,7 @@
 // ? Screens
 export const SCREENS = {
   ONBOARDING: 'Onboarding',
-  LOGIN: 'CreditivooLogin',
+  LOGIN: 'Login',
   REGISTER: 'Register',
   HOME: 'Home',
   OTP_VERIFICATION: 'OTPVerification',
@@ -30,4 +30,10 @@ export const SCREENS = {
   DEVICE_CONFIG: 'Device Config',
   PURCHASE_DETAIL: 'Purchase Detail',
   SPLASH: 'Splash',
+  TERMS: 'Terms',
+  HELP: 'Help',
+  SETTINGS: 'Settings',
+  SECURITY: 'Security',
+  QR_SCANNER: 'QrScanner',
+  NOTIFICATION: 'Notification',
 };
