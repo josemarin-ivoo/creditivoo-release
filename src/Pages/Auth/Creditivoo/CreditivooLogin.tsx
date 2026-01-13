@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
-import {SCREENS} from '@shared-constants';
+// import {SCREENS} from '@shared-constants';
 import {Button, Input, AlertModal} from './components';
 import { IVOO_COLORS, IVOO_TYPOGRAPHY } from './styles';
 import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
@@ -220,7 +220,7 @@ const LoginScreen: React.FC = () => {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              onPress={() => (navigation as any).navigate(SCREENS.REGISTER)} 
+              onPress={() => (navigation as any).navigate(Routes.NAVIGATION_REGISTER)} 
               style={styles.regContainer}>
               <Text style={styles.regText}>
                 ¿No tienes cuenta? <Text style={{fontWeight: 'bold'}}>Regístrate</Text>

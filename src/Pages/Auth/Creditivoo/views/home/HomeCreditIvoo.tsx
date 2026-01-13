@@ -39,6 +39,7 @@ import {
   PointsTransaction,
   PointsData,
 } from '../../services/points';
+import { Routes } from '../../../../../Utils/NavigationRoutes';
 // import {GemTransactionCard, GemTransaction} from '../../components/gems';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -197,7 +198,7 @@ const HomeCreditIvoo: React.FC = () => {
   }, [dispatch, fetchCreditInfo]);
 
   const handleRequestCredit = () => {
-    (navigation as any).navigate('IdentityVerificator');
+    (navigation as any).navigate(Routes.NAVIGATION_IDVERIFICATION);
   };
 
   const handlePayPress = async (purchaseId: number) => {
@@ -216,7 +217,7 @@ const HomeCreditIvoo: React.FC = () => {
       );
 
       // Navigate to payment installments screen with full purchase data
-      (navigation as any).navigate('PaymentInstallments', {
+      (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
         purchase: purchaseDetails,
       });
     } catch (err: any) {
@@ -237,6 +238,7 @@ const HomeCreditIvoo: React.FC = () => {
         try {
           
           if (!user || !user.id) {
+            Alert.alert('info: '+user);
             console.log('[HomeCreditIvoo] Esperando datos del usuario...');
             return;
           }
@@ -257,7 +259,7 @@ const HomeCreditIvoo: React.FC = () => {
           );
           if (availablePurchases.length === 0) {
             // No hay cuotas: Mandamos a la vista con el estado vacío
-            (navigation as any).navigate('MyPurchases', { 
+            (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, { 
               showEmptyState: true,
               emptyMessage: 'No tienes cuotas pendientes para pagar en este momento.'
             });
@@ -266,7 +268,7 @@ const HomeCreditIvoo: React.FC = () => {
             const firstPurchase = availablePurchases[0];
             const purchaseDetails = await getPurchaseById(Number(firstPurchase.id));
 
-            (navigation as any).navigate('PaymentInstallments', {
+            (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
               purchase: purchaseDetails,
             });
           }
@@ -285,7 +287,7 @@ const HomeCreditIvoo: React.FC = () => {
           );
 
           // Navegar a PaymentInstallments con la compra seleccionada
-          (navigation as any).navigate('PaymentInstallments', {
+          (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
             purchase: purchaseDetails,
           });
         } catch (error: any) {
@@ -294,7 +296,7 @@ const HomeCreditIvoo: React.FC = () => {
             error,
           );
           // En caso de error, navegar a MyPurchases como fallback
-          (navigation as any).navigate('PaymentInstallments', { 
+          (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, { 
               emptyMessage: 'Aún no tienes cuotas pendientes para pagar',
               fromQuickAction: 'cuotas'
             }
@@ -302,13 +304,13 @@ const HomeCreditIvoo: React.FC = () => {
         }
         break;
       case 'compras':
-        (navigation as any).navigate('MyPurchases');
+        (navigation as any).navigate(Routes.NAVIGATION_MYPURCHASES);
         break;
       case 'movimientos':
-        (navigation as any).navigate('Movements');
+        (navigation as any).navigate(Routes.NAVIGATION_MOVEMENTS);
         break;
       case 'puntos':
-        (navigation as any).navigate('Gems');
+        (navigation as any).navigate(Routes.NAVIGATION_GEMS);
         break;
       default:
         console.log('Quick Action', action);
@@ -319,18 +321,18 @@ const HomeCreditIvoo: React.FC = () => {
   const handleProfilePress = () => {
     // Try to navigate to Profile tab first, if that doesn't work, use parent navigator
     try {
-      (navigation as any).navigate(SCREENS.PROFILE);
+      (navigation as any).navigate(Routes.NAVIGATION_PROFILE);
     } catch (error) {
       // If navigation fails, try using parent navigator
       const parent = (navigation as any).getParent();
       if (parent) {
-        parent.navigate(SCREENS.PROFILE);
+        parent.navigate(Routes.NAVIGATION_PROFILE);
       }
     }
   };
 
   const handleNotificationPress = () => {
-    (navigation as any).navigate(SCREENS.NOTIFICATIONS);
+    (navigation as any).navigate(Routes.NAVIGATION_NOTIFICATIONS);
   };
 
   const handleCloseChatModal = () => {
@@ -485,9 +487,11 @@ const HomeCreditIvoo: React.FC = () => {
           ]}>
           <View style={{ width: '100%', paddingHorizontal: 0, marginTop: -35, zIndex:10 }}>
             <HomeGemsCard 
-                gemsAmount={pointsData?.totalPoints || 0} // Asegúrate que 'gems' exista en tu modelo de usuario
-                onPress={() => (navigation as any).navigate('Gems')}
-                onAddPress={() => console.log('Añadir gemas')}
+              gemsAmount={pointsData?.totalPoints || 0}
+              // Añadimos esta prop nueva (asegúrate de que HomeGemsCard la reciba)
+              subtitle={isPlusUser ? "Tus gemas acumuladas" : "Gana gemas con tus compras"} 
+              onPress={() => (navigation as any).navigate('Gems')}
+              onAddPress={() => console.log('Añadir gemas')}
             />
 
 
