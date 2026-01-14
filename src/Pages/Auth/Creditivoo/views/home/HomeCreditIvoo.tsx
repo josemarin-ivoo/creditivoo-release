@@ -12,7 +12,8 @@ import {
   ImageBackground,
   Platform,
   Modal,
-  Alert
+  Alert,
+  Linking,
 } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import HomeHelpIvooAdvisor from './HomeHelpIvooAdvisor';
@@ -84,6 +85,21 @@ const HomeCreditIvoo: React.FC = () => {
 
   // Si no hay crédito ni compras activas, las quick actions deben estar más abajo
   const hasNoCreditOrPurchases = !hasActiveCredit && !hasActivePurchases;
+
+  const handleOpenInstagram = () => {
+    const instagramUrl = 'https://www.instagram.com/ivoovenezuela/';
+    const instagramAppUrl = 'instagram://user?username=ivoovenezuela';
+
+    Linking.canOpenURL(instagramAppUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(instagramAppUrl);
+        } else {
+          return Linking.openURL(instagramUrl);
+        }
+      })
+      .catch((err) => console.error('Error al abrir Instagram', err));
+  };
 
 
   //Para las gemas:
@@ -507,35 +523,29 @@ const HomeCreditIvoo: React.FC = () => {
 
           <View style={styles.sectionsContainer}>
             <Text style={styles.sectionTitle}>Novedades</Text>
-            {!isPlusUser && hasActiveCredit ? (
-              <TouchableOpacity
-                onPress={() => {
-                  (navigation as any).navigate(Routes.NAVIGATION_PLANSELECTION, {
-                    groupId: 0,
-                    isPlusPlan: true,
-                  });
-                }}
-                activeOpacity={1}
-                style={[
-                  styles.bannerContainer,
-                  styles.bannerContainerWithPadding,
-                ]}>
-                <FastImage
-                  key="plus-cta-gif"
-                  source={require('../../images/home/plus-cta.gif')}
-                  style={styles.bannerImageFull}
-                  resizeMode={FastImage.resizeMode.cover}
+            <TouchableOpacity 
+              onPress={handleOpenInstagram} 
+              activeOpacity={0.9}
+              style={styles.bannerContainer}
+            >
+              {!isPlusUser && hasActiveCredit ? (
+                <View style={styles.bannerContainerWithPadding}>
+                  <FastImage
+                    key="plus-cta-gif"
+                    source={require('../../images/home/plus-cta.gif')}
+                    style={styles.bannerImageFull}
+                    resizeMode={FastImage.resizeMode.cover}
+                  />
+                </View>
+              ) : (
+                <ImageBackground
+                  source={require('../../images/home/placeholders/main-banner-placeholder.png')}
+                  style={styles.bannerImageFull} // Usamos Full para que ocupe todo el Touchable
+                  imageStyle={styles.bannerImage}
+                  resizeMode="cover"
                 />
-              </TouchableOpacity>
-            ) : (
-
-              <ImageBackground
-                source={require('../../images/home/placeholders/main-banner-placeholder.png')}
-                style={styles.bannerContainer}
-                imageStyle={styles.bannerImage}
-                resizeMode="cover"
-              />
-            )}
+              )}
+            </TouchableOpacity>
 
             <View style={styles.bottomRow}>
               <View style={styles.halfColumn}>
