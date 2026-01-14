@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Necesitamos tu Face ID para un inicio de sesión rápido y seguro.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -102,8 +100,12 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>IVOO does not requires any Apple Music Usage</string>
 	<key>NSCameraUsageDescription</key>
 	<string>I would like to use your camera to update profile photo and scan payment receipt offline.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Necesitamos tu Face ID para un inicio de sesión rápido y seguro.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We use location for better user experience and order delivery purposes.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
@@ -179,7 +181,5 @@
 	<string>Light</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>IVOO does not requires any Apple Music Usage</string>
 </dict>
 </plist>

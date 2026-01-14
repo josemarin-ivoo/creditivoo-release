@@ -14,7 +14,7 @@ import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 // Overlap visual SOLO Android (iOS NO usa negativos)
-const INTERNAL_OVERLAP = Platform.OS === 'android' ? -35 : 0;
+const INTERNAL_OVERLAP = Platform.OS === 'android' ? -35 : -20;
 
 interface HomeGemsCardProps {
   gemsAmount?: number | string;
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   /* 🔐 Wrapper que absorbe el overlap */
   outerWrapper: {
     marginTop: INTERNAL_OVERLAP,
-    paddingTop: Platform.OS === 'android' ? 35 : 0,
+    paddingTop: Platform.OS === 'android' ? 35 : 10,
   },
 
   touchWrapper: {
@@ -100,9 +100,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
     paddingHorizontal: 15,
-    borderRadius: 15,
+    borderRadius: 10,
   },
 
   leftContent: {
@@ -111,30 +110,40 @@ const styles = StyleSheet.create({
 
   title: {
     color: '#000',
-    fontSize: SCREEN_WIDTH * 0.05,
+    fontSize:18,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: '900',
-    includeFontPadding: false,
     textAlignVertical: 'center',
+      ...Platform.select({
+          android: { includeFontPadding: false,lineHeight: SCREEN_WIDTH * 0.05 * 2, },
+          ios: {lineHeight: 22,}
+      }),
   },
 
   subtitle: {
     color: '#FFF',
-    fontSize: SCREEN_WIDTH * 0.05,
+    fontSize: 18,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
     fontWeight: '900',
     includeFontPadding: false,
     textAlignVertical: 'center',
+    ...Platform.select({
+        android: { includeFontPadding: false,lineHeight: SCREEN_WIDTH * 0.05 * 2, },
+        ios: {lineHeight: 22,}
+    }),
   },
 
   gemsBadge: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 8,
+    borderRadius: 10,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     minWidth: 100,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 23,
+    marginTop: 10,
+    marginBottom: 10,
   },
 
   gemsLabel: {
