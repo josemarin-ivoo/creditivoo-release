@@ -1,0 +1,33 @@
+export const bankOptions = [
+  { label: "Banco Mercantil, C.A. Banco Universal", value: "mercantil" },
+  { label: "Banco de Venezuela, S.A. Banco Universal", value: "venezuela" },
+  { label: "Banesco Banco Universal, C.A.", value: "banesco" },
+  { label: "Banco Provincial, S.A. Banco Universal", value: "provincial" },
+  { label: "Banco Occid. de Descuento, Banco Universal, C.A.", value: "bod" },
+  { label: "Banco del Caribe, C.A. Banco Universal", value: "caribe" },
+  { label: "Banco Exterior, C.A. Banco Universal", value: "exterior" },
+  { label: "Banco Caroní, C.A. Banco Universal", value: "caroni" },
+  { label: "Fondo Común, C.A. Banco Universal", value: "fondo_comun" },
+  { label: "Banco Nacional de Crédito, C.A.", value: "bnc" },
+  { label: "Citibank, N.A. Banco Universal", value: "citibank" },
+  {
+    label: "Banco Canarias de Vzla., Banco Universal, C.A.",
+    value: "canarias",
+  },
+  {
+    label: "Venezolano de Crédito, S.A. Banco Universal",
+    value: "venezolano_credito",
+  },
+  { label: "Corp Banca, C.A. Banco Universal", value: "corp_banca" },
+  { label: "C.A. Central, Banco Universal", value: "central" },
+  { label: "Del Sur Banco Universal, C.A.", value: "del_sur" },
+  { label: "Provivienda, Banco Universal, C.A.", value: "provivienda" },
+  { label: "Banco Sofitasa, Banco Universal, C.A.", value: "sofitasa" },
+  { label: "Totalbank,C.A. Banco Universal", value: "totalbank" },
+  { label: "BANFOANDES", value: "banfoandes" },
+  { label: "Banco del Tesoro, C.A. Banco Universal", value: "tesoro" },
+  {
+    label: "Banco Agrícola de Venezuela, C.A. Banco Universal",
+    value: "agricola",
+  },
+];

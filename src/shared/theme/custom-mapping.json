@@ -1,0 +1,69 @@
+{
+  "strict": {
+    "text-heading-1-font-size": 60,
+    "text-font-family": "Urbanist-Regular"
+  },
+  "components": {
+    "Input": {
+      "meta": {
+        "scope": "all",
+        "variantGroups": {
+          "status": {
+            "basic": { "default": true },
+            "primary": { "default": false },
+            "success": { "default": false },
+            "info": { "default": false },
+            "warning": { "default": false },
+            "danger": { "default": false },
+            "control": { "default": false }
+          },
+          "size": {
+            "small": { "default": false },
+            "medium": { "default": true },
+            "large": { "default": false }
+          }
+        }
+      },
+      "appearances": {
+        "default": {
+          "mapping": {
+          },
+          "variantGroups": {
+            "status": {
+              "basic": {
+                "backgroundColor": "transparent",
+                "placeholderColor": "#000000",
+                "state": {
+                  "focused": { "backgroundColor": "transparent" },
+                  "hover": { "backgroundColor": "transparent" }
+                }
+              }
+            },
+            "size": {
+              "small": {
+                "paddingVertical": 12,
+                "textFontSize": 16
+              },
+              "medium": {
+                "paddingVertical": 16,
+                "borderRadius": 16
+              }
+            }
+          }
+        }
+      }
+    },
+    "ListItem": {
+      "meta": {
+      },
+      "appearances": {
+        "default": {
+          "mapping": {
+            "titleFontSize": 15,
+            "titleFontWeight": "600"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#000000"
+    android:gravity="center"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/lock_message"
+        android:text="Este dispositivo está bloqueado por Cuota"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:gravity="center"
+        android:layout_marginBottom="32dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/unlock_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Desbloquear"
+        android:textAllCaps="true"
+        android:background="@android:color/holo_red_dark"
+        android:textColor="#FFFFFF"
+        android:padding="16dp" />
+</LinearLayout>

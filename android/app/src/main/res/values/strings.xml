@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">creditivoo</string>
+
+    <string name="nuovo_app_name" tools:replace="true" translatable="false">@string/app_name</string>
+    <string name="nuovo_device_admin_description" tools:ignore="MissingTranslation">To get this service, please activate as Admin.</string>
+    <string name="custom_activate_admin_title" tools:ignore="MissingTranslation">Custom Title String</string>
+    <string name="custom_activate_admin_help" tools:ignore="MissingTranslation"><![CDATA[<ul>   <li>&nbsp;&nbsp;&nbsp;&nbsp;Add your intro here <b>with styling</b></li>]]></string>
+    <string name="custom_step_one" tools:ignore="MissingTranslation"><![CDATA["<ul>   <li><b>&nbsp;&nbsp;&nbsp;&nbsp;Style your Step 1</b> and replace this string.</li>  </ul>  "]]></string>
+    <string name="custom_step_two" tools:ignore="MissingTranslation"><![CDATA[<ul>   <li><b>&nbsp;&nbsp;&nbsp;&nbsp;Style your step 2</b> and replace this string</li>]]></string>
+    <string name="custom_positive_text" tools:ignore="MissingTranslation">LO HE ENTENDIDO</string>
+    <string name="custom_negative_text" tools:ignore="MissingTranslation">AHORA NO.</string>
+    <string name="custom_device_admin_note" tools:ignore="MissingTranslation"><![CDATA[&nbsp;&nbsp;A Note <b>with styling.</b>]]></string>
+
+    <string name="title_allow_runtime_permissions" tools:replace="true" tools:ignore="MissingTranslation">Allow permissions</string>
+    <string name="desc_allow_runtime_permissions" tools:replace="true" tools:ignore="MissingTranslation">%1$s requires additional permission to work consistently.<![CDATA[Click on toggle to grant the permissions and select <b>Allow</b> button on popups displayed.]]></string>
+
+    <string name="str_complete_setup" tools:replace="true" tools:ignore="MissingTranslation">Complete Setup</string>
+    <string name="title_screen_off_push_block" tools:replace="true" tools:ignore="MissingTranslation">Screen off push block</string>
+    <string name="info_screen_off_push_block" tools:replace="true" tools:ignore="MissingTranslation"><![CDATA[Please find %1$s and disable it from screen off push block restriction. Once disabled click on confirm button for confirmation.]]></string>
+    <string name="title_screen_off_sleep" tools:replace="true" tools:ignore="MissingTranslation">Screen off sleep</string>
+    <string name="info_screen_off_sleep" tools:replace="true" tools:ignore="MissingTranslation"><![CDATA[Please find %1$s and disable it from screen off sleep restriction. Once disabled click on confirm button for confirmation.]]></string>
+    <string name="title_screen_off_scheduled_push" tools:replace="true" tools:ignore="MissingTranslation">Screen off scheduled push</string>
+    <string name="info_screen_off_scheduled_push" tools:replace="true" tools:ignore="MissingTranslation">Please find %1$s and disable it from screen off scheduled push block restriction. Once disabled click on confirm button for confirmation.</string>
+    <string name="title_turn_off_fg_channel" tools:replace="true" tools:ignore="MissingTranslation">Foreground Service Notification</string>
+    <string name="info_turn_off_fg_channel" tools:replace="true" tools:ignore="MissingTranslation"><![CDATA[ Disable <b>Foreground Service</b> notification channel to prevent the persistent notification from being shown.]]></string>
+</resources>

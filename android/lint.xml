@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Disable SuspiciousIndentation check as it's causing issues in external dependencies -->
+    <issue id="SuspiciousIndentation" severity="ignore" />
+    
+    <!-- Disable all lint checks for node_modules to avoid build failures -->
+    <issue id="all" severity="ignore">
+        <ignore path="**/node_modules/**" />
+        <ignore path="**/react-native-camera-kit/**" />
+    </issue>
+</lint>
+

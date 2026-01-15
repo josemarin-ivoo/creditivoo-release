@@ -1,0 +1,10 @@
+[
+    {
+        "appClient": "motocell",
+        "gradleAppName": "motocell",
+        "logoUrl": "https://cuotaapp-assets.s3.us-east-2.amazonaws.com/motocell/d8dd0831-8422-44bb-a2fc-c5e2cb668e89.jpg",
+        "notAllowedAccessType": true,
+        "apiUrl": "https://api.cuotaapp.com",
+        "color": "#006EFF"
+    }
+]

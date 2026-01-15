@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/kiosk_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="32dp">
+
+            <!-- Imagen del dispositivo bloqueado -->
+            <ImageView
+                android:id="@+id/locked_device_image"
+                android:layout_width="144dp"
+                android:layout_height="144dp"
+                android:layout_marginBottom="32dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:scaleType="fitCenter"
+                android:visibility="gone" />
+
+            <!-- Hora -->
+            <TextView
+                android:id="@+id/time_display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                android:textColor="#1A1A1A"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"
+                android:fontFamily="sans-serif-light" />
+
+            <!-- Fecha -->
+            <TextView
+                android:id="@+id/date_display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18sp"
+                android:textColor="#666666"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"
+                android:fontFamily="sans-serif" />
+
+            <!-- Device ID Display -->
+            <TextView
+                android:id="@+id/device_id_display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="14sp"
+                android:textColor="#999999"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"
+                android:fontFamily="sans-serif"
+                android:visibility="gone" />
+
+            <!-- Caja de información -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#F5F5F5"
+                android:padding="24dp"
+                android:layout_marginBottom="32dp">
+
+                <TextView
+                    android:id="@+id/locked_device_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textColor="#666666"
+                    android:gravity="start"
+                    android:fontFamily="sans-serif"
+                    android:lineSpacingExtra="4dp" />
+
+            </LinearLayout>
+
+            <!-- Botón de desbloqueo -->
+            <Button
+                android:id="@+id/unlock_button_main"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ingresar Código de Desbloqueo"
+                android:textSize="16sp"
+                android:textAllCaps="false"
+                android:padding="16dp"
+                android:background="@drawable/button_primary_blue"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:drawableStart="@drawable/ic_lock_white"
+                android:drawablePadding="8dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Botón WiFi -->
+            <Button
+                android:id="@+id/wifi_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Configurar WiFi"
+                android:textSize="16sp"
+                android:textAllCaps="false"
+                android:padding="16dp"
+                android:background="@drawable/button_secondary_grey"
+                android:textColor="#333333"
+                android:fontFamily="sans-serif-medium"
+                android:drawableStart="@drawable/ic_wifi_black"
+                android:drawablePadding="8dp"
+                android:layout_marginBottom="24dp" />
+
+
+
+            <!-- Elementos ocultos para compatibilidad -->
+            <TextView
+                android:id="@+id/locked_device_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/unlock_code_link"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Modal de desbloqueo -->
+    <LinearLayout
+        android:id="@+id/unlock_modal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:gravity="center">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/rounded_background"
+            android:layout_margin="24dp"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ingrese el código de desbloqueo"
+                android:textSize="20sp"
+                android:textColor="#1A1A1A"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginBottom="24dp"
+                android:gravity="center" />
+
+            <EditText
+                android:id="@+id/unlock_code_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Ingrese código de desbloqueo"
+                android:inputType="textPassword"
+                android:maxLength="20"
+                android:gravity="center"
+                android:background="@drawable/edit_text_background"
+                android:padding="16dp"
+                android:textSize="18sp"
+                android:fontFamily="sans-serif" />
+
+            <Button
+                android:id="@+id/unlock_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Desbloquear"
+                android:textSize="16sp"
+                android:textAllCaps="false"
+                android:padding="16dp"
+                android:background="@drawable/button_background"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:id="@+id/cancel_unlock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancelar"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:fontFamily="sans-serif"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Modal de desprovisionamiento -->
+    <LinearLayout
+        android:id="@+id/deprovision_modal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"
+        android:gravity="center">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/rounded_background"
+            android:layout_margin="24dp"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Desprovisionar dispositivo"
+                android:textSize="20sp"
+                android:textColor="#1A1A1A"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginBottom="24dp"
+                android:gravity="center" />
+
+            <EditText
+                android:id="@+id/deprovision_code_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Ingrese código de desprovisionamiento"
+                android:inputType="textPassword"
+                android:maxLength="20"
+                android:gravity="center"
+                android:background="@drawable/edit_text_background"
+                android:padding="16dp"
+                android:textSize="18sp"
+                android:fontFamily="sans-serif" />
+
+            <Button
+                android:id="@+id/deprovision_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Remover provisionamiento"
+                android:textSize="16sp"
+                android:textAllCaps="false"
+                android:padding="16dp"
+                android:background="@drawable/button_background_red"
+                android:textColor="#FFFFFF"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:id="@+id/cancel_deprovision"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cancelar"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:fontFamily="sans-serif"
+                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:padding="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#F8F9FA">
+
+    <!-- Header Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"
+        android:padding="16dp"
+        android:background="@drawable/rounded_header_background"
+        android:elevation="4dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Términos y Condiciones"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cuota - Sistema de Gestión de Dispositivos"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:textColor="#E8F4FD"
+            android:fontStyle="italic"/>
+    </LinearLayout>
+
+    <!-- Terms Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@drawable/rounded_content_background"
+        android:elevation="2dp"
+        android:padding="20dp">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="false">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Por favor, lea cuidadosamente los siguientes términos y condiciones antes de continuar con la configuración del dispositivo.\n\n
+     1. PROPIEDAD DE LA LICENCIA\n
+     Las licencias de uso de esta aplicación y del sistema de gestión y bloqueo de dispositivos son otorgadas por Cuota. Estas licencias son propiedad exclusiva de Cuota y son válidas únicamente durante la vigencia del contrato. La aceptación de estos términos no otorga propiedad ni derechos sobre el software o los sistemas asociados.\n\n
+     2. USO DEL DISPOSITIVO\n
+     El dispositivo será configurado como administrado por Cuota. Esto permitirá aplicar restricciones, políticas de seguridad, control de acceso, bloqueo remoto y otras funcionalidades con el fin de proteger los intereses comerciales vinculados al contrato.\n\n
+     3. RESTRICCIONES APLICADAS\n
+     - Se podrán aplicar restricciones de uso, navegación y acceso a aplicaciones no autorizadas.\n
+     - El dispositivo podrá ser bloqueado remotamente en caso de incumplimiento de los pagos o de los términos del contrato.\n
+     - El dispositivo puede ser configurado en modo kiosko, limitando su uso exclusivamente a las funciones autorizadas por Cuota.\n\n
+     4. RESPONSABILIDAD DEL CLIENTE\n
+     Al aceptar estos términos, usted (dueño de la tienda o responsable del dispositivo) reconoce y acepta que:\n
+     - Es responsable del correcto uso del dispositivo bajo estas políticas.\n
+     - Acepta que el incumplimiento de los pagos de la licencia o del servicio puede llevar al bloqueo temporal o permanente del dispositivo.\n
+     - Comprende que cualquier intento de manipulación, eliminación de restricciones o modificación del sistema sin autorización será motivo de suspensión del servicio, bloqueo del dispositivo y acciones legales si aplica.\n\n
+     5. ACEPTACIÓN DE LOS TÉRMINOS\n
+     - Si usted acepta estos términos, procederemos con la configuración del dispositivo como administrado bajo las políticas y condiciones descritas.\n
+     - Si rechaza estos términos, el proceso de configuración será cancelado y no podrá utilizar la aplicación ni los servicios asociados.\n\n
+     Para continuar, debe aceptar estos términos y condiciones."
+                android:textSize="16sp"
+                android:lineSpacingExtra="8dp"
+                android:textColor="#2C3E50"
+                android:fontFamily="sans-serif-light"/>
+
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- Debug Inputs Section -->
+    <!--
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:background="#F5F5F5"
+        android:padding="8dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Debug Inputs (Optional)"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <EditText
+            android:id="@+id/debug_tenant_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Tenant ID"
+            android:layout_marginBottom="8dp"/>
+
+        <EditText
+            android:id="@+id/debug_token"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Token"
+            android:layout_marginBottom="8dp"/>
+
+        <EditText
+            android:id="@+id/debug_purchase_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Purchase ID"
+            android:layout_marginBottom="8dp"/>
+    </LinearLayout>
+    -->
+
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="24dp"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_reject"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="12dp"
+            android:text="Rechazar"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_button_reject"
+            android:textColor="#FFFFFF"
+            android:elevation="4dp"/>
+
+        <Button
+            android:id="@+id/btn_accept"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="Aceptar"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@drawable/rounded_button_accept"
+            android:textColor="#FFFFFF"
+            android:elevation="4dp"/>
+
+    </LinearLayout>
+
+</LinearLayout> 

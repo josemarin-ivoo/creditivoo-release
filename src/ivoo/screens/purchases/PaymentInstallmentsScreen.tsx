@@ -1,0 +1,580 @@
+import React, {useMemo, useState, useCallback, useEffect, useRef} from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+  Dimensions,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
+import {useNavigation, useRoute, RouteProp} from '@react-navigation/native';
+import {SCREENS} from '@shared-constants';
+import CurvedHeaderLayout from '../../components/layouts/CurvedHeaderLayout';
+import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../styles';
+import {InstallmentItem, Installment} from '../../components/purchases';
+import {
+  PurchaseResponse,
+  Payment,
+  PaymentStatus,
+  getPurchaseById,
+} from '../../services/purchases';
+import CurrencySelector, {Currency} from '../../components/CurrencySelector';
+import {useLatestVesRate} from '../../hooks/useLatestVesRate';
+import {formatAmountByCurrency} from '../../utils/currency';
+
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
+
+type RouteParams = {
+  PaymentInstallments: {
+    purchase: PurchaseResponse | any; // Accept both PurchaseResponse and legacy Purchase
+  };
+};
+
+type PaymentInstallmentsRouteProp = RouteProp<
+  RouteParams,
+  'PaymentInstallments'
+>;
+
+// Helper function to map Payment from API to Installment format
+const mapPaymentToInstallment = (
+  payment: Payment,
+  index: number,
+  allPayments: Payment[],
+): Installment => {
+  // Determine if it's approved (COMPLETED) or pending
+  // COMPLETED = approved, PASS_DUE = pass_due, all others = pending
+  const isApproved = payment.status === PaymentStatus.COMPLETED;
+  const isPassDue = payment.status === PaymentStatus.PASS_DUE;
+  const isPending =
+    payment.status === PaymentStatus.PENDING ||
+    payment.status === PaymentStatus.SCHEDULED ||
+    payment.status === PaymentStatus.PENDING_CONFIRMATION ||
+    payment.status === PaymentStatus.FAILED;
+
+  // Calculate installment number (exclude initial payment)
+  let installmentNumber: number | undefined;
+  if (!payment.isInitialPayment) {
+    // Count how many non-initial payments come before this one
+    const nonInitialPaymentsBefore = allPayments
+      .slice(0, index)
+      .filter(p => !p.isInitialPayment).length;
+    installmentNumber = nonInitialPaymentsBefore + 1;
+  }
+
+  // Determine status for Installment
+  let status: 'approved' | 'pending' | 'pass_due';
+  if (isApproved) {
+    status = 'approved';
+  } else if (isPassDue) {
+    status = 'pass_due';
+  } else {
+    status = 'pending';
+  }
+
+  return {
+    id: payment.id.toString(),
+    date: payment.paymentDate,
+    type: payment.isInitialPayment ? 'initial' : 'installment',
+    installmentNumber,
+    amount: parseFloat(payment.amount),
+    status,
+    gemsReward: isPending ? 47 : undefined,
+  };
+};
+
+const PaymentInstallmentsScreen: React.FC = () => {
+  const navigation = useNavigation();
+  const route = useRoute<PaymentInstallmentsRouteProp>();
+  const initialPurchase = route.params.purchase;
+  const [purchase, setPurchase] = useState<PurchaseResponse | any>(
+    initialPurchase,
+  );
+  const [selectedPayments, setSelectedPayments] = useState<Set<string>>(
+    new Set(),
+  );
+  const [refreshing, setRefreshing] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>('USD');
+
+  // Hook para obtener la tasa de cambio (solo se obtiene cuando se selecciona BS)
+  const {
+    rate: exchangeRate,
+    loading: isLoadingRate,
+    error: exchangeRateError,
+    refetch: refetchExchangeRate,
+  } = useLatestVesRate(false);
+
+  // Obtener tasa de cambio cuando se selecciona BS
+  // Usar useRef para rastrear el último valor de selectedCurrency y evitar loops
+  const prevCurrencyRef = useRef<Currency>('USD');
+
+  useEffect(() => {
+    // Solo hacer fetch si cambió de USD a BS, no en cada render
+    if (
+      selectedCurrency === 'BS' &&
+      prevCurrencyRef.current !== 'BS' &&
+      !isLoadingRate
+    ) {
+      refetchExchangeRate();
+    }
+    prevCurrencyRef.current = selectedCurrency;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCurrency]);
+
+  // Si falla el fetch de la tasa, volver automáticamente a USD
+  useEffect(() => {
+    if (selectedCurrency === 'BS' && exchangeRateError && !isLoadingRate) {
+      console.warn(
+        '[PaymentInstallmentsScreen] Error al obtener tasa de cambio, cambiando a USD',
+      );
+      setSelectedCurrency('USD');
+    }
+  }, [selectedCurrency, exchangeRateError, isLoadingRate]);
+
+  // Get purchase ID from route params
+  const purchaseId = useMemo(() => {
+    if (purchase && typeof purchase === 'object' && 'id' in purchase) {
+      return typeof purchase.id === 'string'
+        ? parseInt(purchase.id, 10)
+        : purchase.id;
+    }
+    return null;
+  }, [purchase]);
+
+  // Map payments from API to Installment format
+  const installments = useMemo<Installment[]>(() => {
+    // Check if purchase has payments array (PurchaseResponse from API)
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'payments' in purchase &&
+      Array.isArray(purchase.payments)
+    ) {
+      const payments = purchase.payments as Payment[];
+      console.log('[PaymentInstallmentsScreen] Payments recibidos:', payments);
+
+      // Sort payments by paymentDate to ensure correct order
+      const sortedPayments = [...payments].sort(
+        (a, b) =>
+          new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime(),
+      );
+
+      return sortedPayments.map((payment, index) =>
+        mapPaymentToInstallment(payment, index, sortedPayments),
+      );
+    }
+
+    // Fallback: return empty array if no payments
+    console.warn(
+      '[PaymentInstallmentsScreen] No se encontraron payments en la compra',
+    );
+    return [];
+  }, [purchase]);
+
+  // Crear installments con montos convertidos según la moneda seleccionada
+  const installmentsWithCurrency = useMemo(() => {
+    return installments.map(installment => {
+      // Si está cargando la tasa y la moneda es BS, mantener el monto original para mostrar skeleton
+      const showSkeleton =
+        selectedCurrency === 'BS' && isLoadingRate && !exchangeRate;
+
+      return {
+        ...installment,
+        amount: installment.amount, // Mantener el monto original en USD
+        displayAmount: showSkeleton
+          ? null
+          : formatAmountByCurrency(
+              installment.amount,
+              selectedCurrency,
+              exchangeRate,
+            ),
+        currency: selectedCurrency,
+        showSkeleton,
+      };
+    });
+  }, [installments, selectedCurrency, exchangeRate, isLoadingRate]);
+
+  // Check if there are any pass due payments
+  const hasPassDuePayments = useMemo(() => {
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'payments' in purchase &&
+      Array.isArray(purchase.payments)
+    ) {
+      const payments = purchase.payments as Payment[];
+      return payments.some(
+        payment => payment.status === PaymentStatus.PASS_DUE,
+      );
+    }
+    return false;
+  }, [purchase]);
+
+  // Refresh purchase data
+  const onRefresh = useCallback(async () => {
+    if (!purchaseId) {
+      setRefreshing(false);
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+      console.log(
+        '[PaymentInstallmentsScreen] Refrescando datos de compra:',
+        purchaseId,
+      );
+      const refreshedPurchase = await getPurchaseById(purchaseId);
+      setPurchase(refreshedPurchase);
+      console.log(
+        '[PaymentInstallmentsScreen] Datos de compra refrescados exitosamente',
+      );
+    } catch (error: any) {
+      console.error(
+        '[PaymentInstallmentsScreen] Error al refrescar datos de compra:',
+        error,
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [purchaseId]);
+
+  // Handle checkbox press with sequential selection logic
+  const handleCheckboxPress = useCallback(
+    (installmentId: string, installmentIndex: number) => {
+      const installment = installments[installmentIndex];
+      if (!installment) {
+        return;
+      }
+
+      // If already approved, cannot be toggled
+      if (installment.status === 'approved') {
+        return;
+      }
+
+      // Check if already selected
+      const isCurrentlySelected = selectedPayments.has(installmentId);
+
+      if (isCurrentlySelected) {
+        // Deselect this payment and all subsequent ones
+        const newSelected = new Set<string>();
+        installments.forEach((inst, idx) => {
+          if (idx < installmentIndex && selectedPayments.has(inst.id)) {
+            newSelected.add(inst.id);
+          }
+        });
+        setSelectedPayments(newSelected);
+      } else {
+        // Check if all previous payments are selected (sequential validation)
+        let canSelect = true;
+        for (let i = 0; i < installmentIndex; i++) {
+          const prevInstallment = installments[i];
+          const isPrevApproved = prevInstallment.status === 'approved';
+          const isPrevSelected = selectedPayments.has(prevInstallment.id);
+          if (!isPrevApproved && !isPrevSelected) {
+            canSelect = false;
+            break;
+          }
+        }
+
+        if (canSelect) {
+          // Select this payment
+          const newSelected = new Set(selectedPayments);
+          newSelected.add(installmentId);
+          setSelectedPayments(newSelected);
+        } else {
+          console.log(
+            '[PaymentInstallmentsScreen] No se puede seleccionar: deben seleccionarse los pagos anteriores primero',
+          );
+        }
+      }
+    },
+    [installments, selectedPayments],
+  );
+
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
+  const handleHelpPress = () => {
+    (navigation as any).navigate(SCREENS.HELP);
+  };
+
+  const handlePayPress = () => {
+    if (!purchaseId) {
+      console.error('[PaymentInstallmentsScreen] No purchaseId available');
+      return;
+    }
+
+    // Verificar que haya payments seleccionados
+    if (selectedPayments.size === 0) {
+      console.log('[PaymentInstallmentsScreen] No hay payments seleccionados');
+      // Podrías mostrar un Alert aquí si lo deseas
+      return;
+    }
+
+    // Convertir los IDs seleccionados a objetos Payment
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'payments' in purchase &&
+      Array.isArray(purchase.payments)
+    ) {
+      const payments = purchase.payments as Payment[];
+      const selectedPaymentObjects = payments.filter(payment =>
+        selectedPayments.has(payment.id.toString()),
+      );
+
+      console.log(
+        '[PaymentInstallmentsScreen] Payments seleccionados:',
+        selectedPaymentObjects,
+      );
+
+      // Navegar a PurchaseConfirmation con purchaseId y payments
+      (navigation as any).navigate('PurchaseConfirmation', {
+        purchaseId: purchaseId,
+        payments: selectedPaymentObjects,
+      });
+    } else {
+      console.error(
+        '[PaymentInstallmentsScreen] No se encontraron payments en la compra',
+      );
+    }
+  };
+
+  const getPlanName = (): string => {
+    // Get plan name from financingType
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'financingType' in purchase &&
+      purchase.financingType
+    ) {
+      return purchase.financingType.name || 'Plan';
+    }
+    return 'Plan';
+  };
+
+  const getPlanDescription = (): string => {
+    // Get description from financingType
+    if (
+      purchase &&
+      typeof purchase === 'object' &&
+      'financingType' in purchase &&
+      purchase.financingType
+    ) {
+      const financingType = purchase.financingType;
+      const daysBetweenPayments = financingType.daysBetweenPayments || 14;
+      const totalCount = installments.length - 1; // Excluding initial
+      return `Inicial + ${totalCount} cuotas cada ${daysBetweenPayments} días`;
+    }
+
+    // Fallback
+    const totalCount = installments.length - 1;
+    return `Inicial + ${totalCount} cuotas cada 14 días`;
+  };
+
+  return (
+    <CurvedHeaderLayout
+      title="Pagar cuotas"
+      showBackButton={true}
+      onBackPress={handleBackPress}
+      scroll={true}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[IVOO_COLORS.primary]}
+          tintColor={IVOO_COLORS.primary}
+        />
+      }>
+      <View style={styles.container}>
+        {/* Currency Selector */}
+        <View style={styles.currencySelectorContainer}>
+          <CurrencySelector
+            selectedCurrency={selectedCurrency}
+            onCurrencyChange={setSelectedCurrency}
+            disabled={isLoadingRate}
+            variant="standalone"
+          />
+        </View>
+
+        {/* Plan Details Card */}
+        <View style={styles.planCard}>
+          <Text style={styles.planTitle}>{getPlanName()}</Text>
+          <Text style={styles.planDescription}>{getPlanDescription()}</Text>
+        </View>
+
+        {/* Pass Due Alert */}
+        {hasPassDuePayments && (
+          <View style={styles.passDueAlert}>
+            <Text style={styles.passDueAlertText}>Tienes pagos pendientes</Text>
+          </View>
+        )}
+
+        {/* Installments List */}
+        <View style={styles.installmentsContainer}>
+          {installmentsWithCurrency.map((item, index) => {
+            const isSelected = selectedPayments.has(item.id);
+            // Check if previous payments are selected (for sequential validation)
+            const canSelect =
+              index === 0 ||
+              installments
+                .slice(0, index)
+                .every(
+                  prevInst =>
+                    prevInst.status === 'approved' ||
+                    selectedPayments.has(prevInst.id),
+                );
+
+            return (
+              <InstallmentItem
+                key={item.id}
+                installment={item}
+                isSelected={isSelected}
+                isDisabled={!canSelect && !isSelected}
+                onCheckboxPress={() => {
+                  if (canSelect || isSelected) {
+                    handleCheckboxPress(item.id, index);
+                  }
+                }}
+              />
+            );
+          })}
+
+          {/* Action Buttons - Solo mostrar si la purchase NO está completada */}
+          {purchase &&
+            purchase.status !== 'COMPLETED' &&
+            purchase.status !== 'completed' && (
+              <View style={styles.buttonsContainer}>
+                <TouchableOpacity
+                  style={styles.helpButton}
+                  onPress={handleHelpPress}
+                  activeOpacity={0.7}>
+                  <Text style={styles.helpButtonText}>Necesito ayuda</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.payButton}
+                  onPress={handlePayPress}
+                  activeOpacity={0.7}>
+                  <Text style={styles.payButtonText}>Pagar</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+        </View>
+      </View>
+    </CurvedHeaderLayout>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  currencySelectorContainer: {
+    alignItems: 'flex-end',
+    marginBottom: SCREEN_WIDTH * 0.03,
+    marginRight: SCREEN_WIDTH * 0.05,
+  },
+  planCard: {
+    backgroundColor: IVOO_COLORS.white,
+    borderRadius: 12,
+    paddingVertical: SCREEN_WIDTH * 0.03,
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    marginBottom: SCREEN_WIDTH * 0.04,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    alignSelf: 'center',
+    width: SCREEN_WIDTH * 0.85,
+  },
+  planTitle: {
+    fontSize: SCREEN_WIDTH * 0.048,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.textPrimary,
+    marginBottom: SCREEN_WIDTH * 0.008,
+    textAlign: 'center',
+  },
+  planDescription: {
+    fontSize: SCREEN_WIDTH * 0.033,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.grayMedium,
+    textAlign: 'center',
+  },
+  passDueAlert: {
+    backgroundColor: '#FFF3F2',
+    borderRadius: 8,
+    paddingVertical: SCREEN_WIDTH * 0.03,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    marginBottom: SCREEN_WIDTH * 0.04,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FFE5E3',
+  },
+  passDueAlertText: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interSemiBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.semibold,
+    color: '#C53030',
+    textAlign: 'center',
+  },
+  installmentsContainer: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: 12,
+    padding: SCREEN_WIDTH * 0.04,
+    borderWidth: 1,
+    borderColor: '#6E717C4F',
+    marginHorizontal: SCREEN_WIDTH * 0.01,
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    gap: SCREEN_WIDTH * 0.03,
+    paddingTop: SCREEN_WIDTH * 0.03,
+  },
+  helpButton: {
+    flex: 1,
+    backgroundColor: IVOO_COLORS.white,
+    borderWidth: 1,
+    borderColor: IVOO_COLORS.grayLight,
+    borderRadius: 12,
+    paddingVertical: SCREEN_WIDTH * 0.025,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  helpButtonText: {
+    fontSize: SCREEN_WIDTH * 0.035,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interSemiBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.semibold,
+    color: IVOO_COLORS.textPrimary,
+  },
+  payButton: {
+    flex: 1,
+    backgroundColor: IVOO_COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: SCREEN_WIDTH * 0.025,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  payButtonText: {
+    fontSize: SCREEN_WIDTH * 0.035,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interSemiBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.semibold,
+    color: IVOO_COLORS.white,
+  },
+});
+
+export default PaymentInstallmentsScreen;
