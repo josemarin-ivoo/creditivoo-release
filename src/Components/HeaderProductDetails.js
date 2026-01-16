@@ -24,7 +24,8 @@ const HeaderProductDetails = props => {
   const isShareProductVisible = false
   const generateLink = async (id, cartId) => {
     console.log(`Generating Progress...id=${id}&cartId=${cartId}`);
-
+    Alert.alert(''+id);
+    Alert.alert(''+cartId);
     // const link = await firebase.dynamicLinks().buildShortLink({
     //   domainUriPrefix: 'https://ivoo.page.link',
     //   link: `https://ivoo.page.link/ProductDetails?id=${id}&cartId=${cartId}`,
@@ -40,6 +41,34 @@ const HeaderProductDetails = props => {
     // const myParam = urlParams.get( 'id' );
     return 'https://ivoo.page.link' + `/ProductDetails?id=${id}&cartId=${cartId}`; // link;
   };
+
+
+  useEffect(() =>{
+
+    const generateLink = async (id, cartId) => {
+    console.log(`Generating Progress...id=${id}&cartId=${cartId}`);
+    Alert.alert(''+id);
+    Alert.alert(''+cartId);
+    // const link = await firebase.dynamicLinks().buildShortLink({
+    //   domainUriPrefix: 'https://ivoo.page.link',
+    //   link: `https://ivoo.page.link/ProductDetails?id=${id}&cartId=${cartId}`,
+    //   ios: {
+    //     bundleId: 'com.siragon',
+    //     appStoreId: '1479559802',
+    //   },
+    //   android: {
+    //     packageName: 'com.ivoo.android',
+    //   },
+    // });
+    //  const urlParams = new URLSearchParams( link );
+    // const myParam = urlParams.get( 'id' );
+    return 'https://ivoo.page.link' + `/ProductDetails?id=${id}&cartId=${cartId}`; // link;
+  };
+
+  generateLink();
+    
+  });
+  
   const [isShared, setIsShared] = useState(false);
   const onShare = async () => {
     if (isShared) {

@@ -25,7 +25,7 @@ interface QuickActionsProps {
 const QuickActions: React.FC<QuickActionsProps> = ({onActionPress}) => {
   const actions = [
     {id: 'cuotas', label: 'Cuotas', Icon: PaymentsOneIcon},
-    {id: 'resumen', label: 'Resumen', Icon: ExtractIcon},
+    {id: 'movimientos', label: 'Resumen', Icon: ExtractIcon},
     {id: 'puntos', label: 'Gemas', Icon: GemIcon},
     {id: 'compras', label: 'Compras', Icon: PaymentsTwoIcon},
   ];

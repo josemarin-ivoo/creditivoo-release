@@ -378,6 +378,7 @@ const ProductDetails = props => {
   };
 
   const addToCart = async () => {
+
     setCanAddtocartClicked(true);
     setIsfastCheckout(false);
 
@@ -491,9 +492,13 @@ const ProductDetails = props => {
           ))}
         </View>
         <View style={styles.creditivooCartBadge}>
-          <Text style={styles.creditivooTag}>CREDITIVOO</Text>
+          {/* <Text style={styles.creditivooTag}>CREDITIVOO</Text> */}
+          <View style={styles.hr} />
           <Text style={styles.creditivooCuotas}>
-            Inicial: {Helper.currencyFormat(financingDetails.downPayment)} + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
+            Inicial: {Helper.currencyFormat(financingDetails.downPayment)}  
+          </Text>
+          <Text style={styles.creditivooCuotas}>
+             + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
           </Text>
         </View>
       </View>
@@ -806,18 +811,29 @@ const ProductDetails = props => {
   const handleFinancedPay = async () => {
     const product = data?.products?.items[0];
     if (!product) return;
+
+    const attr = product?.additional_attributes?.find(
+      a => a.code === 'financiable' || a.code === 'Financiable'
+    );
+
+    // Alert.alert(''+ attr?.value);
+    
+    const isFinanciableValue = attr?.value === "1" || attr?.value === "si";
+    
     const price = product.price_range.minimum_price.final_price.value;
+
     const financing = getFinancingData(price);
     const context = {
       amountToFinance: price,
       downPayment: financing.downPayment,
       installmentAmount: financing.installment,
       productId: product.sku,
-      isFinanciable: true
+      isFinanciable: attr?.value,
+      selectedPercentage: initialPercentage
     };
     await AsyncStorage.setItem('@creditivoo_context', JSON.stringify(context));
-
-    // Alert.alert('prueba '+ await AsyncStorage.getItem('@creditivoo_context'));
+    //const confirm = await AsyncStorage.getItem('@creditivoo_context');
+     //Alert.alert(''+ JSON.stringify(context.isFinanciable));
     // navigation.navigate('PlanSelectionScreen', { totalAmount: price });
   };
 
@@ -1657,7 +1673,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 4,
     marginBottom: 15,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#000000',
     zIndex:10,
   },
@@ -1671,7 +1687,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center', // <--- Esto centra los botones en la fila
     alignItems: 'center',
     marginVertical: 10,
-    width: '100%', },
+    width: '100%', 
+  },
   percentageBtn: { flex: 0.2,            // Reducimos el flex para que no ocupen todo el ancho
     // flex: 0.5,           <--- ELIMINA ESTO para que no se estiren
     width: 33,             // <--- Ancho fijo pequeño para que se vean estéticos
@@ -1680,21 +1697,35 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,   // Espacio entre los botones
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: '#21a72877',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#0606066f',
   },
-  percentageBtnActive: { backgroundColor: '#2E7D32', borderColor: '#2E7D32' },
-  percentageText: { color: '#666', fontSize: 13 },
+  percentageBtnActive: { backgroundColor: '#39a73f9e', borderColor: '#2E7D32' },
+  percentageText: { color: '#ffffff', fontSize: 13 },
   percentageTextActive: { color: '#FFF', fontWeight: 'bold' },
-  creditivooCartBadge: { backgroundColor: '#777777', padding: 12, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#2E7D32' },
-  //creditivooTag: { color: '#2E7D32', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
-  //creditivooCuotas: { color: '#FFF', fontSize: 12 },
+  creditivooCartBadge: { 
+    // backgroundColor: '#777777', 
+    padding: 12, 
+    // borderRadius: 10, 
+    alignItems: 'center', 
+    // borderWidth: 1, 
+    // borderColor: '#2E7D32' 
+    },
+  creditivooTag: { color: '#2E7D32', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
+  creditivooCuotas: { color: '#FFF', fontSize: 16, marginTop: 10, },
   casheaCartBadge: { backgroundColor: '#FDFB43', padding: 15, borderRadius: 10, alignItems: 'center' },
   casheaTag: { color: '#000', fontWeight: '900', fontSize: 14 },
   casheaSubtext: { color: '#000', fontSize: 11, opacity: 0.7 },
-
+  hr: {
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)', // Color blanco con transparencia
+    borderBottomWidth: 1,
+    marginVertical: -2, // Espacio arriba y abajo de la línea
+    width: '90%',      // Ancho de la línea
+    alignSelf: 'center',
+    marginTop: -5
+  },
 
   creditivooBadge: { 
     marginTop: 4, 

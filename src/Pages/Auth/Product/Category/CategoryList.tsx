@@ -2,7 +2,7 @@
 /* eslint-disable prettier/prettier */
 import {useLazyQuery} from '@apollo/client';
 import {useNavigation} from '@react-navigation/native';
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -47,25 +47,45 @@ export const CategoryList = () => {
   const [searchFocusFlag, setSearchFocusFlag] = useState(false);
   const [headHeight, setheadHeight] = useState(0);
 
+  const hasInitialized = useRef(false);
+
   useEffect(() => {
     error && Helper.ShowAlert(error.message);
   }, [error]);
   console.log(categoryId);
 
+  // useEffect(() => {
+  //   const unsubscribe = navigation.addListener('focus', () => {
+  //     if (categoryId == 2) {
+  //       setsrch('');
+  //       setBackFlag(false);
+  //       setSearchIconFlag(false);
+  //       setSearchFocusFlag(false);
+  //       setSearchClickFlag(false);
+  //       dispatch({type: GLOBAL_DATA, payload: {resentSearchText: ''}});
+  //       setCategoryId(2);
+  //     }
+  //   });
+  //   return unsubscribe;
+  // }, [navigation]);
+
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      if (categoryId == 2) {
-        setsrch('');
-        setBackFlag(false);
-        setSearchIconFlag(false);
-        setSearchFocusFlag(false);
-        setSearchClickFlag(false);
-        dispatch({type: GLOBAL_DATA, payload: {resentSearchText: ''}});
-        setCategoryId(2);
+      if (!hasInitialized.current) {
+        if (categoryId == 2) {
+          setsrch('');
+          setBackFlag(false);
+          setSearchIconFlag(false);
+          setSearchFocusFlag(false);
+          setSearchClickFlag(false);
+          dispatch({ type: GLOBAL_DATA, payload: { resentSearchText: '' } });
+          setCategoryId(2);
+        }
+        hasInitialized.current = true;
       }
     });
     return unsubscribe;
-  }, [navigation]);
+  }, [navigation, categoryId]);
 
   useEffect(() => {
     productInfoFunc({variables: {Id: categoryId}});

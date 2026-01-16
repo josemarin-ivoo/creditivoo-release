@@ -816,6 +816,11 @@ const Route = () => {
           headerTitleStyle: {fontWeight: 'bold'},
         }}>
         <Stack.Screen
+          name={Routes.NAVIGATION_CREDITIVOO}
+          component={CreditivooLogin}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
           name={Routes.NAVIGATION_TO_CART}
           component={Cart}
           options={{headerShown: false}}

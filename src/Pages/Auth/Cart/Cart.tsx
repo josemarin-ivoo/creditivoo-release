@@ -57,6 +57,7 @@ import {AnalyticsBeginCheckout} from '../../../helpers/analyticHelper';
 import {TextInput} from 'react-native';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import Colors from '../../../Utils/Colors';
+import CreditivooLogin from '../Creditivoo/CreditivooLogin'; 
 
 const Cart = () => {
   const navigation = useNavigation();
@@ -81,7 +82,7 @@ const Cart = () => {
 
 
   // By JAMP 15-01-2026
-  const [initialPercentage, setInitialPercentage] = useState(0.40);
+  const [initialPercentage, setInitialPercentage] = useState();
   const [isCartFinanciable, setIsCartFinanciable] = useState(true);
   const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0 });
 
@@ -182,6 +183,8 @@ const Cart = () => {
 //   checkStorageImmediatly();
 // }, []);
 
+  
+
 
   useEffect(() => {
     const loadCreditivooContext = async () => {
@@ -190,20 +193,22 @@ const Cart = () => {
         if (jsonValue != null) {
           const savedContext = JSON.parse(jsonValue);
           
-          // 1. Usamos directamente el valor del Storage
-          // Esto quita el cuadro naranja porque ya no depende de CachedCartData
-          setIsCartFinanciable(savedContext.isFinanciable);
+          // CORRECCIÓN 1: Acceso directo al porcentaje
+          const percentage = savedContext.selectedPercentage || 0.40; 
           
-          // 2. Si CachedCartData es undefined, usamos el monto que guardamos en ProductDetail
-          // para que al menos se vea un cálculo inicial
+          setInitialPercentage(percentage);
+          setIsCartFinanciable(savedContext.isFinanciable);
+
+          // CORRECCIÓN 2: Usar la variable local 'percentage' en lugar del estado 'initialPercentage'
+          // para el cálculo inmediato
           if (!CachedCartData) {
             const total = savedContext.amountToFinance;
-            const downPayment = total * initialPercentage;
+            const downPayment = total * percentage; // <--- Usamos la constante local
             const installment = (total - downPayment) / 4;
             setFinancingDetails({ downPayment, installment });
           }
           
-          console.log("Contexto recuperado con éxito:", savedContext);
+          console.log("Contexto recuperado:", savedContext);
         }
       } catch (e) {
         console.error("Error recuperando context", e);
@@ -212,15 +217,14 @@ const Cart = () => {
 
     loadCreditivooContext();
 
-    // 3. Solo si la API llega a cargar datos, recalculamos con los montos reales del carrito
-    if (CachedCartData?.customerCart?.prices?.grand_total?.value) {
+    // CORRECCIÓN 3: Recalcular con datos reales de la API si existen
+    if (CachedCartData?.customerCart?.prices?.grand_total?.value && initialPercentage) {
       const total = CachedCartData.customerCart.prices.grand_total.value;
       const downPayment = total * initialPercentage;
       const installment = (total - downPayment) / 4;
       setFinancingDetails({ downPayment, installment });
     }
   }, [CachedCartData, initialPercentage]);
-  
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -497,6 +501,56 @@ const Cart = () => {
     return has_errorob;
   };
 
+
+  const handleCreditivooCheckout = async () => {
+    Helper.HandleVibration();
+    
+    // 1. Validar Sesión de Creditivoo
+    const token = await AsyncStorage.getItem('@creditivoo_session_token');
+    if (!token) {
+      (navigation as any ).navigate(Routes.NAVIGATION_CREDITIVOO, { redirectTo: 'Cart' });
+      return;
+    }
+
+    try {
+      // Mostrar cargador
+      // setIsRefreshing(true); 
+
+      // 2. Llamada al API de Creditivoo para validar Saldo y Compras en curso
+      // Supongamos que tienes un helper o endpoint para esto:
+      const response = await fetch('URL_API_CREDITIVOO/validate-customer', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const customerData = await response.json();
+
+      // 3. Validación de Compra en Curso
+      if (customerData.hasActiveOrder) {
+        Alert.alert("Acceso Denegado", "Ya tienes una solicitud de crédito en curso. Finalízala antes de continuar.");
+        return;
+      }
+
+      // 4. Validación de Saldo Disponible
+      const totalCart = CachedCartData.prices.grand_total.value;
+      const requiredCredit = totalCart - (totalCart);
+      
+      if (customerData.availableCredit < requiredCredit) {
+        Alert.alert("Saldo Insuficiente", "El monto a financiar excede tu límite de crédito disponible.");
+        return;
+      }
+
+      // 5. Si todo está OK, ir a la Pasarela / PlanSelection
+      (navigation as any).navigate(Routes.NAVIGATION_PLANSELECTION, {
+        //cartId: cartId,
+        selectedPercentage: initialPercentage,
+        totalAmount: totalCart
+      });
+
+    } catch (error) {
+      Alert.alert("Error", "No pudimos validar tu cuenta de Creditivoo en este momento.");
+    } finally {
+      // setIsRefreshing(false);
+    }
+  };
   // By JAMP 14-01-2026
 
   
@@ -559,7 +613,8 @@ const Cart = () => {
             </TouchableOpacity>
           ))}
         </View>
-        <TouchableOpacity style={styles.creditivooCartBadge} onPress={() => Alert.alert("Creditivoo", "Procesando pago...")}>
+        {/* <TouchableOpacity style={styles.creditivooCartBadge} onPress={() => Alert.alert("Creditivoo", "Procesando pago...")}> */}
+        <TouchableOpacity style={styles.creditivooCartBadge} onPress={handleCreditivooCheckout}>
           <Text style={styles.creditivooTag}>PAGAR CON CREDITIVOO</Text>
           <Text style={styles.creditivooCuotas}>
             Inicial de {Helper.currencyFormat(financingDetails.downPayment)} + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
@@ -581,15 +636,15 @@ const Cart = () => {
     if (creditivooToken) {
       // SI TIENE SESIÓN: Vamos directo al Plan Selection
       // Asegúrate de que este nombre coincida con tu NavigationRoutes.ts
-      (navigation as any).navigate('PlanSelection', {
+      (navigation as any).navigate(Routes.NAVIGATION_PLANSELECTION, {
         cartData: CachedCartData,
         financing: financingDetails
       });
     } else {
       // NO TIENE SESIÓN: Vamos al Login de Creditivoo
       // Le pasamos un parámetro 'redirectTo' para que el login sepa a dónde ir después
-      (navigation as any).navigate('CreditivooLogin', {
-        nextScreen: 'PlanSelection',
+      (navigation as any).navigate(Routes.NAVIGATION_CREDITIVOO, {
+        nextScreen: Routes.NAVIGATION_PLANSELECTION,
         cartData: CachedCartData
       });
     }
