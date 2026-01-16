@@ -168,25 +168,25 @@ const RegisterScreen: React.FC = () => {
   const content = (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={{flex: 1, alignItems: 'center', width: '100%'}}>
-      <View style={styles.illustrationContainer}>
-        <Image
-          source={require('./images/onboarding/mobile-register-phone.png')}
-          style={styles.phoneIllustration}
-          resizeMode="contain"
-        />
-      </View>
+        <View style={styles.illustrationContainer}>
+          <Image
+            source={require('./images/onboarding/mobile-register-phone.png')}
+            style={styles.phoneIllustration}
+            resizeMode="contain"
+          />
+        </View>
 
-      <Text style={styles.title}>Ingresa tu número telefónico</Text>
+        <Text style={styles.title}>Ingresa tu número telefónico</Text>
 
-      <Text style={styles.subtitle}>
-        Te enviaremos un SMS con un código de 6 dígitos para validar tu teléfono
-        😉
-      </Text>
+        <Text style={styles.subtitle}>
+          Te enviaremos un SMS con un código de 6 dígitos para validar tu teléfono
+          😉
+        </Text>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      {/* <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.formArea}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}> */}
         <View style={styles.inputContainerWrapper}>
           <View style={[styles.inputWrapper, styles.inputContainer]}>
             <MaskInput
@@ -262,7 +262,7 @@ const RegisterScreen: React.FC = () => {
             </Text>
           </Text>
         </View>
-      </KeyboardAvoidingView>
+      {/* </KeyboardAvoidingView> */}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   formArea: {
     width: SCREEN_WIDTH * 0.75, // Same width as terms container
     alignItems: 'center',
-    flexShrink: 1, // Allow shrinking on small screens
+    //flexShrink: 1, // Allow shrinking on small screens
   },
   inputContainerWrapper: {
     width: '100%',

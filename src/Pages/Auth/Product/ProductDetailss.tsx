@@ -46,7 +46,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {CustomButton} from '../../../Components/CustomButton';
 import wishListHelper from '../Wishlist/wishListHelper';
 import {Animated} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import {
   AnalyticsAddToCartEvent,
   AnalyticsEvent,
@@ -115,14 +115,6 @@ const ProductDetails = props => {
   const [isFastCheckout, setIsfastCheckout] = useState(false);
 
   const [wishitemLoad, setwishitemLoad] = useState(false);
-
-  const [initialPercentage, setInitialPercentage] = useState(0.40);
-  const [isCartFinanciable, setIsCartFinanciable] = useState(true);
-  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0 });
-
-  const [isCasheaSelected, setIsCasheaSelected] = useState(false);
-
-
   useEffect(() => {
     if (error) {
       CommonHandlers.CommonErrorHandler(error, dispatch, navigation);
@@ -247,24 +239,6 @@ const ProductDetails = props => {
   //#endregion
 
   useEffect(() => {
-
-
-
-    const product = data?.products?.items[0];
-
-   
-
-    if (product) {
-      const price = product.price_range.minimum_price.final_price.value;
-      const downPayment = price * initialPercentage;
-      const installment = (price - downPayment) / 4;
-      setFinancingDetails({ downPayment, installment });
-    }
-  }, [data, initialPercentage]);
-
-  
-
-  useEffect(() => {
     // Get Data of  productDetailInfo
     if (data) {
       if (data.products.items.length > 0) {
@@ -377,12 +351,9 @@ const ProductDetails = props => {
     }, 500);
   };
 
-  const addToCart = async () => {
+  const addToCart = () => {
     setCanAddtocartClicked(true);
     setIsfastCheckout(false);
-
-    await handleFinancedPay();
-
     setTimeout(() => {
       if (canAddtocartClicked) {
         setCanAddtocartClicked(false);
@@ -435,120 +406,68 @@ const ProductDetails = props => {
     }
   }, [userCartIdData]);
 
-
-  const renderPaymentMethodSwitch = () => (
-    <View style={styles.switchContainer}>
-      <TouchableOpacity 
-        style={[styles.switchOption, !isCasheaSelected && styles.switchOptionActive]}
-        onPress={() => setIsCasheaSelected(false)}
-      >
-        <Text style={[styles.switchText, !isCasheaSelected && styles.switchTextActive]}>CREDITIVOO</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.switchOption, isCasheaSelected && styles.switchOptionActive]}
-        onPress={() => setIsCasheaSelected(true)}
-      >
-        <Text style={[styles.switchText, isCasheaSelected && styles.switchTextActive]}>CASHEA</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderCasheaSection = () => (
-    <View style={styles.casheaMainContainer}>
-      <View style={styles.casheaCartBadge}>
-        <Text style={styles.casheaTag}>DISPONIBLE CON CASHEA</Text>
-        <Text style={styles.casheaSubtext}>Compra ahora y paga después en cuotas sin interés</Text>
-      </View>
-    </View>
-  );
-
-  const renderCreditivooSection = () => {
-
-    
-    // Verificamos si el producto es financiable según sus atributos
-    // const product = data?.products?.items[0];
-    // const attr = product?.additional_attributes?.find(a => a.code === 'financiable' || a.code === 'Financiable');
-    // const isFinanciable = attr?.value === "1" || attr?.value === "si";
-    
-    if (!isFinanciable) return null;
-
-    return (
-      <View style={styles.creditivooMainContainer}>
-        {/* <Text style={[commonStyle.h5, {color: '#eeee', marginBottom: 10, fontWeight: 'bold'}]}>
-          Financiamiento:
-        </Text> */}
-        <View style={styles.selectorRow}>
-          {[0.40, 0.50, 0.60].map((perc) => (
-            <TouchableOpacity 
-              key={perc}
-              onPress={() => setInitialPercentage(perc)}
-              style={[styles.percentageBtn, initialPercentage === perc && styles.percentageBtnActive]}
-            >
-              <Text style={[styles.percentageText, initialPercentage === perc && styles.percentageTextActive]}>
-                {Math.round(perc * 100)}%
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <View style={styles.creditivooCartBadge}>
-          <Text style={styles.creditivooTag}>CREDITIVOO</Text>
-          <Text style={styles.creditivooCuotas}>
-            Inicial: {Helper.currencyFormat(financingDetails.downPayment)} + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
-
-
-  //By JAMP 14-01-2026 Modificada buscar en creditivoo-release1 para obtener el original
   const renderPrice = item => {
-    const finalPrice = item?.price_range?.minimum_price?.final_price?.value || 0;
-    const regularPrice = item?.price_range?.minimum_price?.regular_price?.value || 0;
-    const isFinanciableItem = isFinanciable(item);
-    const financing = getFinancingData(finalPrice);
-
-    return (
-      <View style={{ flex: 1,  }}>
-        
-        <View style={{ flexDirection: 'row', }}>
-          {regularPrice !== finalPrice && (
-            <Text style={[styles.ExtraAccess_Text_price_Regular, { 
-              color: appTheme.type === 'dark' ? colorResource.white : colorResource.disc_rate_clr,
-              marginRight: 8 
-            }]}>
-              {Helper.currencyFormat(regularPrice)}
-            </Text>
-          )}
-          <Text style={[styles.ExtraAccess_Text_price_Final, { 
-            color: colorResource.pink_product_price,
-            textAlign: 'center' 
-          }]}>
-            {Helper.currencyFormat(finalPrice)}
+    if (
+      item.price_range.minimum_price.regular_price.value != 0 &&
+      item.price_range.minimum_price.regular_price.value !=
+        item.price_range.minimum_price.final_price.value
+    ) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            flexDirection: 'row',
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+          }}>
+          <Text
+            adjustsFontSizeToFit={true}
+            style={[
+              styles.ExtraAccess_Text_price_Regular,
+              {
+                color:
+                  appTheme.type === 'dark'
+                    ? colorResource.white
+                    : colorResource.disc_rate_clr,
+              },
+            ]}>
+            {Helper.currencyFormat(
+              item.price_range.minimum_price.regular_price.value,
+            )}
+          </Text>
+          <Text
+            adjustsFontSizeToFit={true}
+            style={[
+              styles.ExtraAccess_Text_price_Final,
+              {color: colorResource.pink_product_price, marginLeft: 8},
+            ]}>
+            {Helper.currencyFormat(
+              item.price_range.minimum_price.final_price.value,
+            )}
           </Text>
         </View>
-        
-        {/* Widget Creditivoo con Salto de Línea y Montos detallados */}
-        {/* {isFinanciableItem && (
-          <TouchableOpacity 
-            onPress={() => token ? handleFinancedPay() : setLoginOverlayVisible(true)}
-            style={styles.creditivooBadge}
-          >
-            
-            <Text style={styles.creditivooCuotas}>
-              Inicial de {Helper.currencyFormat(financing.downPayment)} +
-            </Text>
-            <Text style={styles.creditivooCuotas}>
-                4 cuotas de: {Helper.currencyFormat(financing.installment)}
-            </Text>
-          </TouchableOpacity>
-        )} */}
-      </View>
-    );
+      );
+    } else {
+      return (
+        <Text
+          style={[
+            commonStyle.h5,
+            styles.ExtraAccess_Text_price_Regular1,
+            {
+              color:
+                appTheme.type === 'dark'
+                  ? colorResource.white
+                  : colorResource.disc_rate_clr,
+              textAlign: 'center',
+            },
+          ]}>
+          {Helper.currencyFormat(
+            item.price_range.minimum_price.regular_price.value,
+          )}
+        </Text>
+      );
+    }
   };
-
-  //By JAMP 14-01-2026
 
   const renderPriceExtraAccess = item => {
     if (
@@ -783,49 +702,6 @@ const ProductDetails = props => {
     }
   };
 
-  //By JAMP 14-01-2026
-  const isFinanciable = (productData) => {
-    if (!productData?.additional_attributes) return false;
-    const attr = productData.additional_attributes.find(
-      a => a.code === 'financiable' || a.code === 'Financiable'
-    );
-    const val = attr?.value?.toString().toLowerCase();
-
-    
-    return val === "1" || val === "si" || val === "true";
-  };
-
-  const getFinancingData = (price) => {
-    const numPrice = Number(price) || 0; 
-    const downPayment = numPrice * 0.40;
-    const remaining = numPrice - downPayment;
-    const installment = remaining / 4;
-    return { downPayment, installment };
-  };
-
-  const handleFinancedPay = async () => {
-    const product = data?.products?.items[0];
-    if (!product) return;
-    const price = product.price_range.minimum_price.final_price.value;
-    const financing = getFinancingData(price);
-    const context = {
-      amountToFinance: price,
-      downPayment: financing.downPayment,
-      installmentAmount: financing.installment,
-      productId: product.sku,
-      isFinanciable: true
-    };
-    await AsyncStorage.setItem('@creditivoo_context', JSON.stringify(context));
-
-    // Alert.alert('prueba '+ await AsyncStorage.getItem('@creditivoo_context'));
-    // navigation.navigate('PlanSelectionScreen', { totalAmount: price });
-  };
-
-  
-
-  //By JAMP 14-01-2026
-
-
   const _renderItem = ({item, index}) => {
     const lowImg:String = item.url + Helper.listImageSize;
     const highImg:String = item.url + Helper.cardImageSize;
@@ -956,16 +832,12 @@ const ProductDetails = props => {
                   </View>
                 )}
               </View>
-              
 
-
-              
               <View
                 style={[
                   styles.productDetailsContainer,
                   {backgroundColor: appTheme.background},
                 ]}>
-                  
                 <View
                   style={[commonStyle.paddingHorizontal_16, {marginTop: 16}]}>
                   <Text
@@ -977,20 +849,12 @@ const ProductDetails = props => {
                     ]}>
                     {data && data.products.items[0].name}
                   </Text>
-                    <View style={{ paddingHorizontal: 16, marginTop: 15 }}>
-                        {renderPaymentMethodSwitch()}
-                        {isCasheaSelected ? renderCasheaSection() : renderCreditivooSection()}
-                      </View>
-                  
                   <View
                     style={[
                       commonStyle.marginBottom_30,
                       styles.productDetailNavContainer,
                       {paddingTop: 16},
                     ]}>
-
-
-                    
                     <View style={[commonStyle.flex_4pt]}>
                       <TouchableHighlight
                         underlayColor={colorResource.transparent}
@@ -1030,7 +894,6 @@ const ProductDetails = props => {
                         />
                       )}
                     </View>
-                    
                     <View style={[commonStyle.flex_3pt]}>
                       <TouchableHighlight
                         underlayColor={colorResource.transparent}
@@ -1067,10 +930,8 @@ const ProductDetails = props => {
                       )}
                     </View>
                   </View>
-
-                  
                 </View>
-                      
+
                 {productDetailType == 'Product' && (
                   <>
                     <View style={commonStyle.paddingHorizontal_16}>
@@ -1523,8 +1384,6 @@ const ProductDetails = props => {
                     )}
                 </View>
 
-                
-
                 <CustomPBar showProgress={wishitemLoad} />
               </View>
             </>
@@ -1647,79 +1506,6 @@ const ProductDetails = props => {
   );
 };
 const styles = StyleSheet.create({
-  //By JAMP 14-01-2026
-  switchContainer: {
-    justifyContent: 'center',
-    alignSelf: 'center',
-    width: '70%',
-    flexDirection: 'row',
-    backgroundColor: '#4c4c4c',
-    borderRadius: 8,
-    padding: 4,
-    marginBottom: 15,
-    borderWidth: 2,
-    borderColor: '#000000',
-    zIndex:10,
-  },
-  switchOption: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8,  },
-  switchOptionActive: { backgroundColor: '#9e9e9e', elevation: 2 },
-  switchText: { fontSize: 12, fontWeight: 'bold', color: '#999' },
-  switchTextActive: { color: '#000' },
-  creditivooMainContainer: { marginTop:-25, marginBottom: 15, paddingTop: 20, backgroundColor: '#4e4d4d', borderWidth: 2, borderRadius: 15 },
-  selectorRow: { 
-    flexDirection: 'row',
-    justifyContent: 'center', // <--- Esto centra los botones en la fila
-    alignItems: 'center',
-    marginVertical: 10,
-    width: '100%', },
-  percentageBtn: { flex: 0.2,            // Reducimos el flex para que no ocupen todo el ancho
-    // flex: 0.5,           <--- ELIMINA ESTO para que no se estiren
-    width: 33,             // <--- Ancho fijo pequeño para que se vean estéticos
-    height: 30,            // Altura delgada
-    paddingVertical: 4,
-    marginHorizontal: 5,   // Espacio entre los botones
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f9f9f9',
-  },
-  percentageBtnActive: { backgroundColor: '#2E7D32', borderColor: '#2E7D32' },
-  percentageText: { color: '#666', fontSize: 13 },
-  percentageTextActive: { color: '#FFF', fontWeight: 'bold' },
-  creditivooCartBadge: { backgroundColor: '#777777', padding: 12, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#2E7D32' },
-  //creditivooTag: { color: '#2E7D32', fontWeight: '900', fontSize: 14, letterSpacing: 1 },
-  //creditivooCuotas: { color: '#FFF', fontSize: 12 },
-  casheaCartBadge: { backgroundColor: '#FDFB43', padding: 15, borderRadius: 10, alignItems: 'center' },
-  casheaTag: { color: '#000', fontWeight: '900', fontSize: 14 },
-  casheaSubtext: { color: '#000', fontSize: 11, opacity: 0.7 },
-
-
-  creditivooBadge: { 
-    marginTop: 4, 
-    flexDirection: 'column', 
-    alignItems: 'center', 
-    backgroundColor: '#b3b3b3', 
-    padding: 4, 
-    borderRadius: 6, 
-    alignSelf: 'flex-start',
-    borderColor: '#2E7D32',
-    maxWidth: '95%',
-  },
-  // creditivooTag: { 
-  //   fontSize: 10, 
-  //   color: '#2E7D32', 
-  //   fontWeight: 'bold',
-  //   marginBottom: 2,
-  // },
-  // creditivooCuotas: {
-  //   fontSize: 10, 
-  //   color: '#ffffff',
-  //   marginLeft: 0, 
-  //   justifyContent:'center',
-  // },
-//By JAMP 14-01-2026
   noProductFound: {lineHeight: 24, color: colorResource.blackShade},
   productHeader: {position: 'absolute', zIndex: 1, display: 'flex'},
   productImageSlider: {
