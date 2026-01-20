@@ -108,6 +108,7 @@ const Cart = () => {
 
   
   // By JAMP 15-01-2026
+  const IVOO_APP_TENANT_ID = 5;
   const route = useRoute();
   const purchaseId = (route.params as any)?.purchaseId as number;
   //const [error, setError] = useState<string | null>(null);
@@ -135,7 +136,7 @@ const Cart = () => {
 
   const [initialPercentage, setInitialPercentage] = useState();
   const [isCartFinanciable, setIsCartFinanciable] = useState(true);
-  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0 });
+  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0 });
 
   const [isCasheaSelected, setIsCasheaSelected] = useState(false);
 
@@ -270,8 +271,9 @@ const Cart = () => {
           if (!CachedCartData) {
             const total = savedContext.amountToFinance;
             const downPayment = total * percentage; // <--- Usamos la constante local
+            const montFinance = (total - downPayment);
             const installment = (total - downPayment) / 4;
-            setFinancingDetails({ downPayment, installment });
+            setFinancingDetails({ downPayment, installment, montFinance });
           }
           
           console.log("Contexto recuperado:", savedContext);
@@ -287,8 +289,9 @@ const Cart = () => {
     if (CachedCartData?.customerCart?.prices?.grand_total?.value && initialPercentage) {
       const total = CachedCartData.customerCart.prices.grand_total.value;
       const downPayment = total * initialPercentage;
+      const montFinance = (total - downPayment);
       const installment = (total - downPayment) / 4;
-      setFinancingDetails({ downPayment, installment });
+      setFinancingDetails({ downPayment, installment, montFinance });
     }
   }, [CachedCartData, initialPercentage]);
 
@@ -573,25 +576,19 @@ const Cart = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const params = route.params as any;
-      const shouldCheckout = params?.autoCheckout;
+    const params = route.params as any;
+    // Solo disparamos si hay señal, hay usuario y EL MONTO YA SE CALCULÓ
+    if (params?.autoCheckout && user?.username && financingDetails?.downPayment > 0) {
+      
+      console.log('[Cart] Ejecutando checkout automático con monto:', financingDetails.downPayment);
+      
+      // Limpiamos el parámetro para que no se repita
+      navigation.setParams({ autoCheckout: undefined } as any);
 
-      // Solo procedemos si:
-      // 1. Tenemos la señal de autoCheckout
-      // 2. El usuario está logueado
-      // 3. Ya tenemos los detalles de financiamiento calculados (downPayment)
-      if (shouldCheckout && user?.username && financingDetails.downPayment > 0) {
-        
-        console.log('[Cart] Todo listo. DownPayment:', financingDetails.downPayment);
-        Alert.alert('DownPayment:'+ financingDetails.downPayment);
-        // 1. Ejecutamos el checkout (ahora usará los financingDetails actualizados)
-        handleCreditivooCheckout();
-
-        // 2. Limpiamos el parámetro para evitar bucles
-        navigation.setParams({ autoCheckout: undefined } as any);
-      }
-    }, [route.params, user?.username, financingDetails]) 
-    // ^ IMPORTANTE: Agregamos financingDetails a las dependencias
+      // Ejecutamos
+      handleCreditivooCheckout();
+    }
+  }, [route.params, user?.username, financingDetails?.downPayment])
   );
 
   
@@ -636,22 +633,18 @@ const Cart = () => {
 
   const handleCreditivooCheckout = async () => {
     Helper.HandleVibration();
-  
+    setIsCreatingOrder(true);
     // const token = await AsyncStorage.getItem('@creditivoo_session_token');
     //obtenemos lo que tiene el carrito
    const totalCart = CachedCartData?.customerCart?.prices?.grand_total?.value ?? 0;
 
-    // Preparamos los datos que necesitan las cuotas
-    const checkoutData = {
-      selectedPercentage: initialPercentage,
-      totalAmount: totalCart,
-      isFinancing: true
-    };
+   const cedulaUsuario = user?.document;
 
-    //const user_creditivoo = JSON.stringify(user.username);
-    //Alert.alert(''+user?.username);
-    //Alert.alert('user: '+JSON.stringify(user.username));
-    //Si hay sesión, validamos deudas o compras en curso (vienen en el objeto user según tu imagen)
+   
+   // verificamos que el usuario exista en creditivoo https://api-ivoo-dev.whaledigitals.com/purchases/paymentValidator/transaction/confirm/p/@control
+   
+
+    
     if (!user?.username) {
     // Si no hay usuario, vamos al login directamente
       (navigation as any).navigate("CreditivooLogin", { 
@@ -667,11 +660,24 @@ const Cart = () => {
     
     try {
 
-      
-      
-      const totalAmount = CachedCartData?.customerCart?.prices?.grand_total?.value;
+
+      const userCheckResponse = await fetch(
+        `https://api-ivoo-dev.whaledigitals.com/api/users?role=CUSTOMER&document=${cedulaUsuario}&page=1&pageSize=1`
+      ).then(res => res.json());
+
+      const creditivooUser = userCheckResponse.data?.[0];
+
+      Alert.alert("inicial "+JSON.stringify(userCheckResponse));
+
+      // Preparamos los datos que necesitan las cuotas
+      const checkoutData = {
+        selectedPercentage: initialPercentage,
+        totalAmount: totalCart,
+        isFinancing: true
+      };
+      //const totalAmount = CachedCartData?.customerCart?.prices?.grand_total?.value;
       const montoInicial = financingDetails.downPayment;
-      Alert.alert("inicial "+montoInicial);
+      //Alert.alert("inicial "+montoInicial);
       
       if (!montoInicial) {
         Alert.alert("Error", "No se pudo obtener el monto total del carrito.");
