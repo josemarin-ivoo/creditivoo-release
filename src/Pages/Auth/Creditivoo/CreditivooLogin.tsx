@@ -11,9 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import {useNavigation, useFocusEffect, useRoute, CommonActions} from '@react-navigation/native';
 // import {SCREENS} from '@shared-constants';
 import {Button, Input, AlertModal} from './components';
 import { IVOO_COLORS, IVOO_TYPOGRAPHY } from './styles';
@@ -29,7 +30,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
-  const {isLoading} = useIvoSelector(state => state.creditivoo.auth);
+  const {isLoading, user} = useIvoSelector(state => state.creditivoo.auth);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,6 +42,46 @@ const LoginScreen: React.FC = () => {
   const [isSensorAvailable, setIsSensorAvailable] = useState(false);
   const [biometryType, setBiometryType] = useState<string | undefined>(undefined);
   const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+
+  const route = useRoute();
+
+  useEffect(() => {
+  
+    const params = (route.params as any) || {};
+    const redirectTo = params.redirectTo;
+    const autoCheckout = params.autoCheckout;
+    //const { redirectTo, autoCheckout } = (route.params as any) || {};
+
+    // 1. SOLO navegar si ya NO está cargando Y el usuario ya existe
+    
+    
+    if (!isLoading && user?.username) { 
+      
+      if (redirectTo === "Cart" || redirectTo === Routes.NAVIGATION_TO_CART) {
+
+        
+        console.log('[Login] Redirigiendo con éxito a Cart');
+
+        const timer = setTimeout(() => {
+          navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              { 
+                name: Routes.NAVIGATION_TO_CART, 
+                params: { autoCheckout: true } 
+              },
+            ],
+          }));
+        }, 600); // Un poco más de tiempo para ganar la carrera al Home
+
+        return () => clearTimeout(timer);
+
+      } else {
+        (navigation as any).navigate(Routes.NAVIGATION_TABCREDITIVOO);
+      }
+    }
+  }, [isLoading, user?.username]);
 
   // 1. CARGA DE CREDENCIALES Y SENSOR
   const checkSensor = useCallback(async () => {
@@ -99,7 +140,7 @@ const LoginScreen: React.FC = () => {
 
       if (result.success) {
         await dispatch(login({email: credentials.email, password: credentials.password})).unwrap();
-        navigation.reset({ index: 0, routes: [{name: 'MainTabs' as never}] });
+        navigation.reset({ index: 0, routes: [{name: Routes.NAVIGATION_TABCREDITIVOO as never}] });
       }
     } catch (err) {
       setAlertMessage('Error en la autenticación biométrica');
@@ -129,8 +170,29 @@ const LoginScreen: React.FC = () => {
       
       // SI EL LOGIN ES EXITOSO, GUARDAMOS LAS CREDENCIALES PARA LA PRÓXIMA VEZ
       await AuthStorage.saveCredentials(trimmedEmail, password);
+
+      // --- NUEVA LÓGICA DE REDIRECCIÓN ---
+      const params = (route.params as any) || {};
+      const redirectTo = params.redirectTo;
+
+      if (redirectTo === "Cart" || redirectTo === Routes.NAVIGATION_TO_CART) {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              { 
+                name: Routes.NAVIGATION_TO_CART, 
+                params: { autoCheckout: true } 
+              },
+            ],
+          })
+        );
+        return; // Detenemos aquí para que no ejecute el reset a MainTabs de abajo
+      }
       
+      // Si no hay redirección, vamos a la Home normal
       navigation.reset({ index: 0, routes: [{name: 'MainTabs' as never}] });
+
     } catch (err: any) {
       setAlertMessage(err?.message || 'Error al iniciar sesión');
       setAlertVisible(true);

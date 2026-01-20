@@ -497,14 +497,14 @@ const PurchaseConfirmationScreen: React.FC = () => {
           console.log(
             '[PurchaseConfirmation] Pago aprobado, navegando a SubscriptionSuccess',
           );
-          (navigation as any).navigate('SubscriptionSuccess', {
+          (navigation as any).navigate(Routes.NAVIGATION_SUSCRIPTIONSUCCESS, {
             purchaseId: purchaseId,
           });
         } else {
           console.log(
             '[PurchaseConfirmation] Pago aprobado, navegando a PurchaseSuccess',
           );
-          (navigation as any).navigate('PurchaseSuccess', {
+          (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, {
             purchaseId: purchaseId,
           });
         }

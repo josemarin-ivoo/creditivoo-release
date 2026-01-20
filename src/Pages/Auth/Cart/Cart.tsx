@@ -1,6 +1,6 @@
 import {useLazyQuery} from '@apollo/client';
-import React, {useState, useEffect, useContext} from 'react';
-import {useNavigation} from '@react-navigation/native';
+import React, {useState, useEffect, useContext, useCallback} from 'react';
+import {useNavigation, useRoute, useFocusEffect, } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -12,7 +12,12 @@ import {
   ScrollView,
   Alert,
   TouchableOpacity,
+  Modal,
+  Dimensions,
 } from 'react-native';
+
+import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../Auth/Creditivoo/styles';
+import {IconType} from 'react-native-dynamic-vector-icons';
 
 import {SwipeListView, SwipeRow} from 'react-native-swipe-list-view';
 import WheelPicker from 'react-native-wheely';
@@ -57,11 +62,30 @@ import {AnalyticsBeginCheckout} from '../../../helpers/analyticHelper';
 import {TextInput} from 'react-native';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import Colors from '../../../Utils/Colors';
+import {fetchMe} from '../../../Pages/Auth/Creditivoo/store-creditivoo/slices/auth-slice';
+import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
+import {WebView} from 'react-native-webview';
 import CreditivooLogin from '../Creditivoo/CreditivooLogin'; 
+import {
+  CreatePaymentOrderRequest,
+  createPaymentOrder,
+  createMultiplePaymentsOrder,
+  verifyPaymentOrder,
+  createTestPaymentOrder,
+} from '../../Auth/Creditivoo/services/megasoft';
+import {Payment, PaymentStatus} from '../../Auth/Creditivoo/services/purchases';
+import {getPurchaseById,
+  RevisionResponse,
+  PurchaseSimulationResponse,
+  simulatePurchase,} from '../../Auth/Creditivoo/services/credit';
+import {getFinancingById, FinancingTypeResponse} from '../../Auth/Creditivoo/services/plan';
+
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const Cart = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const dispatchh = useIvoDispatch();
   const [outofstock, setoutofstock] = useState(false); //Item outof stock will get remvoe from magento side
   const [GrandTotal, setGrandTotal] = useState('');
   const [ServiceFees, setServiceFees] = useState('');
@@ -81,7 +105,34 @@ const Cart = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
 
+
+  
   // By JAMP 15-01-2026
+  const route = useRoute();
+  const purchaseId = (route.params as any)?.purchaseId as number;
+  //const [error, setError] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [paymentReferencia, setPaymentReferencia] = useState<string | null>(
+    null,
+  );
+    const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+    const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+
+  const isPlanSubscription = (route.params as any)?.isPlanSubscription as
+      | boolean
+      | undefined;
+  const paymentsFromRoute = (route.params as any)?.payments as
+    | Payment[]
+    | undefined;
+
+  const [purchase, setPurchase] = useState<RevisionResponse | null>(null);
+    const [financing, setFinancing] = useState<FinancingTypeResponse | null>(
+      null,
+    );
+  //variable para validar el token de usuario creditivoo
+  const {user, isLoggedIn, token} = useIvoSelector(state => state.creditivoo.auth);
+
   const [initialPercentage, setInitialPercentage] = useState();
   const [isCartFinanciable, setIsCartFinanciable] = useState(true);
   const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0 });
@@ -184,7 +235,22 @@ const Cart = () => {
 // }, []);
 
   
+  useEffect(() => {
+      
+  
+    (dispatch as any)(fetchMe()).unwrap()
+    .then((userData) => {
 
+      // Alert.alert('prueba '+userData);
+      //console.log("Sesión activa para:", userData.user.name);
+    })
+    .catch(error => {
+      console.error('[Creditivoo] Sesión inválida o expirada:', error);
+    });
+      // Solo se ejecuta una vez al montar
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+  
 
   useEffect(() => {
     const loadCreditivooContext = async () => {
@@ -471,6 +537,8 @@ const Cart = () => {
     }
   }, [error, remerr, applyCouponerror, updateQTYerr]);
 
+  
+
   const updateDeviceIdonCart = async () => {
     const hasPermission = await PermissionHandler.hasLocationPermission();
 
@@ -502,54 +570,145 @@ const Cart = () => {
   };
 
 
+
+  useFocusEffect(
+    useCallback(() => {
+      const params = route.params as any;
+      const shouldCheckout = params?.autoCheckout;
+
+      // Solo procedemos si:
+      // 1. Tenemos la señal de autoCheckout
+      // 2. El usuario está logueado
+      // 3. Ya tenemos los detalles de financiamiento calculados (downPayment)
+      if (shouldCheckout && user?.username && financingDetails.downPayment > 0) {
+        
+        console.log('[Cart] Todo listo. DownPayment:', financingDetails.downPayment);
+        Alert.alert('DownPayment:'+ financingDetails.downPayment);
+        // 1. Ejecutamos el checkout (ahora usará los financingDetails actualizados)
+        handleCreditivooCheckout();
+
+        // 2. Limpiamos el parámetro para evitar bucles
+        navigation.setParams({ autoCheckout: undefined } as any);
+      }
+    }, [route.params, user?.username, financingDetails]) 
+    // ^ IMPORTANTE: Agregamos financingDetails a las dependencias
+  );
+
+  
+  const handleVerificationFlow = async (referencia: string) => {
+    try {
+      setIsVerifyingPayment(true);
+      const result = await verifyPaymentOrder({
+        control: referencia,
+        purchaseId: purchaseId, // Asegúrate de tener esta variable disponible
+      });
+
+      if (result.approved) {
+        const targetScreen = isPlanSubscription ? 'SubscriptionSuccess' : 'PurchaseSuccess';
+        (navigation as any).navigate(targetScreen, { purchaseId });
+      } else {
+        Alert.alert('Pago no verificado', 'El pago no fue aprobado.');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'No se pudo verificar el pago.');
+    } finally {
+      setIsVerifyingPayment(false);
+    }
+  };
+
+
+  const handleWebViewNavigationStateChange = (navState: any) => {
+    console.log('[WebView] URL:', navState.url);
+
+  // Reemplaza 'URL_EXITO' por la cadena que devuelva Megasoft al pagar (ej: 'approved')
+    if (navState.url.includes('approved') || navState.url.includes('success')) {
+      setIsProcessingPayment(false); // Cierra el Modal
+      
+      // Ejecuta la verificación final o navega al éxito
+      (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, { 
+        purchaseId: purchaseId,
+        referencia: paymentReferencia 
+      });
+    }
+
+    
+  };
+
   const handleCreditivooCheckout = async () => {
     Helper.HandleVibration();
-    
-    // 1. Validar Sesión de Creditivoo
-    const token = await AsyncStorage.getItem('@creditivoo_session_token');
-    if (!token) {
-      (navigation as any ).navigate(Routes.NAVIGATION_CREDITIVOO, { redirectTo: 'Cart' });
+  
+    // const token = await AsyncStorage.getItem('@creditivoo_session_token');
+    //obtenemos lo que tiene el carrito
+   const totalCart = CachedCartData?.customerCart?.prices?.grand_total?.value ?? 0;
+
+    // Preparamos los datos que necesitan las cuotas
+    const checkoutData = {
+      selectedPercentage: initialPercentage,
+      totalAmount: totalCart,
+      isFinancing: true
+    };
+
+    //const user_creditivoo = JSON.stringify(user.username);
+    //Alert.alert(''+user?.username);
+    //Alert.alert('user: '+JSON.stringify(user.username));
+    //Si hay sesión, validamos deudas o compras en curso (vienen en el objeto user según tu imagen)
+    if (!user?.username) {
+    // Si no hay usuario, vamos al login directamente
+      (navigation as any).navigate("CreditivooLogin", { 
+        redirectTo: "Cart", 
+        autoCheckout: true,
+        checkoutData: { 
+          selectedPercentage: initialPercentage 
+        } 
+      });
       return;
     }
-
+    
+    
     try {
-      // Mostrar cargador
-      // setIsRefreshing(true); 
 
-      // 2. Llamada al API de Creditivoo para validar Saldo y Compras en curso
-      // Supongamos que tienes un helper o endpoint para esto:
-      const response = await fetch('URL_API_CREDITIVOO/validate-customer', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const customerData = await response.json();
-
-      // 3. Validación de Compra en Curso
-      if (customerData.hasActiveOrder) {
-        Alert.alert("Acceso Denegado", "Ya tienes una solicitud de crédito en curso. Finalízala antes de continuar.");
-        return;
-      }
-
-      // 4. Validación de Saldo Disponible
-      const totalCart = CachedCartData.prices.grand_total.value;
-      const requiredCredit = totalCart - (totalCart);
       
-      if (customerData.availableCredit < requiredCredit) {
-        Alert.alert("Saldo Insuficiente", "El monto a financiar excede tu límite de crédito disponible.");
+      
+      const totalAmount = CachedCartData?.customerCart?.prices?.grand_total?.value;
+      const montoInicial = financingDetails.downPayment;
+      Alert.alert("inicial "+montoInicial);
+      
+      if (!montoInicial) {
+        Alert.alert("Error", "No se pudo obtener el monto total del carrito.");
         return;
       }
 
-      // 5. Si todo está OK, ir a la Pasarela / PlanSelection
-      (navigation as any).navigate(Routes.NAVIGATION_PLANSELECTION, {
-        //cartId: cartId,
-        selectedPercentage: initialPercentage,
-        totalAmount: totalCart
-      });
 
-    } catch (error) {
-      Alert.alert("Error", "No pudimos validar tu cuenta de Creditivoo en este momento.");
+      const paymentOrderRequest: CreatePaymentOrderRequest = {
+        
+        amount: montoInicial, // Enviamos el monto para que MegaSoft genere el link
+        // purchaseId: purchaseId // Solo incluir si ya creaste la orden en tu backend
+      };
+
+      const response = await createPaymentOrder(paymentOrderRequest);
+
+      const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
+
+      
+      if (isAutoCompleted) {
+        await handleVerificationFlow(response.referencia);
+      } else if (response.paymentUrl) {
+        // --- CAMBIO AQUÍ: ACTIVAR MODAL EN LUGAR DE NAVEGAR ---
+        console.log('[Checkout] Activando Modal de pago:', response.paymentUrl);
+        
+        setPaymentUrl(response.paymentUrl);
+        setPaymentReferencia(response.referencia);
+        setIsProcessingPayment(true);     // Muestra el Modal
+      } else {
+        throw new Error("No se recibió una URL de pago válida.");
+      }
+    } catch (error: any) {
+      console.error('[Checkout] Error:', error.message);
+      Alert.alert('Error de Pago', error.message || 'Error al procesar la solicitud con MegaSoft.');
     } finally {
-      // setIsRefreshing(false);
+      setIsCreatingOrder(false);
     }
+  
   };
   // By JAMP 14-01-2026
 
@@ -1306,6 +1465,36 @@ const Cart = () => {
           </View>
         </View>
       </Modalize>
+      <Modal
+        visible={isProcessingPayment && !!paymentUrl}
+        animationType="slide"
+        onRequestClose={() => setIsProcessingPayment(false)}>
+        <View style={styles.webViewContainer}>
+          <View style={styles.webViewHeader}>
+            <Text style={styles.webViewTitle}>Procesando pago</Text>
+            <TouchableOpacity
+              onPress={() => setIsProcessingPayment(false)}
+              style={styles.closeButton}>
+              <Icon
+                name="close"
+                type={IconType.Ionicons}
+                size={24}
+                color={IVOO_COLORS.black}
+              />
+            </TouchableOpacity>
+          </View>
+          {paymentUrl && (
+            <WebView
+              source={{ uri: paymentUrl }}
+              style={styles.webView}
+              onNavigationStateChange={handleWebViewNavigationStateChange}
+              startInLoadingState={true}
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -1313,6 +1502,124 @@ const Cart = () => {
 const styles = StyleSheet.create({
 
   //By JAMP
+  //estilos de modal
+  webViewContainer: {
+      flex: 1,
+      backgroundColor: IVOO_COLORS.white,
+    },
+    webViewHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SCREEN_WIDTH * 0.05,
+      paddingVertical: SCREEN_HEIGHT * 0.02,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+      backgroundColor: IVOO_COLORS.white,
+    },
+    webViewTitle: {
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: IVOO_COLORS.black,
+    },
+    closeButton: {
+      padding: SCREEN_WIDTH * 0.01,
+    },
+    webView: {
+      flex: 1,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: SCREEN_WIDTH * 0.05,
+    },
+    modalContent: {
+      backgroundColor: IVOO_COLORS.white,
+      borderRadius: 16,
+      width: '100%',
+      maxWidth: SCREEN_WIDTH * 0.9,
+      padding: SCREEN_WIDTH * 0.05,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SCREEN_HEIGHT * 0.02,
+    },
+    modalTitle: {
+      fontSize: SCREEN_WIDTH * 0.048,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: IVOO_COLORS.black,
+    },
+    modalCloseButton: {
+      padding: SCREEN_WIDTH * 0.01,
+    },
+    modalBody: {
+      marginBottom: SCREEN_HEIGHT * 0.02,
+    },
+    modalLabel: {
+      fontSize: SCREEN_WIDTH * 0.038,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+      color: IVOO_COLORS.black,
+      marginBottom: SCREEN_HEIGHT * 0.01,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderColor: 'rgba(110, 113, 124, 0.3)',
+      borderRadius: 12,
+      paddingHorizontal: SCREEN_WIDTH * 0.04,
+      paddingVertical: SCREEN_HEIGHT * 0.015,
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+      color: IVOO_COLORS.black,
+      backgroundColor: '#F9FAFC',
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      gap: SCREEN_WIDTH * 0.03,
+      marginTop: SCREEN_HEIGHT * 0.01,
+    },
+    modalButton: {
+      flex: 1,
+      borderRadius: 12,
+      paddingVertical: SCREEN_HEIGHT * 0.015,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalButtonCancel: {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderColor: IVOO_COLORS.primary,
+    },
+    modalButtonConfirm: {
+      backgroundColor: IVOO_COLORS.primary,
+    },
+    modalButtonCancelText: {
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: IVOO_COLORS.primary,
+    },
+    modalButtonConfirmText: {
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: '#FFFFFF',
+    },
+
+  
 
   // Estilos del Switch
   switchContainer: {

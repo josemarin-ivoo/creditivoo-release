@@ -2,6 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.ivoo.android">
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET" />
@@ -30,7 +31,8 @@
       android:allowBackup="false"
       android:extractNativeLibs="true"
       android:theme="@style/AppTheme"
-      tools:ignore="GoogleAppIndexingWarning">
+      tools:ignore="GoogleAppIndexingWarning"
+      android:usesCleartextTraffic="true">
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

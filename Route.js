@@ -821,6 +821,17 @@ const Route = () => {
           options={{headerShown: false}}
         />
         <Stack.Screen
+          name={Routes.NAVIGATION_PAYMENTSINSTALLS}
+          component={PaymentInstallmentsScreen}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          
+          name={Routes.NAVIGATION_TABCREDITIVOO}
+          component={MainTabsCreditivoo}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
           name={Routes.NAVIGATION_TO_CART}
           component={Cart}
           options={{headerShown: false}}
