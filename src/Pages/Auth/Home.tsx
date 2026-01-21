@@ -73,9 +73,11 @@ import {
   requestMultiple,
   RESULTS,
 } from 'react-native-permissions';
-import {deepLinkAction, homeDeepLinkAction} from "../../redux/actions/deepLinkAction";
+import {
+  deepLinkAction,
+  homeDeepLinkAction,
+} from '../../redux/actions/deepLinkAction';
 //import {firebase} from "@react-native-firebase/dynamic-links";
-
 
 const height = Dimensions.get('window').height;
 const width = Dimensions.get('window').width;
@@ -150,11 +152,19 @@ const Home = () => {
 
   useEffect(() => {
     const productId = deepLinkData.value.id;
-    if (deepLinkData.value == "home") {
+    if (deepLinkData.value == 'home') {
       dispatch(homeDeepLinkAction(''));
-      navigation.reset({index: 1, routes: [{name: Routes.APPSCREENS},], key: null})
+      navigation.reset({
+        index: 1,
+        routes: [{name: Routes.APPSCREENS}],
+        key: null,
+      });
     } else if (productId != null) {
-      navigation.reset({index: 1, routes: [{name: Routes.APPSCREENS},], key: null})
+      navigation.reset({
+        index: 1,
+        routes: [{name: Routes.APPSCREENS}],
+        key: null,
+      });
       navigation.navigate(Routes.NAVIGATION_TO_PRODUCTDETAILS, {
         id: productId,
       });
@@ -235,7 +245,7 @@ const Home = () => {
   }, [appInfodata]);
 
   const getResolveDeepLink = async () => {
-   // const link = await firebase.dynamicLinks().resolveLink("https://ivoo.page.link/Mzc8FioGQHStkE9Q8");
+    // const link = await firebase.dynamicLinks().resolveLink("https://ivoo.page.link/Mzc8FioGQHStkE9Q8");
     var regex = /[?&]([^=#]+)=([^&#]*)/g;
     var params: any = {}; // Initialize an empty object to store the parameters
     var match;
@@ -244,10 +254,9 @@ const Home = () => {
       params[match[1]] = match[2];
     }
 
-    console.log("resolve link:",link.url);
-    console.log("resolve link:",params.id);
-
-  }
+    console.log('resolve link:', link.url);
+    console.log('resolve link:', params.id);
+  };
 
   // const generateLink = async () => {
   //   const link = await firebase.dynamicLinks().buildShortLink({
@@ -264,7 +273,6 @@ const Home = () => {
   //   console.log("home page url",link);
   //   return link;
   // };
-
 
   const remindLater = () => {
     setItemInStorage(
@@ -631,7 +639,32 @@ const Home = () => {
       );
     }
   };
+
   const renderItem = ({item, index}) => {
+    // Helpers para leer additional_attributes
+    const getAttrValue = (code: string) =>
+      item?.additional_attributes?.find(
+        (a: any) => String(a?.code || '').toLowerCase() === code.toLowerCase(),
+      )?.value;
+
+    const rawFin = getAttrValue('financiable') ?? getAttrValue('Financiable');
+    const rawCashea = getAttrValue('cashea') ?? getAttrValue('Cashea');
+
+    const toBool = (v: any) => {
+      if (v === true) return true;
+      if (v === false || v == null) return false;
+      const s = String(v).trim().toLowerCase();
+      return s != '1' && s != 'si' && s != 'sí' && s != 'yes' && s != 'true';
+    };
+
+    const isFinanciable = toBool(rawFin);
+    const isCashea = true;
+
+    const finalPrice =
+      item?.price_range?.minimum_price?.final_price?.value ?? 0;
+    const inicialDesde = finalPrice * 0.4;
+    const iniciaCashea = finalPrice * 0.5;
+
     return (
       <TouchableOpacity
         style={[
@@ -658,17 +691,15 @@ const Home = () => {
                 />
               </View>
             )}
+
             <WishlistButton
               SKU={item.sku}
-              isLoading={load => {
-                setwishitemLoad(load);
-              }}
+              isLoading={load => setwishitemLoad(load)}
               pagetype={'other'}
-              setLoginOverlay={login => {
-                setLoginOverlayvisible(login);
-              }}
+              setLoginOverlay={login => setLoginOverlayvisible(login)}
             />
           </View>
+
           <Text
             style={[
               commonStyle.h6,
@@ -677,6 +708,7 @@ const Home = () => {
             ]}>
             {item.name}
           </Text>
+
           <View style={[commonStyle.flexDir_Row]}>
             <View>
               <Text
@@ -686,12 +718,62 @@ const Home = () => {
                   styles.renderItemPrice,
                   {color: appTheme.text},
                 ]}>
-                {Helper.currencyFormat(
-                  item.price_range.minimum_price.final_price.value,
-                )}
+                {Helper.currencyFormat(finalPrice)}
               </Text>
             </View>
           </View>
+
+          {isFinanciable && (
+            <View
+              style={{
+                width: '100%',
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 8,
+                backgroundColor: '#0add73',
+                marginTop: 6,
+              }}>
+              <ProgressiveImage
+                source={
+                  appTheme.type === 'dark'
+                    ? ImageResource.ic_isotipo_white
+                    : ImageResource.ic_isotipo_white
+                }
+                style={{width: 14, height: 14, marginRight: 8}}
+                resizeMode="contain"
+              />
+
+              <Text style={{fontSize: 11, fontWeight: '700', color: 'black'}}>
+                Inicial desde {Helper.currencyFormat(inicialDesde)}
+              </Text>
+            </View>
+          )}
+
+          {isCashea && (
+            <View
+              style={{
+                width: '100%',
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 8,
+                backgroundColor: '#fdfa3d',
+                marginTop: 6,
+              }}>
+              <ProgressiveImage
+                source={ImageResource.ic_cashea}
+                style={{width: 14, height: 14, marginRight: 8}}
+                resizeMode="contain"
+              />
+
+              <Text style={{fontSize: 11, fontWeight: '700', color: 'black'}}>
+                Inicial desde {Helper.currencyFormat(iniciaCashea)}
+              </Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -801,7 +883,7 @@ const Home = () => {
                   style={{height: 70}}
                   resizeMode="contain"
                   source={
-                   // ImageResource.ic_Home_Green_Theme2
+                    // ImageResource.ic_Home_Green_Theme2
                     appTheme.type === 'dark'
                       ? ImageResource.ic_home_logo_black_theme
                       : ImageResource.ic_home_logo_white_theme
@@ -995,7 +1077,11 @@ const Home = () => {
                                         ]}>
                                         <Pressable
                                           onPress={() => {
-                                              console.log("prod count---->" + option.category.products.total_count)
+                                            console.log(
+                                              'prod count---->' +
+                                                option.category.products
+                                                  .total_count,
+                                            );
                                             Helper.HandleVibration();
                                             AnalyticsEvent(
                                               TrackEvents.Category,
@@ -1035,7 +1121,9 @@ const Home = () => {
                                             <Icon
                                               name="play"
                                               type="font-awesome-5"
-                                              iconStyle={commonStyle.colorCategory}
+                                              iconStyle={
+                                                commonStyle.colorCategory
+                                              }
                                               size={12}
                                             />
                                           </View>

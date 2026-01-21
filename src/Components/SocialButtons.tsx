@@ -1,5 +1,6 @@
 import {useNavigation, StackActions} from '@react-navigation/native';
 import React, {useState, useEffect, useContext} from 'react';
+import {Alert} from 'react-native';
 
 import {TouchableOpacity, View, StyleSheet, Text, Platform} from 'react-native';
 import commonStyle from '../../commonStyle';
@@ -232,6 +233,7 @@ export const SocialButtons = (props: any) => {
       //  console.log( sData );
       if (sData.socialLogin) {
         console.log(`App Token::::::::::::::${sData.socialLogin.token}`);
+        Alert.alert(`App Token::::::::::::::${sData.socialLogin.token}`);
         dispatch({
           type: GLOBAL_DATA,
           payload: {token: sData.socialLogin.token},
@@ -252,6 +254,7 @@ export const SocialButtons = (props: any) => {
     if (customerData) {
       isDataLoading = true;
       // console.log( JSON.stringify( customerData ) );
+      Alert.alert('Customer Data', JSON.stringify(customerData));
       if (customerData.customer.phone == null) {
         isSignUp = 'signup';
       }
@@ -425,7 +428,9 @@ export const SocialButtons = (props: any) => {
       });
       console.log('start 1');
       try {
-          await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        await GoogleSignin.hasPlayServices({
+          showPlayServicesUpdateDialog: true,
+        });
         const userInfo = await GoogleSignin.signIn();
         console.log(JSON.stringify(userInfo));
         setIsLoggedIn(true);

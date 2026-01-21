@@ -369,54 +369,52 @@ const ProductList = props => {
   //   });
   // };
 
+  const loadMoreData = () => {
+    if (isLoadingMore || currentPage >= totalPage) return;
 
-    const loadMoreData =  () => {
-        if (isLoadingMore || currentPage >= totalPage) return;
+    setIsLoadingMore(true);
 
-        setIsLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
 
-        try {
-            const nextPage = currentPage + 1;
+      const {data: fetchMoreResult} = fetchMore({
+        variables: {
+          filters: {category_id: {eq: props.route.params.id}},
+          pageSize: 20,
+          sort: {name: 'DESC'},
+          currentPage: nextPage,
+        },
+        updateQuery: (previousResult, {fetchMoreResult}) => {
+          if (!fetchMoreResult?.products) return previousResult;
 
-            const { data: fetchMoreResult } =  fetchMore({
-                variables: {
-                    filters: { category_id: { eq: props.route.params.id } },
-                    pageSize: 20,
-                    sort: { name: 'DESC' },
-                    currentPage: nextPage,
-                },
-                updateQuery: (previousResult, { fetchMoreResult }) => {
-                    if (!fetchMoreResult?.products) return previousResult;
+          // Merge data in Apollo cache
+          const merged = {
+            ...fetchMoreResult,
+            products: {
+              ...fetchMoreResult.products,
+              items: [
+                ...previousResult.products.items,
+                ...fetchMoreResult.products.items,
+              ],
+            },
+          };
 
-                    // Merge data in Apollo cache
-                    const merged = {
-                        ...fetchMoreResult,
-                        products: {
-                            ...fetchMoreResult.products,
-                            items: [
-                                ...previousResult.products.items,
-                                ...fetchMoreResult.products.items,
-                            ],
-                        },
-                    };
+          return merged;
+        },
+      });
 
-                    return merged;
-                },
-            });
+      // Also update local state
+      const newItems = fetchMoreResult?.products?.items ?? [];
+      setItems(prev => [...prev, ...newItems]);
+      setCurrentPage(nextPage);
+    } catch (error) {
+      console.error('Error loading more data:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
-            // Also update local state
-            const newItems = fetchMoreResult?.products?.items ?? [];
-            setItems(prev => [...prev, ...newItems]);
-            setCurrentPage(nextPage);
-        } catch (error) {
-            console.error('Error loading more data:', error);
-        } finally {
-            setIsLoadingMore(false);
-        }
-    };
-
-
-    const renderFooter = () => {
+  const renderFooter = () => {
     try {
       // Check If Loading
       if (isLoadingMore) {

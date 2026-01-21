@@ -24,7 +24,8 @@ import {translate} from '../../../locales/translate';
 import {
   applyCouponToCart,
   cartDelete,
-  cartList, checkIfHighDimensionProduct,
+  cartList,
+  checkIfHighDimensionProduct,
   updateCartItemsQTY,
 } from '../../../Queries/queries';
 import Helper from '../../../Utils/Helper';
@@ -57,7 +58,7 @@ import {AnalyticsBeginCheckout} from '../../../helpers/analyticHelper';
 import {TextInput} from 'react-native';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import Colors from '../../../Utils/Colors';
-import CreditivooLogin from '../Creditivoo/CreditivooLogin'; 
+import CreditivooLogin from '../Creditivoo/CreditivooLogin';
 
 const Cart = () => {
   const navigation = useNavigation();
@@ -72,7 +73,10 @@ const Cart = () => {
   const [Discount, setDiscount] = useState('');
   const [minimOrderAmtValidate, setMinimumOrder] = useState(false);
   const [minimumOrderValidateMsg, setMinimumOrderValidateMsg] = useState('');
-  const [checkHighDimProduct, { loading:boolean, error:highDimError, data:highDimData }] = useLazyQuery(checkIfHighDimensionProduct);
+  const [
+    checkHighDimProduct,
+    {loading: boolean, error: highDimError, data: highDimData},
+  ] = useLazyQuery(checkIfHighDimensionProduct);
   const [isHighDimTextVisible, setIsHighDimTextVisible] = useState(true);
   const [highDimTextInfo, setHighDimTextInfo] = useState('');
   const global_data = useSelector((state: any) => state.commonReducer);
@@ -80,15 +84,16 @@ const Cart = () => {
   const [CachedCartData, setCachedCartData] = useState<any>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-
   // By JAMP 15-01-2026
   const [initialPercentage, setInitialPercentage] = useState();
   const [isCartFinanciable, setIsCartFinanciable] = useState(true);
-  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0 });
+  const [financingDetails, setFinancingDetails] = useState({
+    downPayment: 0,
+    installment: 0,
+  });
 
   const [isCasheaSelected, setIsCasheaSelected] = useState(false);
 
-  
   // By JAMP
 
   const [getCart, {loading: loadingB, data: cartListdataB}] = useLazyQuery(
@@ -172,19 +177,15 @@ const Cart = () => {
   // Lógica de validación de financiamiento
   // By JAMP 14-01-2026
 
-//   useEffect(() => {
+  //   useEffect(() => {
 
-    
-//   const checkStorageImmediatly = async () => {
-//     const val = await AsyncStorage.getItem('@creditivoo_context');
-//     console.log("LOG INMEDIATO:", val);
-//     if(val) Alert.alert("Carga inicial", val);
-//   };
-//   checkStorageImmediatly();
-// }, []);
-
-  
-
+  //   const checkStorageImmediatly = async () => {
+  //     const val = await AsyncStorage.getItem('@creditivoo_context');
+  //     console.log("LOG INMEDIATO:", val);
+  //     if(val) Alert.alert("Carga inicial", val);
+  //   };
+  //   checkStorageImmediatly();
+  // }, []);
 
   useEffect(() => {
     const loadCreditivooContext = async () => {
@@ -192,10 +193,10 @@ const Cart = () => {
         const jsonValue = await AsyncStorage.getItem('@creditivoo_context');
         if (jsonValue != null) {
           const savedContext = JSON.parse(jsonValue);
-          
+
           // CORRECCIÓN 1: Acceso directo al porcentaje
-          const percentage = savedContext.selectedPercentage || 0.40; 
-          
+          const percentage = savedContext.selectedPercentage || 0.4;
+
           setInitialPercentage(percentage);
           setIsCartFinanciable(savedContext.isFinanciable);
 
@@ -205,24 +206,27 @@ const Cart = () => {
             const total = savedContext.amountToFinance;
             const downPayment = total * percentage; // <--- Usamos la constante local
             const installment = (total - downPayment) / 4;
-            setFinancingDetails({ downPayment, installment });
+            setFinancingDetails({downPayment, installment});
           }
-          
-          console.log("Contexto recuperado:", savedContext);
+
+          console.log('Contexto recuperado:', savedContext);
         }
       } catch (e) {
-        console.error("Error recuperando context", e);
+        console.error('Error recuperando context', e);
       }
     };
 
     loadCreditivooContext();
 
     // CORRECCIÓN 3: Recalcular con datos reales de la API si existen
-    if (CachedCartData?.customerCart?.prices?.grand_total?.value && initialPercentage) {
+    if (
+      CachedCartData?.customerCart?.prices?.grand_total?.value &&
+      initialPercentage
+    ) {
       const total = CachedCartData.customerCart.prices.grand_total.value;
       const downPayment = total * initialPercentage;
       const installment = (total - downPayment) / 4;
-      setFinancingDetails({ downPayment, installment });
+      setFinancingDetails({downPayment, installment});
     }
   }, [CachedCartData, initialPercentage]);
 
@@ -326,17 +330,16 @@ const Cart = () => {
 
   //#region cartDeleteById
 
-  const apiCheckHighDimProduct=()=>{
-
+  const apiCheckHighDimProduct = () => {
     console.log(CachedCartData.customerCart.id);
 
     checkHighDimProduct({
-      variables:{
+      variables: {
         cart_id: CachedCartData.customerCart.id,
       },
     });
 
-    console.log("checkHighDimProduct api called")
+    console.log('checkHighDimProduct api called');
   };
 
   const cartDeleteById = (cartId, ItemId) => {
@@ -501,40 +504,47 @@ const Cart = () => {
     return has_errorob;
   };
 
-
   const handleCreditivooCheckout = async () => {
     Helper.HandleVibration();
-    
+
     // 1. Validar Sesión de Creditivoo
     const token = await AsyncStorage.getItem('@creditivoo_session_token');
     if (!token) {
-      (navigation as any ).navigate(Routes.NAVIGATION_CREDITIVOO, { redirectTo: 'Cart' });
+      (navigation as any).navigate(Routes.NAVIGATION_CREDITIVOO, {
+        redirectTo: 'Cart',
+      });
       return;
     }
 
     try {
       // Mostrar cargador
-      // setIsRefreshing(true); 
+      // setIsRefreshing(true);
 
       // 2. Llamada al API de Creditivoo para validar Saldo y Compras en curso
       // Supongamos que tienes un helper o endpoint para esto:
       const response = await fetch('URL_API_CREDITIVOO/validate-customer', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: {Authorization: `Bearer ${token}`},
       });
       const customerData = await response.json();
 
       // 3. Validación de Compra en Curso
       if (customerData.hasActiveOrder) {
-        Alert.alert("Acceso Denegado", "Ya tienes una solicitud de crédito en curso. Finalízala antes de continuar.");
+        Alert.alert(
+          'Acceso Denegado',
+          'Ya tienes una solicitud de crédito en curso. Finalízala antes de continuar.',
+        );
         return;
       }
 
       // 4. Validación de Saldo Disponible
       const totalCart = CachedCartData.prices.grand_total.value;
-      const requiredCredit = totalCart - (totalCart);
-      
+      const requiredCredit = totalCart - totalCart;
+
       if (customerData.availableCredit < requiredCredit) {
-        Alert.alert("Saldo Insuficiente", "El monto a financiar excede tu límite de crédito disponible.");
+        Alert.alert(
+          'Saldo Insuficiente',
+          'El monto a financiar excede tu límite de crédito disponible.',
+        );
         return;
       }
 
@@ -542,43 +552,61 @@ const Cart = () => {
       (navigation as any).navigate(Routes.NAVIGATION_PLANSELECTION, {
         //cartId: cartId,
         selectedPercentage: initialPercentage,
-        totalAmount: totalCart
+        totalAmount: totalCart,
       });
-
     } catch (error) {
-      Alert.alert("Error", "No pudimos validar tu cuenta de Creditivoo en este momento.");
+      Alert.alert(
+        'Error',
+        'No pudimos validar tu cuenta de Creditivoo en este momento.',
+      );
     } finally {
       // setIsRefreshing(false);
     }
   };
   // By JAMP 14-01-2026
 
-  
   const renderPaymentMethodSwitch = () => (
     <View style={styles.switchContainer}>
-      <TouchableOpacity 
-        style={[styles.switchOption, !isCasheaSelected && styles.switchOptionActive]}
-        onPress={() => setIsCasheaSelected(false)}
-      >
-        <Text style={[styles.switchText, !isCasheaSelected && styles.switchTextActive]}>CREDITIVOO</Text>
+      <TouchableOpacity
+        style={[
+          styles.switchOption,
+          !isCasheaSelected && styles.switchOptionActive,
+        ]}
+        onPress={() => setIsCasheaSelected(false)}>
+        <Text
+          style={[
+            styles.switchText,
+            !isCasheaSelected && styles.switchTextActive,
+          ]}>
+          CREDITIVOO
+        </Text>
       </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.switchOption, isCasheaSelected && styles.switchOptionActive]}
-        onPress={() => setIsCasheaSelected(true)}
-      >
-        <Text style={[styles.switchText, isCasheaSelected && styles.switchTextActive]}>CASHEA</Text>
+      <TouchableOpacity
+        style={[
+          styles.switchOption,
+          isCasheaSelected && styles.switchOptionActive,
+        ]}
+        onPress={() => setIsCasheaSelected(true)}>
+        <Text
+          style={[
+            styles.switchText,
+            isCasheaSelected && styles.switchTextActive,
+          ]}>
+          CASHEA
+        </Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderCasheaSection = () => (
     <View style={styles.casheaMainContainer}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.casheaCartBadge}
-        onPress={() => Alert.alert("Cashea", "Redirigiendo a Cashea...")}
-      >
+        onPress={() => Alert.alert('Cashea', 'Redirigiendo a Cashea...')}>
         <Text style={styles.casheaTag}>PAGAR CON CASHEA</Text>
-        <Text style={styles.casheaSubtext}>Compra ahora y paga después en cuotas sin interés</Text>
+        <Text style={styles.casheaSubtext}>
+          Compra ahora y paga después en cuotas sin interés
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -597,60 +625,74 @@ const Cart = () => {
 
     return (
       <View style={styles.creditivooMainContainer}>
-        <Text style={[commonStyle.h5, {color: appTheme.text, marginBottom: 10, fontWeight: 'bold'}]}>
+        <Text
+          style={[
+            commonStyle.h5,
+            {color: appTheme.text, marginBottom: 10, fontWeight: 'bold'},
+          ]}>
           Selecciona tu inicial:
         </Text>
         <View style={styles.selectorRow}>
-          {[0.40, 0.50, 0.60].map((perc) => (
-            <TouchableOpacity 
+          {[0.4, 0.5, 0.6].map(perc => (
+            <TouchableOpacity
               key={perc}
               onPress={() => setInitialPercentage(perc)}
-              style={[styles.percentageBtn, initialPercentage === perc && styles.percentageBtnActive]}
-            >
-              <Text style={[styles.percentageText, initialPercentage === perc && styles.percentageTextActive]}>
+              style={[
+                styles.percentageBtn,
+                initialPercentage === perc && styles.percentageBtnActive,
+              ]}>
+              <Text
+                style={[
+                  styles.percentageText,
+                  initialPercentage === perc && styles.percentageTextActive,
+                ]}>
                 {Math.round(perc * 100)}%
               </Text>
             </TouchableOpacity>
           ))}
         </View>
         {/* <TouchableOpacity style={styles.creditivooCartBadge} onPress={() => Alert.alert("Creditivoo", "Procesando pago...")}> */}
-        <TouchableOpacity style={styles.creditivooCartBadge} onPress={handleCreditivooCheckout}>
+        <TouchableOpacity
+          style={styles.creditivooCartBadge}
+          onPress={handleCreditivooCheckout}>
           <Text style={styles.creditivooTag}>PAGAR CON CREDITIVOO</Text>
           <Text style={styles.creditivooCuotas}>
-            Inicial de {Helper.currencyFormat(financingDetails.downPayment)} + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
+            Inicial de {Helper.currencyFormat(financingDetails.downPayment)} + 4
+            cuotas de: {Helper.currencyFormat(financingDetails.installment)}
           </Text>
         </TouchableOpacity>
       </View>
     );
   };
 
-
   // By JAMP logica para validacion de usuario creditivoo y navegacion a planSelection
 
   const handleCreditivooNavigation = async () => {
     Helper.HandleVibration();
-    
+
     // 1. Verificamos si existe un token de sesión de Creditivoo
-    const creditivooToken = await AsyncStorage.getItem('@creditivoo_session_token');
+    const creditivooToken = await AsyncStorage.getItem(
+      '@creditivoo_session_token',
+    );
 
     if (creditivooToken) {
       // SI TIENE SESIÓN: Vamos directo al Plan Selection
       // Asegúrate de que este nombre coincida con tu NavigationRoutes.ts
       (navigation as any).navigate(Routes.NAVIGATION_PLANSELECTION, {
         cartData: CachedCartData,
-        financing: financingDetails
+        financing: financingDetails,
       });
     } else {
       // NO TIENE SESIÓN: Vamos al Login de Creditivoo
       // Le pasamos un parámetro 'redirectTo' para que el login sepa a dónde ir después
       (navigation as any).navigate(Routes.NAVIGATION_CREDITIVOO, {
         nextScreen: Routes.NAVIGATION_PLANSELECTION,
-        cartData: CachedCartData
+        cartData: CachedCartData,
       });
     }
   };
 
-  // BY JAMP 
+  // BY JAMP
 
   const [itemIdtoUpdateinCart, setItemIdtoUpdateinCart] = useState(0);
 
@@ -767,8 +809,6 @@ const Cart = () => {
     );
   };
 
-
-
   useEffect(() => {
     //Update item Qty on cart
     if (updateQTYdata) {
@@ -794,7 +834,8 @@ const Cart = () => {
   useEffect(() => {
     if (highDimData) {
       var obj = JSON.parse(JSON.stringify(highDimData));
-      var isHighDimProduct: boolean = obj.highdimension[0].highdimension2.is_high_dimension;
+      var isHighDimProduct: boolean =
+        obj.highdimension[0].highdimension2.is_high_dimension;
       setIsHighDimTextVisible(isHighDimProduct);
       if (isHighDimProduct) {
         setHighDimTextInfo(obj.highdimension[0].highdimension2.text);
@@ -804,33 +845,55 @@ const Cart = () => {
     }
   }, [highDimData]);
 
-    useEffect( () =>{
-      console.log("high dim error data" + JSON.stringify(highDimError))
-      },[highDimError]);
+  useEffect(() => {
+    console.log('high dim error data' + JSON.stringify(highDimError));
+  }, [highDimError]);
 
   const handleKeyDown = () => {
     console.log('========= Enter =========');
     CallapplyCouponToCartAPI();
   };
 
-
-
-
   const Header = () => {
     return (
-        <View style={headerstyles.headerContainer}>
-          <View style={headerstyles.titleContainer}>
-            <Text style={[commonStyle.h5,
-              commonStyle.fontBold, {color: appTheme.text}]}>{translate('cart.lbl_cart_title')}</Text>
-          </View>
-          {/*<TouchableHighlight onPress={()=>{}} underlayColor="transparent">
+      <View style={headerstyles.headerContainer}>
+        <View style={headerstyles.titleContainer}>
+          <Text
+            style={[
+              commonStyle.h5,
+              commonStyle.fontBold,
+              {color: appTheme.text},
+            ]}>
+            {translate('cart.lbl_cart_title')}
+          </Text>
+        </View>
+        {/* ✅ Botón Wishlist (derecha) */}
+        <TouchableOpacity
+          onPress={() => {
+            Helper.HandleVibration();
+            (navigation as any).navigate(Routes.WISHTLIST);
+          }}
+          style={headerstyles.wishlistBtn}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+          activeOpacity={0.8}>
+          <Image
+            source={
+              (appTheme as any)?.type === 'green'
+                ? ResImage.ic_wishlist_white
+                : ResImage.ic_wishlist_green
+            }
+            style={headerstyles.wishlistIcon}
+            resizeMode="stretch"
+          />
+        </TouchableOpacity>
+        {/*<TouchableHighlight onPress={()=>{}} underlayColor="transparent">
             <ProgressiveImage
                 source={appTheme.ic_share_new}
                 style={{width: 24, height: 24, marginRight: 20}}
                 resizeMode="stretch"
             />
           </TouchableHighlight>*/}
-        </View>
+      </View>
     );
   };
 
@@ -846,7 +909,7 @@ const Cart = () => {
         <View>
           <Header />
         </View>
-       {/* <View
+        {/* <View
           style={{
             position: 'absolute',
             top: 0,
@@ -901,7 +964,9 @@ const Cart = () => {
                 }
                 {
                   <View>
-                    {isHighDimTextVisible && <Text style={styles.centeredText}>{highDimTextInfo}</Text>}
+                    {isHighDimTextVisible && (
+                      <Text style={styles.centeredText}>{highDimTextInfo}</Text>
+                    )}
                   </View>
                 }
                 {
@@ -1022,7 +1087,6 @@ const Cart = () => {
                 {/* Cart is empty */}
                 {translate('cart.lbl_empty_cart')}
               </Text>
-              
             )}
           </View>
         </KeyboardAwareScrollView>
@@ -1154,27 +1218,46 @@ const Cart = () => {
                 {GrandTotal}
               </Text>
             </View>
-            
+
             {ServiceFees != '$0.00' && (
-              <View style={[{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }]}>
-                <Text style={[commonStyle.h6, {color: appTheme.placeholderTextColor, fontWeight: '700'}]}>
+              <View
+                style={[
+                  {
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 8,
+                  },
+                ]}>
+                <Text
+                  style={[
+                    commonStyle.h6,
+                    {color: appTheme.placeholderTextColor, fontWeight: '700'},
+                  ]}>
                   Servicio
                 </Text>
-                <Text style={[commonStyle.h6, {color: appTheme.placeholderTextColor, fontWeight: '700'}]}>{`${ServiceFees}`}</Text>
+                <Text
+                  style={[
+                    commonStyle.h6,
+                    {color: appTheme.placeholderTextColor, fontWeight: '700'},
+                  ]}>{`${ServiceFees}`}</Text>
               </View>
             )}
 
             <View
               style={{
-                borderBottomColor: appTheme.type === 'dark' ? 'white' : ResColor.Gray,
+                borderBottomColor:
+                  appTheme.type === 'dark' ? 'white' : ResColor.Gray,
                 borderBottomWidth: 1,
                 marginTop: 5,
-                marginBottom: 15, // Aumenté un poco el margen para el switch
+                marginBottom: 15,
               }}
             />
 
             {renderPaymentMethodSwitch()}
-            {isCasheaSelected ? renderCasheaSection() : renderCreditivooSection()}
+            {isCasheaSelected
+              ? renderCasheaSection()
+              : renderCreditivooSection()}
 
             <CustomButton
               title="cart.lbl_checkout"
@@ -1311,7 +1394,6 @@ const Cart = () => {
 };
 
 const styles = StyleSheet.create({
-
   //By JAMP
 
   // Estilos del Switch
@@ -1346,7 +1428,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   casheaCartBadge: {
-    backgroundColor: '#fdfa3d', 
+    backgroundColor: '#fdfa3d',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -1406,7 +1488,7 @@ const styles = StyleSheet.create({
     borderColor: '#2E7D32', // Borde verde para resaltar sobre el negro
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
@@ -1440,7 +1522,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // by JAMP 
+  // by JAMP
 
   renderDomContainer: {
     flexDirection: 'row',
@@ -1456,10 +1538,9 @@ const styles = StyleSheet.create({
   },
   centeredText: {
     textAlign: 'center',
-    color:ResorceColor.cancleclr,
+    color: ResorceColor.cancleclr,
     marginBottom: 15,
   },
-
 });
 
 const headerstyles = StyleSheet.create({
@@ -1483,7 +1564,16 @@ const headerstyles = StyleSheet.create({
     position: 'absolute',
     right: 10,
   },
+  wishlistBtn: {
+    position: 'absolute',
+    right: 12,
+    padding: 6,
+    borderRadius: 16,
+  },
+  wishlistIcon: {
+    width: 22,
+    height: 22,
+  },
 });
-
 
 export default Cart;

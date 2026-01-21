@@ -21,11 +21,9 @@ const HeaderProductDetails = props => {
   const navigation = useNavigation();
 
   const [selectedSKU, setselectedSKU] = useState(props.sku);
-  const isShareProductVisible = false
+  const isShareProductVisible = false;
   const generateLink = async (id, cartId) => {
     console.log(`Generating Progress...id=${id}&cartId=${cartId}`);
-    Alert.alert(''+id);
-    Alert.alert(''+cartId);
     // const link = await firebase.dynamicLinks().buildShortLink({
     //   domainUriPrefix: 'https://ivoo.page.link',
     //   link: `https://ivoo.page.link/ProductDetails?id=${id}&cartId=${cartId}`,
@@ -39,36 +37,35 @@ const HeaderProductDetails = props => {
     // });
     //  const urlParams = new URLSearchParams( link );
     // const myParam = urlParams.get( 'id' );
-    return 'https://ivoo.page.link' + `/ProductDetails?id=${id}&cartId=${cartId}`; // link;
+    return (
+      'https://ivoo.page.link' + `/ProductDetails?id=${id}&cartId=${cartId}`
+    ); // link;
   };
 
-
-  useEffect(() =>{
-
+  useEffect(() => {
     const generateLink = async (id, cartId) => {
-    console.log(`Generating Progress...id=${id}&cartId=${cartId}`);
-    Alert.alert(''+id);
-    Alert.alert(''+cartId);
-    // const link = await firebase.dynamicLinks().buildShortLink({
-    //   domainUriPrefix: 'https://ivoo.page.link',
-    //   link: `https://ivoo.page.link/ProductDetails?id=${id}&cartId=${cartId}`,
-    //   ios: {
-    //     bundleId: 'com.siragon',
-    //     appStoreId: '1479559802',
-    //   },
-    //   android: {
-    //     packageName: 'com.ivoo.android',
-    //   },
-    // });
-    //  const urlParams = new URLSearchParams( link );
-    // const myParam = urlParams.get( 'id' );
-    return 'https://ivoo.page.link' + `/ProductDetails?id=${id}&cartId=${cartId}`; // link;
-  };
+      console.log(`Generating Progress...id=${id}&cartId=${cartId}`);
+      // const link = await firebase.dynamicLinks().buildShortLink({
+      //   domainUriPrefix: 'https://ivoo.page.link',
+      //   link: `https://ivoo.page.link/ProductDetails?id=${id}&cartId=${cartId}`,
+      //   ios: {
+      //     bundleId: 'com.siragon',
+      //     appStoreId: '1479559802',
+      //   },
+      //   android: {
+      //     packageName: 'com.ivoo.android',
+      //   },
+      // });
+      //  const urlParams = new URLSearchParams( link );
+      // const myParam = urlParams.get( 'id' );
+      return (
+        'https://ivoo.page.link' + `/ProductDetails?id=${id}&cartId=${cartId}`
+      ); // link;
+    };
 
-  generateLink();
-    
+    generateLink();
   });
-  
+
   const [isShared, setIsShared] = useState(false);
   const onShare = async () => {
     if (isShared) {
@@ -126,13 +123,15 @@ const HeaderProductDetails = props => {
         />
       </TouchableHighlight>
       <View style={styles.shareViewStyles}>
-          {isShareProductVisible && (<TouchableHighlight onPress={onShare} underlayColor="transparent">
-          <ProgressiveImage
-            source={appTheme.ic_share_new}
-            style={{width: 24, height: 24, marginRight: 20}}
-            resizeMode="stretch"
-          />
-        </TouchableHighlight>)}
+        {isShareProductVisible && (
+          <TouchableHighlight onPress={onShare} underlayColor="transparent">
+            <ProgressiveImage
+              source={appTheme.ic_share_new}
+              style={{width: 24, height: 24, marginRight: 20}}
+              resizeMode="stretch"
+            />
+          </TouchableHighlight>
+        )}
         <WishlistButton
           SKU={selectedSKU}
           isLoading={load => {

@@ -315,6 +315,47 @@ export const homeSection2 = gql`
 
 // `;
 
+// export const homeSections = gql`
+//   query {
+//     homeSections {
+//       mode
+//       category {
+//         id
+//         name
+//         products(pageSize: 4, sort: {position: ASC}) {
+//           total_count
+//           items {
+//             sku
+//             name
+//             small_image {
+//               url
+//             }
+//             image {
+//               url
+//             }
+//             price_range {
+//               minimum_price {
+//                 final_price {
+//                   currency
+//                   value
+//                 }
+//                 regular_price {
+//                   value
+//                   currency
+//                 }
+//                 discount {
+//                   percent_off
+//                 }
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+//   }
+// `;
+
+// add Frodriguez
 export const homeSections = gql`
   query {
     homeSections {
@@ -327,6 +368,12 @@ export const homeSections = gql`
           items {
             sku
             name
+
+            additional_attributes {
+              code
+              value
+            }
+
             small_image {
               url
             }
@@ -354,6 +401,7 @@ export const homeSections = gql`
     }
   }
 `;
+// end Frodriguez
 
 export const phoneVerification = gql`
   query {
@@ -407,6 +455,10 @@ export const productInfo = gql`
         sku
         small_image {
           url
+        }
+        additional_attributes {
+          code
+          value
         }
         price_range {
           minimum_price {
@@ -2270,7 +2322,7 @@ export const cartInventory = gql`
         region_id
         store_image
         street
-    }
+      }
     }
   }
 `;
@@ -2762,21 +2814,13 @@ export const getLocationConfig = gql`
   }
 `;
 
-
 export const checkIfHighDimensionProduct = gql`
-  query(
-      $cart_id: String!
-  ){
-  highdimension(
-    input: { 
-      cart_id: $cart_id 
-    })
-     {
-      highdimension2{
+  query ($cart_id: String!) {
+    highdimension(input: {cart_id: $cart_id}) {
+      highdimension2 {
         is_high_dimension
         text
+      }
     }
   }
-}
-  `;
-
+`;

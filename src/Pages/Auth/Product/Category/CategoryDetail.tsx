@@ -1,5 +1,3 @@
-/* eslint-disable prettier/prettier */
-/* eslint-disable semi */
 import {useLazyQuery, useQuery} from '@apollo/client';
 import {useNavigation} from '@react-navigation/native';
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';

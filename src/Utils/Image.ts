@@ -40,7 +40,7 @@ export default {
   ic_search_dark: require('../../assets/images/tab/ic_search_dark.png'),
   ic_search: require('../../assets/images/tab/ic_search.png'),
   ic_search_white: require('../../assets/images/tab/ic_search_white.png'),
-  
+
   ic_creditivo: require('../../assets/images/tab/asset_105.png'),
   ic_creditivodark: require('../../assets/images/tab/25px-white-stroke.png'),
   ic_creditivodark_b: require('../../assets/images/tab/49px-white-stroke.png'),
@@ -53,6 +53,13 @@ export default {
   ic_creditivo_green_c: require('../../assets/images/tab/73px-green-stroke.png'),
   // ic_creditivo_b: require('../../assets/images/tab/creditivoo-48px.png'),
   // ic_creditivo_c: require('../../assets/images/tab/creditivoo-72px.png'),
+
+  // add new icons for product details Frodriguez
+  ic_isotipo_green: require('../../assets/images/isotipo.png'),
+  ic_isotipo_dark: require('../../assets/images/isotipo-B.png'),
+  ic_isotipo_white: require('../../assets/images/isotipo-N.png'),
+  ic_cashea: require('../../assets/images/cashea-logo-negro.png'),
+  ic_cashea_yellow: require('../../assets/images/cashea-logo-amarillo.png'),
 
   ic_cart_dark: require('../../assets/images/tab/ic_cart_dark.png'),
   ic_cart_green: require('../../assets/images/tab/ic_cart_green.png'),
@@ -98,7 +105,6 @@ export default {
   ic_theme_dark: require('../../assets/images/profile/ic_dark_dark.png'),
   ic_chat: require('../../assets/images/profile/ic_account_chat.png'),
   ic_chat_dark: require('../../assets/images/profile/ic_account_chat_dark.png'),
-
 
   vd_splash_celebration: require('../../assets/video/splash.mp4'),
   vd_splash: require('../../assets/video/splash1.mp4'),
