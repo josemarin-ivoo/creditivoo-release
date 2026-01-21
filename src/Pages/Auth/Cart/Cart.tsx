@@ -79,6 +79,9 @@ import {getPurchaseById,
   PurchaseSimulationResponse,
   simulatePurchase,} from '../../Auth/Creditivoo/services/credit';
 import {getFinancingById, FinancingTypeResponse} from '../../Auth/Creditivoo/services/plan';
+import { hash } from 'react-native-fs';
+import Config from 'react-native-config';
+
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -109,6 +112,12 @@ const Cart = () => {
   
   // By JAMP 15-01-2026
   const IVOO_APP_TENANT_ID = 5;
+
+  const percentageToId: Record<number, number> = {
+    0.40: 27,
+    0.50: 28,
+    0.60: 29
+  };
   const route = useRoute();
   const purchaseId = (route.params as any)?.purchaseId as number;
   //const [error, setError] = useState<string | null>(null);
@@ -224,16 +233,7 @@ const Cart = () => {
   // Lógica de validación de financiamiento
   // By JAMP 14-01-2026
 
-//   useEffect(() => {
 
-    
-//   const checkStorageImmediatly = async () => {
-//     const val = await AsyncStorage.getItem('@creditivoo_context');
-//     console.log("LOG INMEDIATO:", val);
-//     if(val) Alert.alert("Carga inicial", val);
-//   };
-//   checkStorageImmediatly();
-// }, []);
 
   
   useEffect(() => {
@@ -242,7 +242,7 @@ const Cart = () => {
     (dispatch as any)(fetchMe()).unwrap()
     .then((userData) => {
 
-      // Alert.alert('prueba '+userData);
+       //Alert.alert('prueba '+userData.user.creditLimit);
       //console.log("Sesión activa para:", userData.user.name);
     })
     .catch(error => {
@@ -643,8 +643,6 @@ const Cart = () => {
    
    // verificamos que el usuario exista en creditivoo https://api-ivoo-dev.whaledigitals.com/purchases/paymentValidator/transaction/confirm/p/@control
    
-
-    
     if (!user?.username) {
     // Si no hay usuario, vamos al login directamente
       (navigation as any).navigate("CreditivooLogin", { 
@@ -660,14 +658,52 @@ const Cart = () => {
     
     try {
 
+      
+      const userUrl = 'https://api-ivoo-dev.whaledigitals.com/api';
 
-      const userCheckResponse = await fetch(
-        `https://api-ivoo-dev.whaledigitals.com/api/users?role=CUSTOMER&document=${cedulaUsuario}&page=1&pageSize=1`
-      ).then(res => res.json());
+      const userCheck = await fetch(`${userUrl}/users/client/document/${cedulaUsuario}?role=CUSTOMER&document=${cedulaUsuario}&page=1&Size=1`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'Authorization': `Bearer: ${token}` }
+        
+      });
 
-      const creditivooUser = userCheckResponse.data?.[0];
+      const userText = await userCheck.text();
+      const userObj = JSON.parse(userText);
+      const userr = userObj.user;
 
-      Alert.alert("inicial "+JSON.stringify(userCheckResponse));
+      const creditivooUser = userr;
+
+      if (!creditivooUser) {
+        Alert.alert("Atención", "No se encontró el registro de crédito para esta cédula.");
+        return;
+      }
+      
+      // --- BLOQUE DE VALIDACIONES CON CAMPOS REALES ---
+    
+    // Validar Estatus (creditStatus)
+    if (creditivooUser.creditStatus !== 'ACTIVE') {
+      Alert.alert("Validación", "Su línea de crédito no está activa.");
+      return;
+    }
+
+    // Validar Disponible (creditAvailable)
+    if (!creditivooUser.creditAvailable || creditivooUser.creditAvailable <= 0) {
+      Alert.alert("Validación", "No posee saldo disponible en su línea de crédito.");
+      return;
+    }
+
+    // Validar Facturas Pendientes (hasPurchasePendingInvoice)
+    if (creditivooUser.hasPurchasePendingInvoice === true) {
+      Alert.alert("Validación", "Posee facturas pendientes de pago. Por favor regularice su situación.");
+      return;
+    }
+
+    // Validar Compra en Progreso (hasPurchaseInProgress)
+    if (creditivooUser.hasPurchaseInProgress === true) {
+      Alert.alert("Validación", "Ya tiene una solicitud de compra en curso.");
+      return;
+    }
+
 
       // Preparamos los datos que necesitan las cuotas
       const checkoutData = {
@@ -677,6 +713,7 @@ const Cart = () => {
       };
       //const totalAmount = CachedCartData?.customerCart?.prices?.grand_total?.value;
       const montoInicial = financingDetails.downPayment;
+
       //Alert.alert("inicial "+montoInicial);
       
       if (!montoInicial) {
@@ -684,17 +721,59 @@ const Cart = () => {
         return;
       }
 
+      // generas la compra en status draft
+      const purchaseResponse = await fetch(`${userUrl}/purchases`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
+        },
+          body: JSON.stringify({
+            tenantId: Number(IVOO_APP_TENANT_ID),
+            totalAmount: Number(totalCart),
+            userId: Number(creditivooUser.id) // Aquí convertimos el "36" a 36
+          })
+        }
+      );
 
+      const responsepurchase = await purchaseResponse.text(); 
+      const purchase = JSON.parse(responsepurchase);
+
+      Alert.alert(""+Number(purchase.id));
+      //cargar el plan elegido para que se actualice la compra anexando la inicial a pagar y las cuotas
+      
+      // recibiendo lo que tiene el selector
+      const selectedPerc = checkoutData?.selectedPercentage || 0.40;
+
+      // convirtiendolo al ID de financiamiento
+      const financingId = percentageToId[selectedPerc] || 27;
+
+      const purchaseUpdate = await fetch(`${userUrl}/purchases/${purchase.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
+        },
+          body: JSON.stringify({
+            
+            financingTypeId: Number(financingId) // Aquí lo que carga el selector de porcentajes
+          })
+        }
+      );
+
+
+        //Alert.alert(""+Number(purchase.id));
       const paymentOrderRequest: CreatePaymentOrderRequest = {
         
         amount: montoInicial, // Enviamos el monto para que MegaSoft genere el link
-        // purchaseId: purchaseId // Solo incluir si ya creaste la orden en tu backend
+         //purchaseId: Number(purchase.id) // Solo incluir si ya creaste la orden en tu backend
       };
 
       const response = await createPaymentOrder(paymentOrderRequest);
 
       const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
 
+      //Alert.alert(""+JSON.stringify(isAutoCompleted));
       
       if (isAutoCompleted) {
         await handleVerificationFlow(response.referencia);
@@ -765,6 +844,7 @@ const Cart = () => {
         <Text style={[commonStyle.h5, {color: appTheme.text, marginBottom: 10, fontWeight: 'bold'}]}>
           Selecciona tu inicial:
         </Text>
+        
         <View style={styles.selectorRow}>
           {[0.40, 0.50, 0.60].map((perc) => (
             <TouchableOpacity 
@@ -779,12 +859,12 @@ const Cart = () => {
           ))}
         </View>
         {/* <TouchableOpacity style={styles.creditivooCartBadge} onPress={() => Alert.alert("Creditivoo", "Procesando pago...")}> */}
-        <TouchableOpacity style={styles.creditivooCartBadge} onPress={handleCreditivooCheckout}>
+        {/* <TouchableOpacity style={styles.creditivooCartBadge} onPress={handleCreditivooCheckout}>
           <Text style={styles.creditivooTag}>PAGAR CON CREDITIVOO</Text>
           <Text style={styles.creditivooCuotas}>
             Inicial de {Helper.currencyFormat(financingDetails.downPayment)} + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     );
   };
@@ -1042,7 +1122,7 @@ const Cart = () => {
             style={{
               paddingLeft: 16,
               paddingEnd: 16,
-              marginBottom: 15,
+              marginBottom: 16,
             }}>
             {(CachedCartData && CachedCartData.customerCart.items.length > 0) ||
             (data && data.removeItemFromCart.cart.items > 0) ? (
@@ -1190,10 +1270,26 @@ const Cart = () => {
               
             )}
           </View>
+
+
+           <View
+              style={{
+                borderBottomColor: appTheme.type === 'dark' ? 'white' : ResColor.Gray,
+                borderBottomWidth: 1,
+                marginTop: 5,
+                marginBottom: 15, // Aumenté un poco el margen para el switch
+              }}
+            />
+
+            {renderPaymentMethodSwitch()}
+            {isCasheaSelected ? renderCasheaSection() : renderCreditivooSection()}
+
         </KeyboardAwareScrollView>
 
         {CachedCartData && CachedCartData.customerCart.items.length > 0 && (
           <View style={{padding: 16}}>
+
+           
             {minimumOrderValidateMsg.length > 0 && (
               <Text
                 style={[
@@ -1201,7 +1297,7 @@ const Cart = () => {
                   {
                     color: 'red',
                     textAlign: 'center',
-                    paddingVertical: 8,
+                    paddingVertical: 4,
                   },
                 ]}>
                 {minimumOrderValidateMsg}
@@ -1222,8 +1318,9 @@ const Cart = () => {
                   commonStyle.h6,
                   {color: appTheme.placeholderTextColor, fontWeight: '700'},
                 ]}>
-                Monto inicial
+                Monto de inicial ({Number(initialPercentage)*100}%)
               </Text>
+                
               <Text
                 style={[
                   commonStyle.h6,
@@ -1231,13 +1328,44 @@ const Cart = () => {
                 ]}>{`${
                 CachedCartData
                   ? Helper.currencyFormat(
-                      CachedCartData.customerCart.prices.subtotal_excluding_tax
-                        .value,
+                      financingDetails.downPayment
+                      
                     )
                   : Helper.currencyFormat(0)
               }`}</Text>
             </View>
 
+            <View
+              style={[
+                {
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 8,
+                },
+              ]}>
+              <Text
+                style={[
+                  commonStyle.h6,
+                  {color: appTheme.placeholderTextColor, fontWeight: '700'},
+                ]}>
+                Monto Financiado
+              </Text>
+                
+              <Text
+                style={[
+                  commonStyle.h6,
+                  {color: appTheme.placeholderTextColor},
+                ]}>{`${
+                CachedCartData
+                  ? Helper.currencyFormat(
+                      financingDetails.montFinance
+                      
+                    )
+                  : Helper.currencyFormat(0)
+              }`}</Text>
+            </View>
+              
             {IsValidCoupon && (
               <View
                 style={[
@@ -1328,18 +1456,12 @@ const Cart = () => {
                 <Text style={[commonStyle.h6, {color: appTheme.placeholderTextColor, fontWeight: '700'}]}>{`${ServiceFees}`}</Text>
               </View>
             )}
+            {/* aca estaba el boton de metodos de pago */}
+            
 
-            <View
-              style={{
-                borderBottomColor: appTheme.type === 'dark' ? 'white' : ResColor.Gray,
-                borderBottomWidth: 1,
-                marginTop: 5,
-                marginBottom: 15, // Aumenté un poco el margen para el switch
-              }}
-            />
 
-            {renderPaymentMethodSwitch()}
-            {isCasheaSelected ? renderCasheaSection() : renderCreditivooSection()}
+
+
 
             <CustomButton
               title="cart.lbl_checkout"
