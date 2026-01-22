@@ -1,4 +1,4 @@
-import React, {useContext, useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   StyleSheet,
@@ -23,7 +23,6 @@ import Icon, {IconType} from 'react-native-dynamic-vector-icons';
 import ReactNativeBiometrics, {BiometryTypes} from 'react-native-biometrics';
 import {AuthStorage} from './app/services/AuthStorage';
 import {Routes} from '../../../Utils/NavigationRoutes';
-import {AppContext} from '../../AppContext';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -31,7 +30,6 @@ const LoginScreen: React.FC = () => {
   const navigation = useNavigation();
   const dispatch = useIvoDispatch();
   const {isLoading} = useIvoSelector(state => state.creditivoo.auth);
-  const {appTheme} = useContext(AppContext);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -154,8 +152,7 @@ const LoginScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, {backgroundColor: appTheme.background}]}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -277,7 +274,7 @@ const LoginScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {flex: 1},
+  safeArea: {flex: 1, backgroundColor: '#FFF'},
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 30,
