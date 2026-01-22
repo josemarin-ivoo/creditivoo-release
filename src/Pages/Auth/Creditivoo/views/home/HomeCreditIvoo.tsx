@@ -40,7 +40,7 @@ import {
   PointsTransaction,
   PointsData,
 } from '../../services/points';
-import { Routes } from '../../../../../Utils/NavigationRoutes';
+import {Routes} from '../../../../../Utils/NavigationRoutes';
 // import {GemTransactionCard, GemTransaction} from '../../components/gems';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -58,10 +58,12 @@ const HomeCreditIvoo: React.FC = () => {
   const [pointsData, setPointsData] = useState<PointsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-    // const [refreshing, setRefreshing] = useState(false);
+  // const [refreshing, setRefreshing] = useState(false);
 
   // Obtener usuario del store
-  const {user, isLoggedIn, token} = useIvoSelector(state => state.creditivoo.auth);
+  const {user, isLoggedIn, token} = useIvoSelector(
+    state => state.creditivoo.auth,
+  );
 
   // Obtener la URL de la foto de perfil
   const profilePictureUrl = (user as any)?.profilePictureUrl || null;
@@ -91,43 +93,40 @@ const HomeCreditIvoo: React.FC = () => {
     const instagramAppUrl = 'instagram://user?username=ivoovenezuela';
 
     Linking.canOpenURL(instagramAppUrl)
-      .then((supported) => {
+      .then(supported => {
         if (supported) {
           return Linking.openURL(instagramAppUrl);
         } else {
           return Linking.openURL(instagramUrl);
         }
       })
-      .catch((err) => console.error('Error al abrir Instagram', err));
+      .catch(err => console.error('Error al abrir Instagram', err));
   };
-
 
   //Para las gemas:
   const fetchPointsData = useCallback(async (showRefreshing = false) => {
-      try {
-        if (showRefreshing) {
-          setRefreshing(true);
-        } else {
-          setIsLoading(true);
-        }
-        setError(null);
-        console.log('[GemsScreen] Obteniendo información de gemas...');
-        const data = await getPointsInfo();
-        console.log('[GemsScreen] Información de gemas obtenida:', data);
-        setPointsData(data);
-      } catch (err: any) {
-        console.error('[GemsScreen] Error al obtener información de gemas:', err);
-        setError(err.message || 'Error al cargar la información de gemas');
-      } finally {
-        if (showRefreshing) {
-          setRefreshing(false);
-        } else {
-          setIsLoading(false);
-        }
+    try {
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setIsLoading(true);
       }
-    }, []);
-
-
+      setError(null);
+      console.log('[GemsScreen] Obteniendo información de gemas...');
+      const data = await getPointsInfo();
+      console.log('[GemsScreen] Información de gemas obtenida:', data);
+      setPointsData(data);
+    } catch (err: any) {
+      console.error('[GemsScreen] Error al obtener información de gemas:', err);
+      setError(err.message || 'Error al cargar la información de gemas');
+    } finally {
+      if (showRefreshing) {
+        setRefreshing(false);
+      } else {
+        setIsLoading(false);
+      }
+    }
+  }, []);
 
   const fetchCreditInfo = useCallback(async () => {
     try {
@@ -148,7 +147,6 @@ const HomeCreditIvoo: React.FC = () => {
     // Hacer fetchMe() al montar para asegurar datos actualizados al abrir la app
     // Esto solo se ejecuta una vez al montar, no en cada focus
     fetchPointsData();
-
 
     dispatch(fetchMe()).catch(error => {
       console.error(
@@ -179,8 +177,6 @@ const HomeCreditIvoo: React.FC = () => {
       // Cerrar el modal si el usuario se desautentica
       setShowChatModal(false);
     }
-
-    
   }, [
     isLoggedIn,
     token,
@@ -193,7 +189,6 @@ const HomeCreditIvoo: React.FC = () => {
 
   // Hacer fetch de crédito cuando la pantalla recibe foco (pero no fetchMe)
   useFocusEffect(
-  
     useCallback(() => {
       fetchCreditInfo();
       fetchPointsData();
@@ -246,43 +241,45 @@ const HomeCreditIvoo: React.FC = () => {
   };
 
   const handleQuickAction = async (action: string) => {
-
-    console.log(user)
+    console.log(user);
     switch (action) {
       case 'cuotas':
         // Obtener la primera compra disponible y navegar a installments
         try {
-          
           if (!user || !user.id) {
-            Alert.alert('info: '+user);
+            Alert.alert('info: ' + user);
             console.log('[HomeCreditIvoo] Esperando datos del usuario...');
             return;
           }
 
-          console.log('[HomeCreditIvoo] Consultando compras para el usuario:', user.id);
-
+          console.log(
+            '[HomeCreditIvoo] Consultando compras para el usuario:',
+            user.id,
+          );
 
           const purchases = await getPurchasesByUserId(user.id).catch(err => {
             // Si es 404, retornamos array vacío en lugar de lanzar error
             if (err.response?.status === 404) return [];
-              throw err;
-            });
+            throw err;
+          });
 
           // Filtrar compras que no estén completadas
           const availablePurchases = (purchases || []).filter(
-            purchase =>
-              purchase.status?.toUpperCase() !== 'COMPLETED'
+            purchase => purchase.status?.toUpperCase() !== 'COMPLETED',
           );
           if (availablePurchases.length === 0) {
             // No hay cuotas: Mandamos a la vista con el estado vacío
-            (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, { 
+            (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
               showEmptyState: true,
-              emptyMessage: 'No tienes cuotas pendientes para pagar en este momento.'
+              emptyMessage:
+                'No tienes cuotas pendientes para pagar en este momento.',
             });
           } else {
             // Hay cuotas: Seguimos el flujo normal
             const firstPurchase = availablePurchases[0];
-            const purchaseDetails = await getPurchaseById(Number(firstPurchase.id));
+            const purchaseDetails = await getPurchaseById(
+              Number(firstPurchase.id),
+            );
 
             (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
               purchase: purchaseDetails,
@@ -312,11 +309,10 @@ const HomeCreditIvoo: React.FC = () => {
             error,
           );
           // En caso de error, navegar a MyPurchases como fallback
-          (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, { 
-              emptyMessage: 'Aún no tienes cuotas pendientes para pagar',
-              fromQuickAction: 'cuotas'
-            }
-          );
+          (navigation as any).navigate(Routes.NAVIGATION_PAYMENTSINSTALLS, {
+            emptyMessage: 'Aún no tienes cuotas pendientes para pagar',
+            fromQuickAction: 'cuotas',
+          });
         }
         break;
       case 'compras':
@@ -501,7 +497,7 @@ const HomeCreditIvoo: React.FC = () => {
                 : SCREEN_HEIGHT * 0.2,
             },
           ]}>
-          <View style={{ width: '100%' }}>
+          <View style={{width: '100%'}}>
             <HomeGemsCard
               gemsAmount={pointsData?.totalPoints || 0}
               subtitle={
@@ -518,16 +514,15 @@ const HomeCreditIvoo: React.FC = () => {
             <Text style={styles.sectionTitle}>Mi Actividad</Text>
             <View style={styles.line} />
           </View>
-          
+
           <QuickActions onActionPress={handleQuickAction} />
 
           <View style={styles.sectionsContainer}>
             <Text style={styles.sectionTitle}>Novedades</Text>
-            <TouchableOpacity 
-              onPress={handleOpenInstagram} 
+            <TouchableOpacity
+              onPress={handleOpenInstagram}
               activeOpacity={0.9}
-              style={styles.bannerContainer}
-            >
+              style={styles.bannerContainer}>
               {!isPlusUser && hasActiveCredit ? (
                 <View style={styles.bannerContainerWithPadding}>
                   <FastImage
@@ -630,25 +625,23 @@ const HomeCreditIvoo: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-
-
   sectionHeader: {
-    flexDirection: 'row',     // Alinea línea - texto - línea en fila
-    alignItems: 'center',     // Centra verticalmente los elementos
-    marginVertical: 20,       // Espacio respecto a la tarjeta de gemas y botones
-    paddingHorizontal: 20,    // Margen lateral
+    flexDirection: 'row', // Alinea línea - texto - línea en fila
+    alignItems: 'center', // Centra verticalmente los elementos
+    marginVertical: 20, // Espacio respecto a la tarjeta de gemas y botones
+    paddingHorizontal: 20, // Margen lateral
   },
 
   line: {
-    flex: 1,                  // Hace que las líneas ocupen todo el espacio disponible
-    height: 1,                // Grosor de la línea
+    flex: 1, // Hace que las líneas ocupen todo el espacio disponible
+    height: 1, // Grosor de la línea
     backgroundColor: '#E0E0E0', // Color gris suave para no saturar el diseño
   },
   sectionTitle: {
-    marginHorizontal: 15,     // Espacio entre las líneas y el texto
+    marginHorizontal: 15, // Espacio entre las líneas y el texto
     fontSize: 14,
     fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
-    color: '#666',            // Color de texto que combina con los iconos de abajo
+    color: '#666', // Color de texto que combina con los iconos de abajo
     textTransform: 'uppercase', // Opcional, para un toque más profesional
     letterSpacing: 1,
   },
