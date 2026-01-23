@@ -63,7 +63,7 @@ import {AnalyticsBeginCheckout} from '../../../helpers/analyticHelper';
 import {TextInput} from 'react-native';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import Colors from '../../../Utils/Colors';
-<<<<<<< HEAD
+
 import {fetchMe} from '../../../Pages/Auth/Creditivoo/store-creditivoo/slices/auth-slice';
 import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
 import {WebView} from 'react-native-webview';
@@ -86,9 +86,7 @@ import Config from 'react-native-config';
 
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
-=======
-import CreditivooLogin from '../Creditivoo/CreditivooLogin';
->>>>>>> origin/frodriguez
+
 
 const Cart = () => {
   const navigation = useNavigation();
@@ -114,13 +112,8 @@ const Cart = () => {
 
   const [CachedCartData, setCachedCartData] = useState<any>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-<<<<<<< HEAD
-
-
   
-=======
->>>>>>> origin/frodriguez
+
   // By JAMP 15-01-2026
   const IVOO_APP_TENANT_ID = 5;
 
@@ -156,14 +149,9 @@ const Cart = () => {
 
   const [initialPercentage, setInitialPercentage] = useState();
   const [isCartFinanciable, setIsCartFinanciable] = useState(true);
-<<<<<<< HEAD
-  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0 });
-=======
-  const [financingDetails, setFinancingDetails] = useState({
-    downPayment: 0,
-    installment: 0,
-  });
->>>>>>> origin/frodriguez
+
+  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0, initialPercentage: 0, });
+
 
   const [isCasheaSelected, setIsCasheaSelected] = useState(false);
 
@@ -250,8 +238,6 @@ const Cart = () => {
   // Lógica de validación de financiamiento
   // By JAMP 14-01-2026
 
-<<<<<<< HEAD
-
 
   
   useEffect(() => {
@@ -268,21 +254,15 @@ const Cart = () => {
     });
       // Solo se ejecuta una vez al montar
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, []
+  );
   
-=======
-  //   useEffect(() => {
 
-  //   const checkStorageImmediatly = async () => {
-  //     const val = await AsyncStorage.getItem('@creditivoo_context');
-  //     console.log("LOG INMEDIATO:", val);
-  //     if(val) Alert.alert("Carga inicial", val);
-  //   };
-  //   checkStorageImmediatly();
-  // }, []);
->>>>>>> origin/frodriguez
 
   useEffect(() => {
+    
+    
+
     const loadCreditivooContext = async () => {
       try {
         const jsonValue = await AsyncStorage.getItem('@creditivoo_context');
@@ -302,11 +282,9 @@ const Cart = () => {
             const downPayment = total * percentage; // <--- Usamos la constante local
             const montFinance = (total - downPayment);
             const installment = (total - downPayment) / 4;
-<<<<<<< HEAD
-            setFinancingDetails({ downPayment, installment, montFinance });
-=======
-            setFinancingDetails({downPayment, installment});
->>>>>>> origin/frodriguez
+
+            setFinancingDetails({ downPayment, installment, montFinance, initialPercentage });
+
           }
 
           console.log('Contexto recuperado:', savedContext);
@@ -327,11 +305,9 @@ const Cart = () => {
       const downPayment = total * initialPercentage;
       const montFinance = (total - downPayment);
       const installment = (total - downPayment) / 4;
-<<<<<<< HEAD
-      setFinancingDetails({ downPayment, installment, montFinance });
-=======
-      setFinancingDetails({downPayment, installment});
->>>>>>> origin/frodriguez
+
+      setFinancingDetails({ downPayment, installment, montFinance, initialPercentage });
+
     }
   }, [CachedCartData, initialPercentage]);
 
@@ -611,7 +587,7 @@ const Cart = () => {
     return has_errorob;
   };
 
-<<<<<<< HEAD
+
 
 
   useFocusEffect(
@@ -677,7 +653,7 @@ const Cart = () => {
     // const token = await AsyncStorage.getItem('@creditivoo_session_token');
     //obtenemos lo que tiene el carrito
    const totalCart = CachedCartData?.customerCart?.prices?.grand_total?.value ?? 0;
-
+  
    const cedulaUsuario = user?.document;
 
    
@@ -926,13 +902,9 @@ const Cart = () => {
           ))}
         </View>
         {/* <TouchableOpacity style={styles.creditivooCartBadge} onPress={() => Alert.alert("Creditivoo", "Procesando pago...")}> */}
-<<<<<<< HEAD
+
         {/* <TouchableOpacity style={styles.creditivooCartBadge} onPress={handleCreditivooCheckout}>
-=======
-        <TouchableOpacity
-          style={styles.creditivooCartBadge}
-          onPress={handleCreditivooCheckout}>
->>>>>>> origin/frodriguez
+
           <Text style={styles.creditivooTag}>PAGAR CON CREDITIVOO</Text>
           <Text style={styles.creditivooCuotas}>
             Inicial de {Helper.currencyFormat(financingDetails.downPayment)} + 4
@@ -1570,28 +1542,9 @@ const Cart = () => {
               </View>
             )}
             {/* aca estaba el boton de metodos de pago */}
-            
 
 
 
-<<<<<<< HEAD
-
-=======
-            <View
-              style={{
-                borderBottomColor:
-                  appTheme.type === 'dark' ? 'white' : ResColor.Gray,
-                borderBottomWidth: 1,
-                marginTop: 5,
-                marginBottom: 15,
-              }}
-            />
-
-            {renderPaymentMethodSwitch()}
-            {isCasheaSelected
-              ? renderCasheaSection()
-              : renderCreditivooSection()}
->>>>>>> origin/frodriguez
 
             <CustomButton
               title="cart.lbl_checkout"
@@ -1613,6 +1566,9 @@ const Cart = () => {
                 (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
                   cData: CachedCartData,
                   highDimText: highDimTextInfo,
+                  finance: financingDetails,
+                  totalCart: CachedCartData?.customerCart?.prices?.grand_total?.value,
+                  initialPercentage: 0.40
                 });
               }}
             />

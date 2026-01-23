@@ -1,5 +1,5 @@
-import {useNavigation, StackActions} from '@react-navigation/native';
-import React, {useContext, useEffect, useState} from 'react';
+import {useNavigation, StackActions, useFocusEffect, useRoute, } from '@react-navigation/native';
+import React, {useContext, useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,15 @@ import {
   StyleSheet,
   Platform,
   AppState,
-  Switch,
+  Switch, 
+  Alert,
+  Modal,
+  Dimensions,
+  
 } from 'react-native';
+import {Icon} from 'react-native-elements';
+import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../Auth/Creditivoo/styles';
+import {IconType} from 'react-native-dynamic-vector-icons';
 import commonStyle from '../../../../commonStyle';
 import CustomPBar from '../../../Components/CustomPBar';
 import Helper from '../../../Utils/Helper';
@@ -90,16 +97,43 @@ import {
 } from '../../../redux/AlternetAddressReducers/AlternetAddressAction';
 import ResorceColor from "../../../Utils/Colors";
 
+
+// imports for JAMP
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {fetchMe} from '../../../Pages/Auth/Creditivoo/store-creditivoo/slices/auth-slice';
+import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
+import {WebView} from 'react-native-webview';
+import CreditivooLogin from '../Creditivoo/CreditivooLogin'; 
+import {
+  CreatePaymentOrderRequest,
+  createPaymentOrder,
+  createMultiplePaymentsOrder,
+  verifyPaymentOrder,
+  createTestPaymentOrder,
+} from '../../Auth/Creditivoo/services/megasoft';
+import {Payment, PaymentStatus} from '../../Auth/Creditivoo/services/purchases';
+import {getPurchaseById,
+  RevisionResponse,
+  PurchaseSimulationResponse,
+  simulatePurchase,} from '../../Auth/Creditivoo/services/credit';
+import {getFinancingById, FinancingTypeResponse} from '../../Auth/Creditivoo/services/plan';
+import { hash } from 'react-native-fs';
+import Config from 'react-native-config';
+import { darkColors, lightColors } from 'Utils/themeColors';
+
 // stripe.setOptions({
 //   publishableKey: Helper.stripeKey,
 //   androidPayMode: Helper.androidPayMode,
 // });
+
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const locRefreshTimeInMin = 1440;
 
 const Checkout = props => {
   const [cartData, setcartData] = useState(props.route.params.cData);
   const [highDimText, setHighDimText] = useState(props.route.params.highDimText);
+  const [financeData] = useState(props.route.params.finance);
   const [isChecked, setIsChecked] = useState(false);
   // const [paymentCards, setpaymentCards] = useState( props.route.params.cardData )
   //console.log( props.route.params )
@@ -183,6 +217,63 @@ const Checkout = props => {
   const CheckoutCacheReducer = useSelector(
     (state: any) => state.CheckoutCacheReducer,
   );
+
+
+
+  // CONST BY JAMP 22-01-2026
+  const [CachedCartData, setCachedCartData] = useState<any>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const dispatchh = useIvoDispatch();
+  const IVOO_APP_TENANT_ID = 5;
+
+  const percentageToId: Record<number, number> = {
+    0.40: 27,
+    0.50: 28,
+    0.60: 29
+  };
+
+  
+
+  const route = useRoute();
+
+ 
+  const purchaseId = (route.params as any)?.purchaseId as number;
+  //const [error, setError] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [paymentReferencia, setPaymentReferencia] = useState<string | null>(
+    null,
+  );
+
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+
+  const isPlanSubscription = (route.params as any)?.isPlanSubscription as
+      | boolean
+      | undefined;
+  const paymentsFromRoute = (route.params as any)?.payments as
+    | Payment[]
+    | undefined;
+
+  const [purchase, setPurchase] = useState<RevisionResponse | null>(null);
+    const [financing, setFinancing] = useState<FinancingTypeResponse | null>(
+      null,
+    );
+  //variable para validar el token de usuario creditivoo
+  const {user, isLoggedIn, token} = useIvoSelector(state => state.creditivoo.auth);
+
+  const [initialPercentage, setInitialPercentage] = useState();
+  const [isCartFinanciable, setIsCartFinanciable] = useState(true);
+
+  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0 });
+
+
+  const [isCasheaSelected, setIsCasheaSelected] = useState(false);
+
+
+  // END BY JAMP
+
+
 
   function UpdateCacheExpTime(isUpdated) {
     var expTime = new Date(new Date().setHours(new Date().getHours() + 5));
@@ -676,6 +767,268 @@ const Checkout = props => {
       }
     }
   }, [isAlternetAddress]);
+
+
+
+
+
+  // By JAMP 22-01-2026
+
+  useFocusEffect(
+      useCallback(() => {
+      const params = route.params as any;
+      // Solo disparamos si hay señal, hay usuario y EL MONTO YA SE CALCULÓ
+      if (params?.autoCheckout && user?.username && financingDetails?.downPayment > 0) {
+        
+        console.log('[Cart] Ejecutando checkout automático con monto:', financingDetails.downPayment);
+        
+        // Limpiamos el parámetro para que no se repita
+        navigation.setParams({ autoCheckout: undefined } as any);
+  
+        // Ejecutamos
+        handleCreditivooCheckout();
+      }
+    }, [route.params, user?.username, financingDetails?.downPayment])
+  );
+
+  const handleVerificationFlow = async (referencia: string) => {
+      try {
+        setIsVerifyingPayment(true);
+        const result = await verifyPaymentOrder({
+          control: referencia,
+          purchaseId: purchaseId, // Asegúrate de tener esta variable disponible
+        });
+  
+        if (result.approved) {
+          const targetScreen = isPlanSubscription ? 'SubscriptionSuccess' : 'PurchaseSuccess';
+          (navigation as any).navigate(targetScreen, { purchaseId });
+        } else {
+          Alert.alert('Pago no verificado', 'El pago no fue aprobado.');
+        }
+      } catch (err) {
+        Alert.alert('Error', 'No se pudo verificar el pago.');
+      } finally {
+        setIsVerifyingPayment(false);
+      }
+    };
+
+  const handleWebViewNavigationStateChange = (navState: any) => {
+      console.log('[WebView] URL:', navState.url);
+  
+    // Reemplaza 'URL_EXITO' por la cadena que devuelva Megasoft al pagar (ej: 'approved')
+      if (navState.url.includes('approved') || navState.url.includes('success')) {
+        setIsProcessingPayment(false); // Cierra el Modal
+        
+        // Ejecuta la verificación final o navega al éxito
+        (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, { 
+          purchaseId: purchaseId,
+          referencia: paymentReferencia 
+        });
+      }
+  
+      
+    };
+
+    
+
+    useEffect(() => {
+     
+      const getFinance = async () => {
+
+      const jsonValue = await AsyncStorage.getItem('@creditivoo_context');
+
+      Alert.alert(''+jsonValue);
+      
+
+    };
+
+      getFinance();
+        
+        
+  
+      
+    });
+
+    // comienza el flujo de creditivoo
+
+  const handleCreditivooCheckout = async () => {
+    Helper.HandleVibration();
+    setIsCreatingOrder(true);
+    
+    // const token = await AsyncStorage.getItem('@creditivoo_session_token');
+    //obtenemos lo que tiene el carrito
+   const totalCart = CachedCartData?.customerCart?.prices?.grand_total?.value ?? 0;
+
+   const cedulaUsuario = user?.document;
+
+   
+   // verificamos que el usuario exista en creditivoo https://api-ivoo-dev.whaledigitals.com/purchases/paymentValidator/transaction/confirm/p/@control
+   
+
+
+    if (!user?.username) {
+      
+    // Si no hay usuario, vamos al login directamente
+      (navigation as any).navigate("CreditivooLogin", { 
+        redirectTo: "Cart", 
+        autoCheckout: true,
+        checkoutData: { 
+          selectedPercentage: initialPercentage 
+        } 
+      });
+      return;
+    }
+    
+    
+    try {
+
+      
+      const userUrl = 'https://api-ivoo-dev.whaledigitals.com/api';
+
+      const userCheck = await fetch(`${userUrl}/users/client/document/${cedulaUsuario}?role=CUSTOMER&document=${cedulaUsuario}&page=1&Size=1`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'Authorization': `Bearer: ${token}` }
+        
+      });
+
+      const userText = await userCheck.text();
+      const userObj = JSON.parse(userText);
+      const userr = userObj.user;
+
+      const creditivooUser = userr;
+
+      if (!creditivooUser) {
+        Alert.alert("Atención", "No se encontró el registro de crédito para esta cédula.");
+        return;
+      }
+      
+      // --- BLOQUE DE VALIDACIONES CON CAMPOS REALES ---
+    
+    // Validar Estatus (creditStatus)
+    if (creditivooUser.creditStatus !== 'ACTIVE') {
+      Alert.alert("Validación", "Su línea de crédito no está activa.");
+      return;
+    }
+
+    // Validar Disponible (creditAvailable)
+    if (!creditivooUser.creditAvailable || creditivooUser.creditAvailable <= 0) {
+      Alert.alert("Validación", "No posee saldo disponible en su línea de crédito.");
+      return;
+
+    }
+
+    // Validar Facturas Pendientes (hasPurchasePendingInvoice)
+    if (creditivooUser.hasPurchasePendingInvoice === true) {
+      Alert.alert("Validación", "Posee facturas pendientes de pago. Por favor regularice su situación.");
+      return;
+    }
+
+    // Validar Compra en Progreso (hasPurchaseInProgress)
+    if (creditivooUser.hasPurchaseInProgress === true) {
+      Alert.alert("Validación", "Ya tiene una solicitud de compra en curso.");
+      return;
+    }
+
+
+      // Preparamos los datos que necesitan las cuotas
+      const checkoutData = {
+        selectedPercentage: initialPercentage,
+        totalAmount: totalCart,
+        isFinancing: true
+      };
+      //const totalAmount = CachedCartData?.customerCart?.prices?.grand_total?.value;
+      const montoInicial = financingDetails.downPayment;
+
+      //Alert.alert("inicial "+montoInicial);
+      
+      if (!montoInicial) {
+        Alert.alert("Error", "No se pudo obtener el monto total del carrito.");
+        return;
+      }
+
+      // generas la compra en status draft
+      const purchaseResponse = await fetch(`${userUrl}/purchases`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
+        },
+          body: JSON.stringify({
+            tenantId: Number(IVOO_APP_TENANT_ID),
+            totalAmount: Number(totalCart),
+            userId: Number(creditivooUser.id) // Aquí convertimos el "36" a 36
+          })
+        }
+      );
+
+      const responsepurchase = await purchaseResponse.text(); 
+      const purchase = JSON.parse(responsepurchase);
+
+      Alert.alert(""+Number(purchase.id));
+      //cargar el plan elegido para que se actualice la compra anexando la inicial a pagar y las cuotas
+      
+      // recibiendo lo que tiene el selector
+      const selectedPerc = checkoutData?.selectedPercentage || 0.40;
+
+      // convirtiendolo al ID de financiamiento
+      const financingId = percentageToId[selectedPerc] || 27;
+
+      const purchaseUpdate = await fetch(`${userUrl}/purchases/${purchase.id}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
+        },
+          body: JSON.stringify({
+            
+            financingTypeId: Number(financingId) // Aquí lo que carga el selector de porcentajes
+          })
+        }
+      );
+
+
+        //Alert.alert(""+Number(purchase.id));
+      const paymentOrderRequest: CreatePaymentOrderRequest = {
+        
+        amount: montoInicial, // Enviamos el monto para que MegaSoft genere el link
+         //purchaseId: Number(purchase.id) // Solo incluir si ya creaste la orden en tu backend
+      };
+
+      const response = await createPaymentOrder(paymentOrderRequest);
+
+      const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
+
+      //Alert.alert(""+JSON.stringify(isAutoCompleted));
+      
+      if (isAutoCompleted) {
+        await handleVerificationFlow(response.referencia);
+      } else if (response.paymentUrl) {
+        // --- CAMBIO AQUÍ: ACTIVAR MODAL EN LUGAR DE NAVEGAR ---
+        console.log('[Checkout] Activando Modal de pago:', response.paymentUrl);
+        
+        setPaymentUrl(response.paymentUrl);
+        setPaymentReferencia(response.referencia);
+        setIsProcessingPayment(true);     // Muestra el Modal
+      } else {
+        throw new Error("No se recibió una URL de pago válida.");
+      }
+    } catch (error: any) {
+      console.error('[Checkout] Error:', error.message);
+      Alert.alert('Error de Pago', error.message || 'Error al procesar la solicitud con MegaSoft.');
+    } finally {
+      setIsCreatingOrder(false);
+    }
+  
+  };
+
+
+  // end By JAMP
+
+
+
+
+
+
 
   return (
     <View style={{flex: 1, backgroundColor: appTheme.background}}>
@@ -1286,314 +1639,386 @@ const Checkout = props => {
                 ? 'none'
                 : 'auto'
             }>
-            <Text
+            {/* <Text
               style={[
                 commonStyle.profileHeader,
                 commonStyle.fontBold,
                 {paddingBottom: 0, color: appTheme.text},
               ]}>
               {translate('order.lbl_payment')}
-            </Text>
+            </Text> */}
             {
-              <TouchableOpacity
-                style={{marginBottom: 80}}
-                onPress={() => {
-                  openPaymentSelection();
-                }}>
-                {!Paymenttype && (
-                  <View
-                    style={[
-                      commonStyle.profileContainer,
-                      commonStyle.flexDir_Row,
-                      commonStyle.flexDir_Row,
-                      commonStyle.justifyContent_flex_start,
-                      {
-                        padding: 12,
-                        marginTop: 8,
-                        alignItems: 'center',
-                        backgroundColor: appTheme.InputBoxBGColor,
-                      },
-                    ]}>
-                    <ProgressiveImage
-                      source={isDark ? ResImage.ic_Plus : ResImage.ic_plus_gray}
-                      style={{paddingRight: 8}}></ProgressiveImage>
-                    <Text
-                      style={[
-                        commonStyle.h5,
-                        {
-                          color: isDark
-                            ? colorResource.disable_clr
-                            : colorResource.Gray,
-                        },
-                      ]}>
-                      {translate('checkout.lbl_select_payment')}
-                    </Text>
-                  </View>
-                )}
-                {Paymenttype == 'cash' && (
-                  <View
-                    style={[
-                      styles.cashitemContainer,
-                      commonStyle.padding_12,
-                      {backgroundColor: appTheme.InputBoxBGColor},
-                    ]}>
-                    <ProgressiveImage
-                      source={ResImage.ic_Cash}
-                      style={[styles.type_icon, {paddingLeft: 15}]}
-                      resizeMode="center"></ProgressiveImage>
-                    <View style={{paddingLeft: 6}}>
-                      <Text
-                        style={[
-                          commonStyle.h5,
-                          commonStyle.fontBold,
-                          {paddingLeft: 6, color: appTheme.text},
-                        ]}>
-                        {translate('payment.lbl_incash')}
-                      </Text>
-                    </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
-                      <ProgressiveImage
-                        source={ResImage.ic_pen}
-                        style={[
-                          commonStyle.he_wi_24,
-                          {marginRight: 4, alignSelf: 'flex-end'},
-                        ]}
-                      />
-                    </View>
-                  </View>
-                )}
-                {Paymenttype == 'card' && (
-                  <View
-                    style={[
-                      styles.cashitemContainer,
-                      commonStyle.padding_12,
-                      {
-                        backgroundColor: appTheme.InputBoxBGColor,
-                      },
-                    ]}>
-                    {PaymentOption.brand == 'visa' && (
-                      <ProgressiveImage
-                        source={ResImage.ic_visa}
-                        style={[styles.type_icon, {paddingLeft: 15}]}
-                      />
-                    )}
-                    {PaymentOption.brand == 'mastercard' && (
-                      <ProgressiveImage
-                        source={ResImage.ic_mastercard}
-                        style={[styles.type_icon, {paddingLeft: 15}]}
-                      />
-                    )}
-                    {PaymentOption.brand == 'amex' && (
-                      <ProgressiveImage
-                        source={ResImage.ic_amex}
-                        style={[styles.type_icon, {paddingLeft: 15}]}
-                      />
-                    )}
 
-                    <View style={{flex: 1, marginLeft: 6}}>
-                      <Text
-                        style={[
-                          commonStyle.h5,
-                          commonStyle.fontBold,
-                          {
-                            paddingLeft: 6,
-                            color: appTheme.text,
-                            textTransform: 'capitalize',
-                          },
-                        ]}>
-                        {PaymentOption.brand}
-                      </Text>
-                      <Text
-                        style={[
-                          commonStyle.h6,
-                          commonStyle.fontNormal,
-                          styles.cardNumberText,
-                          {
-                            color: isDark
-                              ? colorResource.disable_clr
-                              : colorResource.Gray,
-                          },
-                        ]}>
-                        {PaymentOption.card_number}
-                      </Text>
-                    </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
-                      <ProgressiveImage
-                        source={ResImage.ic_pen}
-                        style={[
-                          commonStyle.he_wi_24,
-                          {marginRight: 4, alignSelf: 'flex-end'},
-                        ]}
-                      />
-                    </View>
 
-                    <View></View>
+
+              <View style={{marginBottom: 20, marginTop: 10}}>
+                
+                <Text style={[commonStyle.h5, {color: appTheme.text, marginBottom: 12, fontWeight: 'bold'}]}>
+                  {translate('checkout.lbl_select_payment')}
+                </Text>
+
+                {/* Opción: Creditivoo */}
+                <TouchableOpacity style={[styles.methodItem, Paymenttype === 'creditivoo' && styles.methodItemActive]} onPress={handleCreditivooCheckout}>
+
+                  <Text style={[commonStyle.h5, {color: appTheme.text}]}>CREDITIVOO</Text>
+                  
+                </TouchableOpacity>
+
+                {/* Opción: Cashea */}
+                <TouchableOpacity 
+                  onPress={() => setPaymentType('cashea')}
+                  style={[styles.methodItem, Paymenttype === 'cashea' && styles.methodItemActive]}
+                >
+                  <View style={commonStyle.flexDir_Row}>
+                    <ProgressiveImage source={ResImage.ic_cashea} style={styles.methodIcon} />
+                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>Cashea</Text>
                   </View>
-                )}
-                {Paymenttype == 'movil' && (
-                  <View
-                    style={[
-                      styles.cashitemContainer,
-                      commonStyle.padding_12,
-                      {backgroundColor: appTheme.InputBoxBGColor},
-                    ]}>
-                    <ProgressiveImage
-                      source={ResImage.ic_movil}
-                      style={[styles.type_icon, {paddingLeft: 15}]}
-                      resizeMode="center"></ProgressiveImage>
-                    <View style={{paddingLeft: 6}}>
-                      <Text
-                        style={[
-                          commonStyle.h5,
-                          commonStyle.fontBold,
-                          {paddingLeft: 6, color: appTheme.text},
-                        ]}>
-                        {translate('NewPaymentMethods.movilTitle')}
-                      </Text>
-                    </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
-                      <ProgressiveImage
-                        source={ResImage.ic_pen}
-                        style={[
-                          commonStyle.he_wi_24,
-                          {marginRight: 4, alignSelf: 'flex-end'},
-                        ]}
-                      />
-                    </View>
+                  {/* <View style={[styles.radioCircle, Paymenttype === 'cashea' && styles.radioCircleSelected]} /> */}
+                </TouchableOpacity>
+
+                {/* Opción: En Tienda */}
+                <TouchableOpacity 
+                  onPress={() => setPaymentType('cash')}
+                  style={[styles.methodItem, Paymenttype === 'cash' && styles.methodItemActive]}
+                >
+                  <View style={commonStyle.flexDir_Row}>
+                    <ProgressiveImage source={ResImage.ic_Cash} style={styles.methodIcon} />
+                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>Pago en Tienda</Text>
                   </View>
-                )}
-                {Paymenttype == 'hs_paypal' && (
-                  <View
-                    style={[
-                      styles.cashitemContainer,
-                      commonStyle.padding_12,
-                      {backgroundColor: appTheme.InputBoxBGColor},
-                    ]}>
-                    <ProgressiveImage
-                      source={ResImage.ic_paypal}
-                      style={[styles.type_icon, {paddingLeft: 15}]}
-                      resizeMode="center"></ProgressiveImage>
-                    <View style={{paddingLeft: 6}}>
-                      <Text
-                        style={[
-                          commonStyle.h5,
-                          commonStyle.fontBold,
-                          {paddingLeft: 6, color: appTheme.text},
-                        ]}>
-                        {translate('NewPaymentMethods.paypalTitle')}
-                      </Text>
-                    </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
-                      <ProgressiveImage
-                        source={ResImage.ic_pen}
-                        style={[
-                          commonStyle.he_wi_24,
-                          {marginRight: 4, alignSelf: 'flex-end'},
-                        ]}
-                      />
-                    </View>
-                  </View>
-                )}
-                {Paymenttype == 'zelle' && (
-                  <View
-                    style={[
-                      styles.cashitemContainer,
-                      commonStyle.padding_12,
-                      {backgroundColor: appTheme.InputBoxBGColor},
-                    ]}>
-                    <ProgressiveImage
-                      source={ResImage.ic_zelle}
-                      style={[styles.type_icon, {paddingLeft: 15}]}
-                      resizeMode="center"></ProgressiveImage>
-                    <View style={{paddingLeft: 6}}>
-                      <Text
-                        style={[
-                          commonStyle.h5,
-                          commonStyle.fontBold,
-                          {paddingLeft: 6, color: appTheme.text},
-                        ]}>
-                        {translate('NewPaymentMethods.zelleTitle')}
-                      </Text>
-                    </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
-                      <ProgressiveImage
-                        source={ResImage.ic_pen}
-                        style={[
-                          commonStyle.he_wi_24,
-                          {marginRight: 4, alignSelf: 'flex-end'},
-                        ]}
-                      />
-                    </View>
-                  </View>
-                )}
-                {Paymenttype == 'banesco' && (
-                  <View
-                    style={[
-                      styles.cashitemContainer,
-                      commonStyle.padding_12,
-                      {backgroundColor: appTheme.InputBoxBGColor},
-                    ]}>
-                    <ProgressiveImage
-                      source={ResImage.ic_banesco}
-                      style={[styles.type_icon, {paddingLeft: 15}]}
-                      resizeMode="center"></ProgressiveImage>
-                    <View style={{paddingLeft: 6}}>
-                      <Text
-                        style={[
-                          commonStyle.h5,
-                          commonStyle.fontBold,
-                          {paddingLeft: 6, color: appTheme.text},
-                        ]}>
-                        {translate('NewPaymentMethods.banescoTitle')}
-                      </Text>
-                    </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
-                      <ProgressiveImage
-                        source={ResImage.ic_pen}
-                        style={[
-                          commonStyle.he_wi_24,
-                          {marginRight: 4, alignSelf: 'flex-end'},
-                        ]}
-                      />
-                    </View>
-                  </View>
-                )}
-                {Paymenttype == 'hs_bank_transfer' && (
-                  <View
-                    style={[
-                      styles.cashitemContainer,
-                      commonStyle.padding_12,
-                      {backgroundColor: appTheme.InputBoxBGColor},
-                    ]}>
-                    <ProgressiveImage
-                      source={ResImage.ic_boli}
-                      style={[styles.type_icon, {paddingLeft: 15}]}
-                      resizeMode="center"></ProgressiveImage>
-                    <View style={{paddingLeft: 6}}>
-                      <Text
-                        style={[
-                          commonStyle.h5,
-                          commonStyle.fontBold,
-                          {paddingLeft: 6, color: appTheme.text},
-                        ]}>
-                        {translate('NewPaymentMethods.bolivaresTitle')}
-                      </Text>
-                    </View>
-                    <View style={{flex: 1, alignItems: 'flex-end'}}>
-                      <ProgressiveImage
-                        source={ResImage.ic_pen}
-                        style={[
-                          commonStyle.he_wi_24,
-                          {marginRight: 4, alignSelf: 'flex-end'},
-                        ]}
-                      />
-                    </View>
-                  </View>
-                )}
-              </TouchableOpacity>
+                  {/* <View style={[styles.radioCircle, Paymenttype === 'cash' && styles.radioCircleSelected]} /> */}
+                </TouchableOpacity>
+              </View>
+
+              
+              // <TouchableOpacity
+              //   style={{marginBottom: 80}}
+              //   onPress={() => {
+              //     openPaymentSelection();
+              //   }}>
+              //   {!Paymenttype && (
+              //     <View
+              //       style={[
+              //         commonStyle.profileContainer,
+              //         commonStyle.flexDir_Row,
+              //         commonStyle.flexDir_Row,
+              //         commonStyle.justifyContent_flex_start,
+              //         {
+              //           padding: 12,
+              //           marginTop: 8,
+              //           alignItems: 'center',
+              //           backgroundColor: appTheme.InputBoxBGColor,
+              //         },
+              //       ]}>
+              //       <ProgressiveImage
+              //         source={isDark ? ResImage.ic_Plus : ResImage.ic_plus_gray}
+              //         style={{paddingRight: 8}}></ProgressiveImage>
+              //       <Text
+              //         style={[
+              //           commonStyle.h5,
+              //           {
+              //             color: isDark
+              //               ? colorResource.disable_clr
+              //               : colorResource.Gray,
+              //           },
+              //         ]}>
+              //         {translate('checkout.lbl_select_payment')}
+              //       </Text>
+              //     </View>
+              //   )}
+              //   {Paymenttype == 'cash' && (
+              //     <View
+              //       style={[
+              //         styles.cashitemContainer,
+              //         commonStyle.padding_12,
+              //         {backgroundColor: appTheme.InputBoxBGColor},
+              //       ]}>
+              //       <ProgressiveImage
+              //         source={ResImage.ic_Cash}
+              //         style={[styles.type_icon, {paddingLeft: 15}]}
+              //         resizeMode="center"></ProgressiveImage>
+              //       <View style={{paddingLeft: 6}}>
+              //         <Text
+              //           style={[
+              //             commonStyle.h5,
+              //             commonStyle.fontBold,
+              //             {paddingLeft: 6, color: appTheme.text},
+              //           ]}>
+              //           {translate('payment.lbl_incash')}
+              //         </Text>
+              //       </View>
+              //       <View style={{flex: 1, alignItems: 'flex-end'}}>
+              //         <ProgressiveImage
+              //           source={ResImage.ic_pen}
+              //           style={[
+              //             commonStyle.he_wi_24,
+              //             {marginRight: 4, alignSelf: 'flex-end'},
+              //           ]}
+              //         />
+              //       </View>
+              //     </View>
+              //   )}
+              //   {Paymenttype == 'card' && (
+              //     <View
+              //       style={[
+              //         styles.cashitemContainer,
+              //         commonStyle.padding_12,
+              //         {
+              //           backgroundColor: appTheme.InputBoxBGColor,
+              //         },
+              //       ]}>
+              //       {PaymentOption.brand == 'visa' && (
+              //         <ProgressiveImage
+              //           source={ResImage.ic_visa}
+              //           style={[styles.type_icon, {paddingLeft: 15}]}
+              //         />
+              //       )}
+              //       {PaymentOption.brand == 'mastercard' && (
+              //         <ProgressiveImage
+              //           source={ResImage.ic_mastercard}
+              //           style={[styles.type_icon, {paddingLeft: 15}]}
+              //         />
+              //       )}
+              //       {PaymentOption.brand == 'amex' && (
+              //         <ProgressiveImage
+              //           source={ResImage.ic_amex}
+              //           style={[styles.type_icon, {paddingLeft: 15}]}
+              //         />
+              //       )}
+
+              //       <View style={{flex: 1, marginLeft: 6}}>
+              //         <Text
+              //           style={[
+              //             commonStyle.h5,
+              //             commonStyle.fontBold,
+              //             {
+              //               paddingLeft: 6,
+              //               color: appTheme.text,
+              //               textTransform: 'capitalize',
+              //             },
+              //           ]}>
+              //           {PaymentOption.brand}
+              //         </Text>
+              //         <Text
+              //           style={[
+              //             commonStyle.h6,
+              //             commonStyle.fontNormal,
+              //             styles.cardNumberText,
+              //             {
+              //               color: isDark
+              //                 ? colorResource.disable_clr
+              //                 : colorResource.Gray,
+              //             },
+              //           ]}>
+              //           {PaymentOption.card_number}
+              //         </Text>
+              //       </View>
+              //       <View style={{flex: 1, alignItems: 'flex-end'}}>
+              //         <ProgressiveImage
+              //           source={ResImage.ic_pen}
+              //           style={[
+              //             commonStyle.he_wi_24,
+              //             {marginRight: 4, alignSelf: 'flex-end'},
+              //           ]}
+              //         />
+              //       </View>
+
+              //       <View></View>
+              //     </View>
+              //   )}
+              //   {Paymenttype == 'movil' && (
+              //     <View
+              //       style={[
+              //         styles.cashitemContainer,
+              //         commonStyle.padding_12,
+              //         {backgroundColor: appTheme.InputBoxBGColor},
+              //       ]}>
+              //       <ProgressiveImage
+              //         source={ResImage.ic_movil}
+              //         style={[styles.type_icon, {paddingLeft: 15}]}
+              //         resizeMode="center"></ProgressiveImage>
+              //       <View style={{paddingLeft: 6}}>
+              //         <Text
+              //           style={[
+              //             commonStyle.h5,
+              //             commonStyle.fontBold,
+              //             {paddingLeft: 6, color: appTheme.text},
+              //           ]}>
+              //           {translate('NewPaymentMethods.movilTitle')}
+              //         </Text>
+              //       </View>
+              //       <View style={{flex: 1, alignItems: 'flex-end'}}>
+              //         <ProgressiveImage
+              //           source={ResImage.ic_pen}
+              //           style={[
+              //             commonStyle.he_wi_24,
+              //             {marginRight: 4, alignSelf: 'flex-end'},
+              //           ]}
+              //         />
+              //       </View>
+              //     </View>
+              //   )}
+              //   {Paymenttype == 'hs_paypal' && (
+              //     <View
+              //       style={[
+              //         styles.cashitemContainer,
+              //         commonStyle.padding_12,
+              //         {backgroundColor: appTheme.InputBoxBGColor},
+              //       ]}>
+              //       <ProgressiveImage
+              //         source={ResImage.ic_paypal}
+              //         style={[styles.type_icon, {paddingLeft: 15}]}
+              //         resizeMode="center"></ProgressiveImage>
+              //       <View style={{paddingLeft: 6}}>
+              //         <Text
+              //           style={[
+              //             commonStyle.h5,
+              //             commonStyle.fontBold,
+              //             {paddingLeft: 6, color: appTheme.text},
+              //           ]}>
+              //           {translate('NewPaymentMethods.paypalTitle')}
+              //         </Text>
+              //       </View>
+              //       <View style={{flex: 1, alignItems: 'flex-end'}}>
+              //         <ProgressiveImage
+              //           source={ResImage.ic_pen}
+              //           style={[
+              //             commonStyle.he_wi_24,
+              //             {marginRight: 4, alignSelf: 'flex-end'},
+              //           ]}
+              //         />
+              //       </View>
+              //     </View>
+              //   )}
+              //   {Paymenttype == 'zelle' && (
+              //     <View
+              //       style={[
+              //         styles.cashitemContainer,
+              //         commonStyle.padding_12,
+              //         {backgroundColor: appTheme.InputBoxBGColor},
+              //       ]}>
+              //       <ProgressiveImage
+              //         source={ResImage.ic_zelle}
+              //         style={[styles.type_icon, {paddingLeft: 15}]}
+              //         resizeMode="center"></ProgressiveImage>
+              //       <View style={{paddingLeft: 6}}>
+              //         <Text
+              //           style={[
+              //             commonStyle.h5,
+              //             commonStyle.fontBold,
+              //             {paddingLeft: 6, color: appTheme.text},
+              //           ]}>
+              //           {translate('NewPaymentMethods.zelleTitle')}
+              //         </Text>
+              //       </View>
+              //       <View style={{flex: 1, alignItems: 'flex-end'}}>
+              //         <ProgressiveImage
+              //           source={ResImage.ic_pen}
+              //           style={[
+              //             commonStyle.he_wi_24,
+              //             {marginRight: 4, alignSelf: 'flex-end'},
+              //           ]}
+              //         />
+              //       </View>
+              //     </View>
+              //   )}
+              //   {Paymenttype == 'banesco' && (
+              //     <View
+              //       style={[
+              //         styles.cashitemContainer,
+              //         commonStyle.padding_12,
+              //         {backgroundColor: appTheme.InputBoxBGColor},
+              //       ]}>
+              //       <ProgressiveImage
+              //         source={ResImage.ic_banesco}
+              //         style={[styles.type_icon, {paddingLeft: 15}]}
+              //         resizeMode="center"></ProgressiveImage>
+              //       <View style={{paddingLeft: 6}}>
+              //         <Text
+              //           style={[
+              //             commonStyle.h5,
+              //             commonStyle.fontBold,
+              //             {paddingLeft: 6, color: appTheme.text},
+              //           ]}>
+              //           {translate('NewPaymentMethods.banescoTitle')}
+              //         </Text>
+              //       </View>
+              //       <View style={{flex: 1, alignItems: 'flex-end'}}>
+              //         <ProgressiveImage
+              //           source={ResImage.ic_pen}
+              //           style={[
+              //             commonStyle.he_wi_24,
+              //             {marginRight: 4, alignSelf: 'flex-end'},
+              //           ]}
+              //         />
+              //       </View>
+              //     </View>
+              //   )}
+              //   {Paymenttype == 'hs_bank_transfer' && (
+              //     <View
+              //       style={[
+              //         styles.cashitemContainer,
+              //         commonStyle.padding_12,
+              //         {backgroundColor: appTheme.InputBoxBGColor},
+              //       ]}>
+              //       <ProgressiveImage
+              //         source={ResImage.ic_boli}
+              //         style={[styles.type_icon, {paddingLeft: 15}]}
+              //         resizeMode="center"></ProgressiveImage>
+              //       <View style={{paddingLeft: 6}}>
+              //         <Text
+              //           style={[
+              //             commonStyle.h5,
+              //             commonStyle.fontBold,
+              //             {paddingLeft: 6, color: appTheme.text},
+              //           ]}>
+              //           {translate('NewPaymentMethods.bolivaresTitle')}
+              //         </Text>
+              //       </View>
+              //       <View style={{flex: 1, alignItems: 'flex-end'}}>
+              //         <ProgressiveImage
+              //           source={ResImage.ic_pen}
+              //           style={[
+              //             commonStyle.he_wi_24,
+              //             {marginRight: 4, alignSelf: 'flex-end'},
+              //           ]}
+              //         />
+              //       </View>
+              //     </View>
+              //   )}
+              // </TouchableOpacity>
             }
           </View>
         </View>
+        <Modal
+            visible={isProcessingPayment && !!paymentUrl}
+            animationType="slide"
+            onRequestClose={() => setIsProcessingPayment(false)}>
+            <View style={styles.webViewContainer}>
+              <View style={styles.webViewHeader}>
+                <Text style={styles.webViewTitle}>Procesando pago</Text>
+                <TouchableOpacity
+                  onPress={() => setIsProcessingPayment(false)}
+                  style={styles.closeButton}>
+                  <Icon
+                    name="close"
+                    type={IconType.Ionicons}
+                    size={24}
+                    color={IVOO_COLORS.black}
+                  />
+                </TouchableOpacity>
+              </View>
+              {paymentUrl && (
+                <WebView
+                  source={{ uri: paymentUrl }}
+                  style={styles.webView}
+                  onNavigationStateChange={handleWebViewNavigationStateChange}
+                  startInLoadingState={true}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                />
+              )}
+            </View>
+          </Modal>
       </ScrollView>
       {
         <View>
@@ -1607,9 +2032,10 @@ const Checkout = props => {
             commonStyle.padding_16,
             {
               backgroundColor: isDark
-                ? appTheme.InputBoxBGColor
+                ? darkColors.InputBoxBGColor
                 : colorResource.SmokeWhite,
               marginBottom: 20,
+             
             },
           ]}>
           {
@@ -1625,7 +2051,7 @@ const Checkout = props => {
                 <Text
                   style={[
                     commonStyle.h6,
-                    {color: appTheme.text, fontWeight: '700'},
+                    {color: appTheme.text, fontWeight: '700', paddingVertical:10},
                   ]}>
                   Monto inicial
                 </Text>
@@ -1915,6 +2341,193 @@ const Checkout = props => {
 };
 
 const styles = StyleSheet.create({
+
+  // BY JAMP 22-06-2026
+    //modal
+
+    webViewContainer: {
+      flex: 1,
+      backgroundColor: IVOO_COLORS.white,
+    },
+    webViewHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SCREEN_WIDTH * 0.05,
+      paddingVertical: SCREEN_HEIGHT * 0.02,
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+      backgroundColor: IVOO_COLORS.white,
+    },
+    webViewTitle: {
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: IVOO_COLORS.black,
+    },
+    closeButton: {
+      padding: SCREEN_WIDTH * 0.01,
+    },
+    webView: {
+      flex: 1,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: SCREEN_WIDTH * 0.05,
+    },
+    modalContent: {
+      backgroundColor: IVOO_COLORS.white,
+      borderRadius: 16,
+      width: '100%',
+      maxWidth: SCREEN_WIDTH * 0.9,
+      padding: SCREEN_WIDTH * 0.05,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.15,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SCREEN_HEIGHT * 0.02,
+    },
+    modalTitle: {
+      fontSize: SCREEN_WIDTH * 0.048,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: IVOO_COLORS.black,
+    },
+    modalCloseButton: {
+      padding: SCREEN_WIDTH * 0.01,
+    },
+    modalBody: {
+      marginBottom: SCREEN_HEIGHT * 0.02,
+    },
+    modalLabel: {
+      fontSize: SCREEN_WIDTH * 0.038,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+      color: IVOO_COLORS.black,
+      marginBottom: SCREEN_HEIGHT * 0.01,
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderColor: 'rgba(110, 113, 124, 0.3)',
+      borderRadius: 12,
+      paddingHorizontal: SCREEN_WIDTH * 0.04,
+      paddingVertical: SCREEN_HEIGHT * 0.015,
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+      color: IVOO_COLORS.black,
+      backgroundColor: '#F9FAFC',
+    },
+    modalFooter: {
+      flexDirection: 'row',
+      gap: SCREEN_WIDTH * 0.03,
+      marginTop: SCREEN_HEIGHT * 0.01,
+    },
+    modalButton: {
+      flex: 1,
+      borderRadius: 12,
+      paddingVertical: SCREEN_HEIGHT * 0.015,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalButtonCancel: {
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      borderColor: IVOO_COLORS.primary,
+    },
+    modalButtonConfirm: {
+      backgroundColor: IVOO_COLORS.primary,
+    },
+    modalButtonCancelText: {
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: IVOO_COLORS.primary,
+    },
+    modalButtonConfirmText: {
+      fontSize: SCREEN_WIDTH * 0.042,
+      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+      color: '#FFFFFF',
+    },
+
+    creditivooCartBadge: {
+      backgroundColor: '#000000',
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: '#2E7D32', // Borde verde para resaltar sobre el negro
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 4},
+      shadowOpacity: 0.3,
+      shadowRadius: 4.65,
+      elevation: 8,
+    },
+    creditivooTag: {
+    color: '#ffffff', // Texto verde llamativo
+    fontWeight: '900',
+    fontSize: 16,
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  creditivooCuotas: {
+    color: '#FFFFFF', // Texto de las cuotas en blanco para legibilidad
+    fontSize: 13,
+    textAlign: 'center',
+    opacity: 0.9,
+  },
+
+  methodItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: darkColors?.InputBoxBGColor ,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  methodItemActive: {
+    borderColor: colorResource.primary, // O el color de tu marca
+    //backgroundColor: isDark ? '#1a2a1a' : '#f0fff0',
+  },
+  methodIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+  },
+  radioCircle: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colorResource.Gray,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioCircleSelected: {
+    borderColor: colorResource.primary,
+    backgroundColor: colorResource.primary,
+  },
+
+
+  // BY JAMP
+
+
+
+
   cardNumberText: {paddingLeft: 7},
   cashitemContainer: {
     paddingLeft: 15,

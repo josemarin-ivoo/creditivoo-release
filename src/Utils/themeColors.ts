@@ -24,6 +24,8 @@ export const lightColors = {
   profileimage: Image.ic_profile_black,
 };
 
+
+
 // Dark theme colors
 export const darkColors = {
   type: 'dark',

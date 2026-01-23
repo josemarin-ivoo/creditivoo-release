@@ -58,7 +58,6 @@ import {setItemInStorage} from './../../../Utils/Storage';
 import ProductDetailsSkelton from '../../../Components/Skeleton/ProductDetailsSkelton';
 import {Routes} from '../../../Utils/NavigationRoutes';
 import {AppEventsLogger} from 'react-native-fbsdk-next';
-import {HeaderTitle} from '@react-navigation/stack';
 import LowResHighResImage from '../../../Components/LowResHighResImage';
 import ImageResource from './../../../Utils/Image';
 
@@ -118,14 +117,19 @@ const ProductDetails = props => {
   const [wishitemLoad, setwishitemLoad] = useState(false);
 
   const [initialPercentage, setInitialPercentage] = useState(0.4);
+  const [initialPercentageCashea, setInitialPercentageCashea] = useState(0.5);
   const [isCartFinanciable, setIsCartFinanciable] = useState(true);
   const [financingDetails, setFinancingDetails] = useState({
     downPayment: 0,
     installment: 0,
   });
 
+  //added by Frodriguez
   const [isAcuotasSelected, setIsAcuotasSelected] = useState(false); // Si es de contado (false) o a cuotas (true)
   const [isCreditivooSelected, setIsCreditivooSelected] = useState(true); // Si dentro de "A cuotas" se selecciona Creditivoo (true) o Cashea (false)
+  const DEFAULT_CREDITIVOO_PERC = 0.4;
+  const DEFAULT_CASHEA_PERC = 0.4;
+  //end Frodriguez
 
   const didShowAttrAlert = useRef(false);
 
@@ -162,23 +166,6 @@ const ProductDetails = props => {
     };
 
     didShowAttrAlert.current = true;
-
-    // Alert.alert(
-    //   'Producto: Flags de financiamiento',
-    //   JSON.stringify(
-    //     {
-    //       flags,
-    //       // Para que veas si realmente vienen en el payload:
-    //       sampleAttrs: attrs
-    //         .filter(a =>
-    //           ['financiable', 'cashea'].includes((a?.code || '').toLowerCase()),
-    //         )
-    //         .map(a => ({code: a.code, label: a.label, value: a.value})),
-    //     },
-    //     null,
-    //     2,
-    //   ).slice(0, 1800),
-    // );
   }, [data]);
 
   useEffect(() => {
@@ -304,16 +291,45 @@ const ProductDetails = props => {
 
   //#endregion
 
+  // // added by Frodriguez - Financiación Creditivoo / Cashea
+  // // Lógica para actualizar el "Inicial" y las cuotas para Creditivoo
+  // useEffect(() => {
+  //   const product = data?.products?.items[0];
+  //   if (product) {
+  //     const price = product.price_range.minimum_price.final_price.value;
+  //     const downPayment = price * initialPercentage; // Calculamos el inicial de Creditivoo
+  //     const installment = (price - downPayment) / 4;
+  //     setFinancingDetails({downPayment, installment});
+  //   }
+  // }, [data, initialPercentage]); // Este effect se activa cuando cambia el porcentaje de Creditivoo
+
+  // // Lógica para actualizar el "Inicial" y las cuotas para Cashea
+  // useEffect(() => {
+  //   const product = data?.products?.items[0];
+  //   if (product) {
+  //     const price = product.price_range.minimum_price.final_price.value;
+  //     const downPayment = price * initialPercentageCashea; // Calculamos el inicial de Cashea
+  //     const installment = (price - downPayment) / 4;
+  //     setFinancingDetails({downPayment, installment});
+  //   }
+  // }, [data, initialPercentageCashea]); // Este effect se activa cuando cambia el porcentaje de Cashea
+  // // end Frodriguez
+
+  //added by Frodriguez - Financiación Creditivoo / Cashea
+  // Lógica para actualizar el "Inicial" y las cuotas para Creditivoo o Cashea
   useEffect(() => {
     const product = data?.products?.items[0];
-
     if (product) {
       const price = product.price_range.minimum_price.final_price.value;
-      const downPayment = price * initialPercentage;
+      const percentage = isCreditivooSelected
+        ? initialPercentage
+        : initialPercentageCashea;
+      const downPayment = price * percentage;
       const installment = (price - downPayment) / 4;
       setFinancingDetails({downPayment, installment});
     }
-  }, [data, initialPercentage]);
+  }, [data, initialPercentage, initialPercentageCashea, isCreditivooSelected]);
+  //end Frodriguez
 
   useEffect(() => {
     // Get Data of  productDetailInfo
@@ -486,6 +502,7 @@ const ProductDetails = props => {
     }
   }, [userCartIdData]);
 
+  //added by Frodriguez
   const renderPaymentMethodSwitch = () => (
     <View style={styles.switchContainer}>
       {/* Opción "De contado" */}
@@ -520,6 +537,8 @@ const ProductDetails = props => {
         onPress={() => {
           setIsAcuotasSelected(true); // Selección "A crédito"
           setIsCreditivooSelected(true); // Por defecto seleccionamos Creditivoo
+          setInitialPercentage(DEFAULT_CREDITIVOO_PERC);
+          setInitialPercentageCashea(DEFAULT_CASHEA_PERC);
         }}
         disabled={isAcuotasSelected} // Deshabilitar si ya está en "De contado"
       >
@@ -548,45 +567,49 @@ const ProductDetails = props => {
 
   const renderCreditivooCasheaSwitch = () => (
     <View style={styles.switchContainer}>
-      {/* Opción "Creditivoo" */}
+      {/* Creditivoo */}
       <TouchableOpacity
         style={[
           styles.switchOption,
           isCreditivooSelected && styles.switchOptionActive,
         ]}
-        onPress={() => setIsCreditivooSelected(true)} // Selección "Creditivoo"
-      >
+        onPress={() => {
+          setIsCreditivooSelected(true);
+          setInitialPercentage(DEFAULT_CREDITIVOO_PERC);
+        }}>
         <ProgressiveImage
-          source={ImageResource.ic_isotipo_green} // Icono de Creditivoo
+          source={ImageResource.ic_isotipo_green}
           style={styles.icon}
           resizeMode="contain"
         />
         <Text
           style={[
             styles.switchText,
-            isCreditivooSelected && styles.switchTextActive, // Estilo activo cuando "Creditivoo" está seleccionado
+            isCreditivooSelected && styles.switchTextActive,
           ]}>
           Creditivoo
         </Text>
       </TouchableOpacity>
 
-      {/* Opción "Cashea" */}
+      {/* Cashea */}
       <TouchableOpacity
         style={[
           styles.switchOption,
           !isCreditivooSelected && styles.switchOptionActive,
         ]}
-        onPress={() => setIsCreditivooSelected(false)} // Selección "Cashea"
-      >
+        onPress={() => {
+          setIsCreditivooSelected(false);
+          setInitialPercentageCashea(DEFAULT_CASHEA_PERC);
+        }}>
         <ProgressiveImage
-          source={ImageResource.ic_cashea_yellow} // Icono de Cashea
+          source={ImageResource.ic_cashea_yellow}
           style={styles.icon}
           resizeMode="contain"
         />
         <Text
           style={[
             styles.switchText,
-            !isCreditivooSelected && styles.switchTextActive, // Estilo activo cuando "Cashea" está seleccionado
+            !isCreditivooSelected && styles.switchTextActive,
           ]}>
           Cashea
         </Text>
@@ -608,71 +631,7 @@ const ProductDetails = props => {
     </View>
   );
 
-  // const renderCasheaSection = () => (
-  //   <View style={styles.casheaMainContainer}>
-  //     <View style={styles.casheaCartBadge}>
-  //       <Text style={styles.casheaTag}>DISPONIBLE CON CASHEA</Text>
-  //       <Text style={styles.casheaSubtext}>
-  //         Compra ahora y paga después en cuotas sin interés
-  //       </Text>
-  //     </View>
-  //   </View>
-  // );
-
-  const renderCasheaSection = () => (
-    <View style={styles.casheaMainContainer}>
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={() => {
-          setIsCreditivooSelected(true);
-          setIsAcuotasSelected(false);
-        }} // Reinicia la variable de selección de Crédito a false
-      >
-        <Text style={styles.closeButtonText}>X</Text>
-      </TouchableOpacity>
-      <View style={styles.casheaCartBadge}>
-        <Text style={styles.casheaTag}>DISPONIBLE CON CASHEA</Text>
-        <Text style={styles.casheaSubtext}>
-          Compra ahora y paga después en cuotas sin interés
-        </Text>
-      </View>
-    </View>
-  );
-
-  // const renderCreditivooSection = () => (
-  //   <View style={styles.creditivooMainContainer}>
-  //     <View style={styles.selectorRow}>
-  //       {[0.4, 0.5, 0.6].map(perc => (
-  //         <TouchableOpacity
-  //           key={perc}
-  //           onPress={() => setInitialPercentage(perc)}
-  //           style={[
-  //             styles.percentageBtn,
-  //             initialPercentage === perc && styles.percentageBtnActive,
-  //           ]}>
-  //           <Text
-  //             style={[
-  //               styles.percentageText,
-  //               initialPercentage === perc && styles.percentageTextActive,
-  //             ]}>
-  //             {Math.round(perc * 100)}%
-  //           </Text>
-  //         </TouchableOpacity>
-  //       ))}
-  //     </View>
-
-  //     <View style={styles.creditivooCartBadge}>
-  //       <View style={styles.hr} />
-  //       <Text style={styles.creditivooCuotas}>
-  //         Inicial: {Helper.currencyFormat(financingDetails.downPayment)}
-  //       </Text>
-  //       <Text style={styles.creditivooCuotas}>
-  //         + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
-  //       </Text>
-  //     </View>
-  //   </View>
-  // );
-
+  // Sección de Creditivoo
   const renderCreditivooSection = () => (
     <View style={styles.creditivooMainContainer}>
       <TouchableOpacity
@@ -680,8 +639,7 @@ const ProductDetails = props => {
         onPress={() => {
           setIsCreditivooSelected(true);
           setIsAcuotasSelected(false);
-        }} // Reinicia la variable de selección de Crédito a false
-      >
+        }}>
         <Text style={styles.closeButtonText}>X</Text>
       </TouchableOpacity>
       <View style={styles.selectorRow}>
@@ -715,6 +673,53 @@ const ProductDetails = props => {
       </View>
     </View>
   );
+
+  // Sección de Cashea
+  const renderCasheaSection = () => (
+    <View style={styles.creditivooMainContainer}>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => {
+          setIsCreditivooSelected(true);
+          setIsAcuotasSelected(false);
+        }}>
+        <Text style={styles.closeButtonText}>X</Text>
+      </TouchableOpacity>
+      <View style={styles.selectorRow}>
+        {[0.4, 0.5, 0.6].map(perc => (
+          <TouchableOpacity
+            key={perc}
+            onPress={() => setInitialPercentageCashea(perc)}
+            style={[
+              styles.percentageBtnCashea,
+              initialPercentageCashea === perc &&
+                styles.percentageBtnActiveCashea,
+            ]}>
+            <Text
+              style={[
+                styles.percentageText,
+                initialPercentageCashea === perc &&
+                  styles.percentageTextActiveCashea,
+              ]}>
+              {Math.round(perc * 100)}%
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.creditivooCartBadge}>
+        <View style={styles.hr} />
+        <Text style={styles.creditivooCuotas}>
+          Inicial: {Helper.currencyFormat(financingDetails.downPayment)}
+        </Text>
+        <Text style={styles.creditivooCuotas}>
+          + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
+        </Text>
+      </View>
+    </View>
+  );
+
+  //end Frodriguez
 
   //By JAMP 14-01-2026 Modificada buscar en creditivoo-release1 para obtener el original
   const renderPrice = item => {
@@ -754,22 +759,6 @@ const ProductDetails = props => {
             {Helper.currencyFormat(finalPrice)}
           </Text>
         </View>
-
-        {/* Widget Creditivoo con Salto de Línea y Montos detallados */}
-        {/* {isFinanciableItem && (
-          <TouchableOpacity 
-            onPress={() => token ? handleFinancedPay() : setLoginOverlayVisible(true)}
-            style={styles.creditivooBadge}
-          >
-            
-            <Text style={styles.creditivooCuotas}>
-              Inicial de {Helper.currencyFormat(financing.downPayment)} +
-            </Text>
-            <Text style={styles.creditivooCuotas}>
-                4 cuotas de: {Helper.currencyFormat(financing.installment)}
-            </Text>
-          </TouchableOpacity>
-        )} */}
       </View>
     );
   };
@@ -1206,10 +1195,6 @@ const ProductDetails = props => {
                     ]}>
                     {data && data.products.items[0].name}
                   </Text>
-                  {/* <View style={{paddingHorizontal: 16, marginTop: 15}}>
-                    {renderPaymentMethodSwitch()}
-                    {isCasheaSelected ? renderCasheaSection() : renderCreditivooSection()}
-                  </View> */}
                   <View style={{paddingHorizontal: 16, marginTop: 15}}>
                     {renderPaymentDetails()}{' '}
                     {/* Llamamos la función que gestiona el switch entre De contado / A crédito y Creditivoo / Cashea */}
@@ -1903,7 +1888,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: 'white',
-    marginLeft: 2, // Espacio entre el ícono y el texto
+    marginLeft: 2,
   },
   switchTextActive: {color: 'white'},
   creditivooMainContainer: {
@@ -1916,18 +1901,17 @@ const styles = StyleSheet.create({
   },
   selectorRow: {
     flexDirection: 'row',
-    justifyContent: 'center', // <--- Esto centra los botones en la fila
+    justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 10,
     width: '100%',
   },
   percentageBtn: {
-    flex: 0.2, // Reducimos el flex para que no ocupen todo el ancho
-    // flex: 0.5,           <--- ELIMINA ESTO para que no se estiren
-    width: 33, // <--- Ancho fijo pequeño para que se vean estéticos
-    height: 30, // Altura delgada
+    flex: 0.2,
+    width: 33,
+    height: 30,
     paddingVertical: 4,
-    marginHorizontal: 5, // Espacio entre los botones
+    marginHorizontal: 5,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#21a72877',
@@ -1935,16 +1919,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#0606066f',
   },
+  percentageBtnCashea: {
+    flex: 0.2,
+    width: 33,
+    height: 30,
+    paddingVertical: 4,
+    marginHorizontal: 5,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#fdfa3d',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0606066f',
+  },
   percentageBtnActive: {backgroundColor: '#39a73f9e', borderColor: '#2E7D32'},
+  percentageBtnActiveCashea: {
+    backgroundColor: '#878822',
+    borderColor: '#fdfa3d',
+  },
   percentageText: {color: '#ffffff', fontSize: 13},
   percentageTextActive: {color: '#FFF', fontWeight: 'bold'},
   creditivooCartBadge: {
-    // backgroundColor: '#777777',
     padding: 12,
-    // borderRadius: 10,
-    alignItems: 'center',
-    // borderWidth: 1,
-    // borderColor: '#2E7D32'
+    alignItems: 'flex-start',
   },
   creditivooTag: {
     color: '#2E7D32',
@@ -1953,19 +1950,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   creditivooCuotas: {color: '#FFF', fontSize: 16, marginTop: 10},
-  casheaCartBadge: {
-    backgroundColor: '#FDFB43',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
   casheaTag: {color: '#000', fontWeight: '900', fontSize: 14},
   casheaSubtext: {color: '#000', fontSize: 11, opacity: 0.7},
   hr: {
-    borderBottomColor: 'rgba(255, 255, 255, 0.3)', // Color blanco con transparencia
-    borderBottomWidth: 1,
-    marginVertical: -2, // Espacio arriba y abajo de la línea
-    width: '90%', // Ancho de la línea
+    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+    borderBottomWidth: 2,
+    marginVertical: -2,
+    width: '100%',
     alignSelf: 'center',
     marginTop: -5,
   },
@@ -1980,18 +1971,6 @@ const styles = StyleSheet.create({
     borderColor: '#2E7D32',
     maxWidth: '95%',
   },
-  // creditivooTag: {
-  //   fontSize: 10,
-  //   color: '#2E7D32',
-  //   fontWeight: 'bold',
-  //   marginBottom: 2,
-  // },
-  // creditivooCuotas: {
-  //   fontSize: 10,
-  //   color: '#ffffff',
-  //   marginLeft: 0,
-  //   justifyContent:'center',
-  // },
   //By JAMP 14-01-2026
   noProductFound: {lineHeight: 24, color: colorResource.blackShade},
   productHeader: {position: 'absolute', zIndex: 1, display: 'flex'},
@@ -2157,8 +2136,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     fontFamily: 'Inter-Regular',
-    // fontWeight: "600",
-    // color: colorResource.black
   },
   image: {
     width: width,
@@ -2169,7 +2146,6 @@ const styles = StyleSheet.create({
     bottom: 4,
   },
   footeraddtocart: {
-    //  backgroundColor: colorResource.SmokeWhite,
     padding: 16,
   },
   footertotal: {
@@ -2240,25 +2216,26 @@ const styles = StyleSheet.create({
     height: 300,
   },
   iconContainer: {
-    flexDirection: 'row', // Los iconos se mostrarán uno junto al otro
-    marginRight: 5, // Espacio entre los íconos y el texto
+    flexDirection: 'row',
+    marginRight: 5,
   },
   icon: {
     width: 16,
     height: 16,
-    marginRight: 5, // Espacio entre los dos íconos
+    marginRight: 5,
   },
   closeButton: {
     position: 'absolute',
     top: 10,
-    right: 10,
-    padding: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Fondo oscuro semi-transparente
-    borderRadius: 20,
+    right: 15,
   },
   closeButtonText: {
     fontSize: 18,
     color: 'white',
+    fontWeight: 'bold',
+  },
+  percentageTextActiveCashea: {
+    color: '#fdfa3d',
     fontWeight: 'bold',
   },
 });
