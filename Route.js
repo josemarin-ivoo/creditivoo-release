@@ -309,6 +309,9 @@ const Route = () => {
                         : imageResource.ic_creditivo_green
                     }
                     size={size}
+                    style={{width: 28,
+                    height: 18,
+                    marginRight: 12,}}
                     resizeMode="stretch"
                   />
                 ) : (
@@ -321,6 +324,9 @@ const Route = () => {
                         : imageResource.ic_creditivo
                     }
                     size={size}
+                    style={{width: 28,
+                      height: 18,
+                      marginRight: 12,}}
                     resizeMode="stretch"
                   />
                 )
@@ -825,6 +831,12 @@ const Route = () => {
           component={PaymentInstallmentsScreen}
           options={{headerShown: false}}
         />
+        <Stack.Screen
+          name={Routes.NAVIGATION_SUSCRIPTIONSUCCESS}
+          component={PaymentInstallmentsScreen}
+          options={{headerShown: false}}
+        />
+        
         <Stack.Screen
           
           name={Routes.NAVIGATION_TABCREDITIVOO}

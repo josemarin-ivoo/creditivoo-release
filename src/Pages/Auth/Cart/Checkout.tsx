@@ -232,8 +232,18 @@ const Checkout = props => {
     0.60: 29
   };
 
-  
+  // const [cartData, setcartData] = useState(props.route.params.cData);
+  const creditivooParams = props.route.params.creditivooData;
+  const [initialPercentage, setInitialPercentage] = useState(
+    creditivooParams?.initialPercentage || 0.40
+  );
+  const [isCartFinanciable, setIsCartFinanciable] = useState(
+    creditivooParams?.isCartFinanciable ?? true
+  );
 
+  const [financingDetails, setFinancingDetails] = useState(
+    creditivooParams?.financingDetails || { downPayment: 0, installment: 0, montFinance: 0 }
+  );
   const route = useRoute();
 
  
@@ -242,6 +252,10 @@ const Checkout = props => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [paymentReferencia, setPaymentReferencia] = useState<string | null>(
+    null,
+  );
+
+  const [purchas, setPurchasePayment] = useState<string | null>(
     null,
   );
 
@@ -262,10 +276,10 @@ const Checkout = props => {
   //variable para validar el token de usuario creditivoo
   const {user, isLoggedIn, token} = useIvoSelector(state => state.creditivoo.auth);
 
-  const [initialPercentage, setInitialPercentage] = useState();
-  const [isCartFinanciable, setIsCartFinanciable] = useState(true);
+  // const [initialPercentage, setInitialPercentage] = useState();
+  // const [isCartFinanciable, setIsCartFinanciable] = useState(true);
 
-  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0 });
+  // const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0 });
 
 
   const [isCasheaSelected, setIsCasheaSelected] = useState(false);
@@ -830,41 +844,121 @@ const Checkout = props => {
     };
 
     
+    // comienza el flujo de creditivoo
 
-    useEffect(() => {
-     
-      const getFinance = async () => {
 
-      const jsonValue = await AsyncStorage.getItem('@creditivoo_context');
+  const handleWebViewClose = async () => {
 
-      Alert.alert(''+jsonValue);
+      console.log('[PurchaseConfirmation] WebView cerrado por el usuario');
+      console.log(
+        '[PurchaseConfirmation] Referencia del pago:',
+        paymentReferencia,
+      );
+  
+      // Cerrar el modal del WebView
+      setPaymentUrl(null);
+      setIsProcessingPayment(false);
       
 
+      
+      // Si no hay referencia, no podemos verificar
+      if (!paymentReferencia) {
+        console.warn(
+          '[PurchaseConfirmation] No hay referencia para verificar el pago',
+        );
+        Alert.alert(
+          'Error',
+          'No se pudo verificar el pago. Por favor, intenta nuevamente.',
+        );
+        return;
+      }
+  
+      // Verificar el estado del pago
+      try {
+        setIsVerifyingPayment(true);
+        console.log(
+          '[PurchaseConfirmation] Verificando estado del pago con referencia:',
+          paymentReferencia,
+        );
+
+        
+        
+        const verificationResult = await verifyPaymentOrder({
+          control: paymentReferencia,
+          purchaseId: Number(purchas),
+        });
+        
+        
+        Alert.alert(''+JSON.stringify(verificationResult));
+        console.log(
+          '[PurchaseConfirmation] Resultado de verificaci?n:',
+          verificationResult,
+        );
+  
+        if (verificationResult.approved) {
+          // Pago aprobado, navegar a la pantalla de ?xito correspondiente
+          if (isPlanSubscription) {
+            console.log(
+              '[PurchaseConfirmation] Pago aprobado, navegando a SubscriptionSuccess',
+            );
+            (navigation as any).navigate(Routes.NAVIGATION_SUSCRIPTIONSUCCESS, {
+              purchaseId: purchaseId,
+            });
+          } else {
+            console.log(
+              '[PurchaseConfirmation] Pago aprobado, navegando a PurchaseSuccess',
+            );
+            (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
+              purchaseId: purchaseId,
+            });
+          }
+        } else {
+          // Pago no aprobado o pendiente
+          console.log(
+            '[PurchaseConfirmation] Pago no aprobado o pendiente. Estado:',
+            verificationResult.status,
+          );
+          Alert.alert(
+            'Pago no verificado',
+            'El pago no pudo ser verificado. Por favor, intenta nuevamente o verifica con tu banco.',
+          );
+        }
+      } catch (verifyError: any) {
+        console.error(
+          '[PurchaseConfirmation] Error al verificar el pago:',
+          verifyError,
+        );
+        Alert.alert(
+          'Error',
+          verifyError.message ||
+            'No se pudo verificar el estado del pago. Por favor, intenta nuevamente.',
+        );
+      } finally {
+        setIsVerifyingPayment(false);
+        // Limpiar la referencia despu?s de verificar
+        setPaymentReferencia(null);
+      }
     };
 
-      getFinance();
-        
-        
-  
-      
-    });
-
-    // comienza el flujo de creditivoo
 
   const handleCreditivooCheckout = async () => {
     Helper.HandleVibration();
     setIsCreatingOrder(true);
+
+    const creditivooContext = {
+        initialPercentage,
+        isCartFinanciable,
+        financingDetails,
+      };
     
-    // const token = await AsyncStorage.getItem('@creditivoo_session_token');
     //obtenemos lo que tiene el carrito
-   const totalCart = CachedCartData?.customerCart?.prices?.grand_total?.value ?? 0;
+   const totalCart = financingDetails?.total;
 
    const cedulaUsuario = user?.document;
 
-   
+  
    // verificamos que el usuario exista en creditivoo https://api-ivoo-dev.whaledigitals.com/purchases/paymentValidator/transaction/confirm/p/@control
-   
-
+      // Alert.alert(''+user?.username);
 
     if (!user?.username) {
       
@@ -878,7 +972,6 @@ const Checkout = props => {
       });
       return;
     }
-    
     
     try {
 
@@ -897,7 +990,11 @@ const Checkout = props => {
 
       const creditivooUser = userr;
 
-      if (!creditivooUser) {
+      //Alert.alert(''+parseInt(GrandTotal.slice(1)));
+      
+
+
+      if (!creditivooUser.creditStatus) {
         Alert.alert("Atención", "No se encontró el registro de crédito para esta cédula.");
         return;
       }
@@ -911,7 +1008,7 @@ const Checkout = props => {
     }
 
     // Validar Disponible (creditAvailable)
-    if (!creditivooUser.creditAvailable || creditivooUser.creditAvailable <= 0) {
+    if (!creditivooUser.creditAvailable || creditivooUser.creditAvailable <= 0 ) {
       Alert.alert("Validación", "No posee saldo disponible en su línea de crédito.");
       return;
 
@@ -933,7 +1030,7 @@ const Checkout = props => {
       // Preparamos los datos que necesitan las cuotas
       const checkoutData = {
         selectedPercentage: initialPercentage,
-        totalAmount: totalCart,
+        totalAmount: parseInt(GrandTotal.slice(1)),
         isFinancing: true
       };
       //const totalAmount = CachedCartData?.customerCart?.prices?.grand_total?.value;
@@ -955,7 +1052,7 @@ const Checkout = props => {
         },
           body: JSON.stringify({
             tenantId: Number(IVOO_APP_TENANT_ID),
-            totalAmount: Number(totalCart),
+            totalAmount: parseInt(GrandTotal.slice(1)),
             userId: Number(creditivooUser.id) // Aquí convertimos el "36" a 36
           })
         }
@@ -964,7 +1061,7 @@ const Checkout = props => {
       const responsepurchase = await purchaseResponse.text(); 
       const purchase = JSON.parse(responsepurchase);
 
-      Alert.alert(""+Number(purchase.id));
+      //Alert.alert(""+Number(purchase.id));
       //cargar el plan elegido para que se actualice la compra anexando la inicial a pagar y las cuotas
       
       // recibiendo lo que tiene el selector
@@ -996,8 +1093,10 @@ const Checkout = props => {
 
       const response = await createPaymentOrder(paymentOrderRequest);
 
-      const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
+      
 
+      const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
+      //Alert.alert(''+JSON.stringify(isAutoCompleted));
       //Alert.alert(""+JSON.stringify(isAutoCompleted));
       
       if (isAutoCompleted) {
@@ -1009,6 +1108,7 @@ const Checkout = props => {
         setPaymentUrl(response.paymentUrl);
         setPaymentReferencia(response.referencia);
         setIsProcessingPayment(true);     // Muestra el Modal
+        setPurchasePayment(purchase.id);
       } else {
         throw new Error("No se recibió una URL de pago válida.");
       }
@@ -1659,8 +1759,11 @@ const Checkout = props => {
 
                 {/* Opción: Creditivoo */}
                 <TouchableOpacity style={[styles.methodItem, Paymenttype === 'creditivoo' && styles.methodItemActive]} onPress={handleCreditivooCheckout}>
-
-                  <Text style={[commonStyle.h5, {color: appTheme.text}]}>CREDITIVOO</Text>
+                  <View style={commonStyle.flexDir_Row}>
+                    <ProgressiveImage source={ResImage.ic_creditivodark_green} style={styles.methodIcon} />
+                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>Creditivoo</Text>
+                  </View>
+                  
                   
                 </TouchableOpacity>
 
@@ -1992,12 +2095,14 @@ const Checkout = props => {
         <Modal
             visible={isProcessingPayment && !!paymentUrl}
             animationType="slide"
-            onRequestClose={() => setIsProcessingPayment(false)}>
+            // onRequestClose={() => setIsProcessingPayment(false)}>
+            onRequestClose={handleWebViewClose}>
             <View style={styles.webViewContainer}>
               <View style={styles.webViewHeader}>
                 <Text style={styles.webViewTitle}>Procesando pago</Text>
                 <TouchableOpacity
-                  onPress={() => setIsProcessingPayment(false)}
+                  // onPress={() => setIsProcessingPayment(false)}
+                  onPress={handleWebViewClose}
                   style={styles.closeButton}>
                   <Icon
                     name="close"
@@ -2057,10 +2162,34 @@ const Checkout = props => {
                 </Text>
                 <Text style={[commonStyle.h6, {color: appTheme.text}]}>
                   {Helper.currencyFormat(
-                    cartData.customerCart.prices.subtotal_excluding_tax.value,
+                    financingDetails.downPayment
+                    //cartData.customerCart.prices.subtotal_excluding_tax.value,
                   )}
                 </Text>
+                
               </View>
+              <View
+                style={[
+                  {
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  },
+                ]}>
+                  <Text
+                    style={[
+                      commonStyle.h6,
+                      {color: appTheme.text, fontWeight: '700', paddingVertical:10},
+                    ]}>
+                    Monto a Financiar
+                  </Text>
+                  <Text style={[commonStyle.h6, {color: appTheme.text}]}>
+                    {Helper.currencyFormat(
+                      financingDetails.montFinance
+                      //cartData.customerCart.prices.subtotal_excluding_tax.value,
+                    )}
+                  </Text>
+                </View>
             </View>
           }
           {cartData &&
@@ -2504,7 +2633,7 @@ const styles = StyleSheet.create({
     //backgroundColor: isDark ? '#1a2a1a' : '#f0fff0',
   },
   methodIcon: {
-    width: 24,
+    width: 35,
     height: 24,
     marginRight: 12,
   },

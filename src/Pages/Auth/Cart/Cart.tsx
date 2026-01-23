@@ -1,5 +1,5 @@
 import {useLazyQuery} from '@apollo/client';
-import React, {useState, useEffect, useContext, useCallback} from 'react';
+import React, {useState, useEffect, useContext, useRef, useCallback} from 'react';
 import {useNavigation, useRoute, useFocusEffect, } from '@react-navigation/native';
 import {
   View,
@@ -116,12 +116,19 @@ const Cart = () => {
 
   // By JAMP 15-01-2026
   const IVOO_APP_TENANT_ID = 5;
-
+  const [initialPercentageCashea, setInitialPercentageCashea] = useState(0.5);
   const percentageToId: Record<number, number> = {
     0.40: 27,
     0.50: 28,
     0.60: 29
   };
+
+  const [isAcuotasSelected, setIsAcuotasSelected] = useState(false); // Si es de contado (false) o a cuotas (true)
+  const [isCreditivooSelected, setIsCreditivooSelected] = useState(true); // Si dentro de "A cuotas" se selecciona Creditivoo (true) o Cashea (false)
+  const DEFAULT_CREDITIVOO_PERC = 0.4;
+  const DEFAULT_CASHEA_PERC = 0.4;
+  const didShowAttrAlert = useRef(false);
+
   const route = useRoute();
   const purchaseId = (route.params as any)?.purchaseId as number;
   //const [error, setError] = useState<string | null>(null);
@@ -147,15 +154,38 @@ const Cart = () => {
   //variable para validar el token de usuario creditivoo
   const {user, isLoggedIn, token} = useIvoSelector(state => state.creditivoo.auth);
 
-  const [initialPercentage, setInitialPercentage] = useState();
+  const [initialPercentage, setInitialPercentage] = useState(0);
   const [isCartFinanciable, setIsCartFinanciable] = useState(true);
 
-  const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0, initialPercentage: 0, });
+  const [financingDetails, setFinancingDetails] = useState({ total: 0, downPayment: 0, installment: 0, montFinance: 0, initialPercentage: 0, });
 
 
   const [isCasheaSelected, setIsCasheaSelected] = useState(false);
 
   // By JAMP
+
+
+  useEffect(() => {
+  const total = CachedCartData?.customerCart?.prices?.grand_total?.value;
+
+  if (total && isCasheaSelected) {
+    // 1. Forzamos los valores específicos que pediste
+    const percentage = 0.5; 
+    const downPayment = Math.floor(total * percentage); // Convertimos a entero (ej: 47)
+    const montFinance = total - downPayment;
+    const installment = montFinance / 3; // Dividido en 3 cuotas
+
+    // 2. Actualizamos el estado
+    setInitialPercentage(percentage);
+    setFinancingDetails({
+      total,
+      downPayment,
+      installment,
+      montFinance,
+      initialPercentage: percentage,
+    });
+  }
+}, [CachedCartData, isCasheaSelected]); // Solo se ejecuta si cambia el carrito o seleccionas el método
 
   const [getCart, {loading: loadingB, data: cartListdataB}] = useLazyQuery(
     cartList,
@@ -261,11 +291,11 @@ const Cart = () => {
 
   useEffect(() => {
     
-    
 
     const loadCreditivooContext = async () => {
       try {
         const jsonValue = await AsyncStorage.getItem('@creditivoo_context');
+        //Alert.alert(''+jsonValue)
         if (jsonValue != null) {
           const savedContext = JSON.parse(jsonValue);
 
@@ -283,7 +313,7 @@ const Cart = () => {
             const montFinance = (total - downPayment);
             const installment = (total - downPayment) / 4;
 
-            setFinancingDetails({ downPayment, installment, montFinance, initialPercentage });
+            setFinancingDetails({ total, downPayment, installment, montFinance, initialPercentage });
 
           }
 
@@ -306,7 +336,7 @@ const Cart = () => {
       const montFinance = (total - downPayment);
       const installment = (total - downPayment) / 4;
 
-      setFinancingDetails({ downPayment, installment, montFinance, initialPercentage });
+      setFinancingDetails({ total, downPayment, installment, montFinance, initialPercentage });
 
     }
   }, [CachedCartData, initialPercentage]);
@@ -849,14 +879,32 @@ const Cart = () => {
 
   const renderCasheaSection = () => (
     <View style={styles.casheaMainContainer}>
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.casheaCartBadge}
         onPress={() => Alert.alert('Cashea', 'Redirigiendo a Cashea...')}>
         <Text style={styles.casheaTag}>PAGAR CON CASHEA</Text>
         <Text style={styles.casheaSubtext}>
           Compra ahora y paga después en cuotas sin interés
         </Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
+      
+
+      
+      <View style={styles.creditivooMainContainer}>
+        
+        
+        <View style={styles.selectorRow}>
+          <TouchableOpacity
+            disabled={true} // Deshabilitado porque es la única opción
+            style={[styles.percentageBtn, styles.percentageBtnActive]}>
+            <Text style={[styles.percentageText, styles.percentageTextActive]}>
+              50% de inicial
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+      </View>
+    
     </View>
   );
 
@@ -1566,9 +1614,11 @@ const Cart = () => {
                 (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
                   cData: CachedCartData,
                   highDimText: highDimTextInfo,
-                  finance: financingDetails,
-                  totalCart: CachedCartData?.customerCart?.prices?.grand_total?.value,
-                  initialPercentage: 0.40
+                  creditivooData: {
+                    initialPercentage: initialPercentage,
+                    isCartFinanciable: isCartFinanciable,
+                    financingDetails: financingDetails,
+                  }
                 });
               }}
             />
