@@ -41,7 +41,19 @@ import {
   PointsData,
 } from '../../services/points';
 import {Routes} from '../../../../../Utils/NavigationRoutes';
+import {useLazyQuery, useQuery} from '@apollo/client';
 // import {GemTransactionCard, GemTransaction} from '../../components/gems';
+import {
+  homeInfo,
+  getLatestPendingOrder,
+  homeSections,
+  userWishlist,
+  storeConfig,
+  customerAddressList,
+  getAppReleaseInfo,
+  sendLocationToServer,
+  setNewPasswordQuery,
+} from '../../../../../Queries/queries';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -54,6 +66,8 @@ const HomeCreditIvoo: React.FC = () => {
   const [showChatModal, setShowChatModal] = useState(false);
   const [hasShownChatModal, setHasShownChatModal] = useState(false);
 
+
+  const [GethomeInfo, { loading, errors, data: homeData }] = useLazyQuery(homeInfo);
   // Para las gemas
   const [pointsData, setPointsData] = useState<PointsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,6 +200,8 @@ const HomeCreditIvoo: React.FC = () => {
     hasShownChatModal,
     creditInfo,
   ]);
+
+  
 
   // Hacer fetch de crédito cuando la pantalla recibe foco (pero no fetchMe)
   useFocusEffect(
@@ -350,6 +366,44 @@ const HomeCreditIvoo: React.FC = () => {
   const handleCloseChatModal = () => {
     setShowChatModal(false);
   };
+
+
+  const handleGoToSales = useCallback(() => {
+
+    const option = homeData?.homeSection?.section1?.[0]?.children?.[0];
+
+    
+
+    if (!option) {
+      Alert.alert('Sales', 'No hay data aún. homeInfo no cargó section1/children.');
+      return;
+    }
+
+    const headerOption = {
+      // Esto emula el "props" que Sales manda como headerOption
+      data: {
+        ...option,
+        current_date: option?.current_date ?? new Date().toISOString(),
+      },
+      themeName: option?.text_color,
+      id: option?.id,
+      imgName: option?.icon,
+      saleType: option?.name,
+      theme: option?.category_background_css ?? '#FFE5DA,#FFCDF1',
+    };
+
+    
+
+    try {
+      (navigation as any).navigate(Routes.NAVIGATION_TO_PRODUCTLIST, {
+        headerOption,
+        id: option?.id,
+      });
+    } catch (e: any) {
+      
+      Alert.alert('Error', `navigate falló: ${String(e?.message ?? e)}`);
+    }
+  }, [homeData, navigation]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -545,13 +599,21 @@ const HomeCreditIvoo: React.FC = () => {
             <View style={styles.bottomRow}>
               <View style={styles.halfColumn}>
                 <Text style={styles.sectionTitle}>Descuentos</Text>
-                <View style={styles.discountCard}>
+                <TouchableOpacity
+                  onPress={handleGoToSales}
+                  disabled={loading}
+                  style={styles.discountCard}
+                  // style={styles.discountCard}
+                >
                   <Image
                     source={require('../../images/home/placeholders/discuounts-placeholder.png')}
                     style={styles.discountImage}
                     resizeMode="cover"
                   />
-                </View>
+                  {/* <Text style={{ color: 'white', fontWeight: '700' }}>
+                    {loading ? 'Cargando...' : 'Ir a Sales'}
+                  </Text> */}
+                </TouchableOpacity>
               </View>
 
               <View style={styles.halfColumn}>

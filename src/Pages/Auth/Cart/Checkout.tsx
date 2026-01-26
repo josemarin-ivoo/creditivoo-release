@@ -120,6 +120,7 @@ import {getFinancingById, FinancingTypeResponse} from '../../Auth/Creditivoo/ser
 import { hash } from 'react-native-fs';
 import Config from 'react-native-config';
 import { darkColors, lightColors } from 'Utils/themeColors';
+import CasheaTestWebCheckout from './CasheaTestWebCheckout';
 
 // stripe.setOptions({
 //   publishableKey: Helper.stripeKey,
@@ -221,6 +222,9 @@ const Checkout = props => {
 
 
   // CONST BY JAMP 22-01-2026
+
+
+
   const [CachedCartData, setCachedCartData] = useState<any>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const dispatchh = useIvoDispatch();
@@ -784,8 +788,6 @@ const Checkout = props => {
 
 
 
-
-
   // By JAMP 22-01-2026
 
   useFocusEffect(
@@ -859,7 +861,6 @@ const Checkout = props => {
       setPaymentUrl(null);
       setIsProcessingPayment(false);
       
-
       
       // Si no hay referencia, no podemos verificar
       if (!paymentReferencia) {
@@ -889,12 +890,13 @@ const Checkout = props => {
         });
         
         
-        Alert.alert(''+JSON.stringify(verificationResult));
+        //Alert.alert(''+JSON.stringify(verificationResult));
         console.log(
           '[PurchaseConfirmation] Resultado de verificaci?n:',
           verificationResult,
         );
-  
+        
+        //Alert.alert(''+JSON.stringify(verificationResult.approved));
         if (verificationResult.approved) {
           // Pago aprobado, navegar a la pantalla de ?xito correspondiente
           if (isPlanSubscription) {
@@ -939,7 +941,15 @@ const Checkout = props => {
         setPaymentReferencia(null);
       }
     };
+  
+  const functionTest = async () => {
 
+      (navigation as any ).navigate("CasheaTestWebCheckout", 
+        { 
+          cedula: "22011090", 
+          cartId: cartData.customerCart.id 
+        });
+  }
 
   const handleCreditivooCheckout = async () => {
     Helper.HandleVibration();
@@ -958,7 +968,7 @@ const Checkout = props => {
 
   
    // verificamos que el usuario exista en creditivoo https://api-ivoo-dev.whaledigitals.com/purchases/paymentValidator/transaction/confirm/p/@control
-      // Alert.alert(''+user?.username);
+      
 
     if (!user?.username) {
       
@@ -989,10 +999,6 @@ const Checkout = props => {
       const userr = userObj.user;
 
       const creditivooUser = userr;
-
-      //Alert.alert(''+parseInt(GrandTotal.slice(1)));
-      
-
 
       if (!creditivooUser.creditStatus) {
         Alert.alert("Atención", "No se encontró el registro de crédito para esta cédula.");
@@ -1033,10 +1039,9 @@ const Checkout = props => {
         totalAmount: parseInt(GrandTotal.slice(1)),
         isFinancing: true
       };
-      //const totalAmount = CachedCartData?.customerCart?.prices?.grand_total?.value;
+      
       const montoInicial = financingDetails.downPayment;
 
-      //Alert.alert("inicial "+montoInicial);
       
       if (!montoInicial) {
         Alert.alert("Error", "No se pudo obtener el monto total del carrito.");
@@ -1061,7 +1066,21 @@ const Checkout = props => {
       const responsepurchase = await purchaseResponse.text(); 
       const purchase = JSON.parse(responsepurchase);
 
-      //Alert.alert(""+Number(purchase.id));
+
+      //cambiar de estatus la compra
+
+      const updatePurchase = await fetch(`${userUrl}/purchases/creditivoo/revision`, {
+        method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
+          },
+          
+        }
+      );
+
+      const responseUpdatePurchase = await updatePurchase.text(); 
+      
       //cargar el plan elegido para que se actualice la compra anexando la inicial a pagar y las cuotas
       
       // recibiendo lo que tiene el selector
@@ -1083,21 +1102,17 @@ const Checkout = props => {
         }
       );
 
-
-        //Alert.alert(""+Number(purchase.id));
       const paymentOrderRequest: CreatePaymentOrderRequest = {
         
-        amount: montoInicial, // Enviamos el monto para que MegaSoft genere el link
-         //purchaseId: Number(purchase.id) // Solo incluir si ya creaste la orden en tu backend
+        // amount: montoInicial, // Enviamos el monto para que MegaSoft genere el link
+        purchaseId: Number(purchase.id) // Solo incluir si ya creaste la orden en tu backend
       };
 
-      const response = await createPaymentOrder(paymentOrderRequest);
+       const response = await createPaymentOrder(paymentOrderRequest);
 
       
 
       const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
-      //Alert.alert(''+JSON.stringify(isAutoCompleted));
-      //Alert.alert(""+JSON.stringify(isAutoCompleted));
       
       if (isAutoCompleted) {
         await handleVerificationFlow(response.referencia);
@@ -1769,14 +1784,17 @@ const Checkout = props => {
 
                 {/* Opción: Cashea */}
                 <TouchableOpacity 
-                  onPress={() => setPaymentType('cashea')}
+                  // Ejecutamos la función con paréntesis
+                  onPress={() => {
+                    setPaymentType('cashea'); // Marcamos como seleccionado
+                    functionTest();           // Ejecutamos la navegación
+                  }}
                   style={[styles.methodItem, Paymenttype === 'cashea' && styles.methodItemActive]}
                 >
                   <View style={commonStyle.flexDir_Row}>
                     <ProgressiveImage source={ResImage.ic_cashea} style={styles.methodIcon} />
                     <Text style={[commonStyle.h5, {color: appTheme.text}]}>Cashea</Text>
                   </View>
-                  {/* <View style={[styles.radioCircle, Paymenttype === 'cashea' && styles.radioCircleSelected]} /> */}
                 </TouchableOpacity>
 
                 {/* Opción: En Tienda */}

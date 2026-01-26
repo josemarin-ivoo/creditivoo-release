@@ -77,7 +77,7 @@ import ResetPasswordScreen from './src/Pages/Auth/Creditivoo/views/signup/ResetP
 // import SplashScreen from './src/Pages/Auth/Creditivoo/views/splash/SplashScreen';
 import IvitooChatScreen from './src/Pages/Auth/Creditivoo/views/help/IvitooChatScreen';
 import ChangePasswordScreen from './src/Pages/Auth/Creditivoo/views/settings/ChangePasswordScreen';
-
+import CasheaTestWebCheckout from './src/Pages/Auth/Cart/CasheaTestWebCheckout';
 // import CreditivooLogin from './src/Pages/Auth/Creditivoo/CreditivooLogin'; // revisar a donde va a abrir 
 
 import CardDetails from './src/Pages/Auth/cardDetails';
@@ -841,6 +841,12 @@ const Route = () => {
           
           name={Routes.NAVIGATION_TABCREDITIVOO}
           component={MainTabsCreditivoo}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          
+          name={Routes.NAVIGATION_CASHEA}
+          component={CasheaTestWebCheckout}
           options={{headerShown: false}}
         />
         <Stack.Screen

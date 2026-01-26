@@ -254,7 +254,7 @@ export const SocialButtons = (props: any) => {
     if (customerData) {
       isDataLoading = true;
       // console.log( JSON.stringify( customerData ) );
-      Alert.alert('Customer Data', JSON.stringify(customerData));
+      //Alert.alert('Customer Data', JSON.stringify(customerData));
       if (customerData.customer.phone == null) {
         isSignUp = 'signup';
       }

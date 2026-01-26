@@ -503,61 +503,222 @@ const ProductDetails = props => {
   }, [userCartIdData]);
 
   //added by Frodriguez
+  const isDark = appTheme.type === 'dark';
+
+  const financeUI = {
+    cardBg: isDark ? '#4e4d4d' : '#FFFFFF',
+    cardBorder: isDark ? '#000000' : '#E6E6E6',
+    text: isDark ? '#FFFFFF' : '#111111',
+    hr: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.12)',
+    pillBg: isDark ? '#0606066f' : '#F2F2F2',
+    pillBorderCredit: isDark ? '#21a72877' : '#2E7D32',
+    pillBorderCashea: isDark ? '#fdfa3d' : '#E0C700',
+    activeCreditBg: isDark ? '#39a73f9e' : colorResource.Green,
+    activeCasheaBg: isDark ? '#878822' : '#F5E200',
+    activeTextOnLight: '#FFFFFF',
+    casheaTextOnLight: '#111111',
+  };
+
+  const switchUI = {
+    containerBg: isDark ? '#4c4c4c' : '#F2F2F2',
+    containerBorder: isDark ? '#000000' : '#E6E6E6',
+    tabActiveBg: isDark ? '#9e9e9e' : '#FFFFFF',
+    tabInactiveBg: 'transparent',
+    textActive: isDark ? '#FFFFFF' : '#111111',
+    textInactive: isDark ? '#EDEDED' : '#666666',
+  };
+
+  // const renderPaymentMethodSwitch = () => (
+  //   <View style={styles.switchContainer}>
+  //     {/* Opción "De contado" */}
+  //     {!isAcuotasSelected && (
+  //       <TouchableOpacity
+  //         style={[
+  //           styles.switchOption,
+  //           !isAcuotasSelected && styles.switchOptionActive,
+  //         ]}
+  //         onPress={() => {
+  //           setIsAcuotasSelected(false); // Selección "De contado"
+  //           setIsCreditivooSelected(true); // Al seleccionar "De contado", volvemos a Creditivoo por defecto
+  //         }}
+  //         disabled={isAcuotasSelected} // Deshabilitar si ya está en "A crédito"
+  //       >
+  //         <Text
+  //           style={[
+  //             styles.switchText,
+  //             !isAcuotasSelected && styles.switchTextActive,
+  //           ]}>
+  //           De contado
+  //         </Text>
+  //       </TouchableOpacity>
+  //     )}
+
+  //     {/* Opción "A crédito" */}
+  //     <TouchableOpacity
+  //       style={[
+  //         styles.switchOption,
+  //         isAcuotasSelected && styles.switchOptionActive,
+  //       ]}
+  //       onPress={() => {
+  //         setIsAcuotasSelected(true); // Selección "A crédito"
+  //         setIsCreditivooSelected(true); // Por defecto seleccionamos Creditivoo
+  //         setInitialPercentage(DEFAULT_CREDITIVOO_PERC);
+  //         setInitialPercentageCashea(DEFAULT_CASHEA_PERC);
+  //       }}
+  //       disabled={isAcuotasSelected} // Deshabilitar si ya está en "De contado"
+  //     >
+  //       <View style={styles.iconContainer}>
+  //         <ProgressiveImage
+  //           source={ImageResource.ic_isotipo_green} // Icono de Creditivoo
+  //           style={styles.icon}
+  //           resizeMode="contain"
+  //         />
+  //         <ProgressiveImage
+  //           source={ImageResource.ic_cashea_yellow} // Icono de Cashea
+  //           style={styles.icon}
+  //           resizeMode="contain"
+  //         />
+  //       </View>
+  //       <Text
+  //         style={[
+  //           styles.switchText,
+  //           isAcuotasSelected && styles.switchTextActive,
+  //         ]}>
+  //         A cuotas
+  //       </Text>
+  //     </TouchableOpacity>
+  //   </View>
+  // );
+
+  // const renderCreditivooCasheaSwitch = () => (
+  //   <View style={styles.switchContainer}>
+  //     {/* Creditivoo */}
+  //     <TouchableOpacity
+  //       style={[
+  //         styles.switchOption,
+  //         isCreditivooSelected && styles.switchOptionActive,
+  //       ]}
+  //       onPress={() => {
+  //         setIsCreditivooSelected(true);
+  //         setInitialPercentage(DEFAULT_CREDITIVOO_PERC);
+  //       }}>
+  //       <ProgressiveImage
+  //         source={ImageResource.ic_isotipo_green}
+  //         style={styles.icon}
+  //         resizeMode="contain"
+  //       />
+  //       <Text
+  //         style={[
+  //           styles.switchText,
+  //           isCreditivooSelected && styles.switchTextActive,
+  //         ]}>
+  //         Creditivoo
+  //       </Text>
+  //     </TouchableOpacity>
+
+  //     {/* Cashea */}
+  //     <TouchableOpacity
+  //       style={[
+  //         styles.switchOption,
+  //         !isCreditivooSelected && styles.switchOptionActive,
+  //       ]}
+  //       onPress={() => {
+  //         setIsCreditivooSelected(false);
+  //         setInitialPercentageCashea(DEFAULT_CASHEA_PERC);
+  //       }}>
+  //       <ProgressiveImage
+  //         source={ImageResource.ic_cashea_yellow}
+  //         style={styles.icon}
+  //         resizeMode="contain"
+  //       />
+  //       <Text
+  //         style={[
+  //           styles.switchText,
+  //           !isCreditivooSelected && styles.switchTextActive,
+  //         ]}>
+  //         Cashea
+  //       </Text>
+  //     </TouchableOpacity>
+  //   </View>
+  // );
+
   const renderPaymentMethodSwitch = () => (
-    <View style={styles.switchContainer}>
+    <View
+      style={[
+        styles.switchContainer,
+        {
+          backgroundColor: switchUI.containerBg,
+          borderColor: switchUI.containerBorder,
+        },
+      ]}>
       {/* Opción "De contado" */}
       {!isAcuotasSelected && (
         <TouchableOpacity
           style={[
             styles.switchOption,
-            !isAcuotasSelected && styles.switchOptionActive,
+            {
+              backgroundColor: !isAcuotasSelected
+                ? switchUI.tabActiveBg
+                : switchUI.tabInactiveBg,
+            },
           ]}
           onPress={() => {
-            setIsAcuotasSelected(false); // Selección "De contado"
-            setIsCreditivooSelected(true); // Al seleccionar "De contado", volvemos a Creditivoo por defecto
+            setIsAcuotasSelected(false);
+            setIsCreditivooSelected(true);
           }}
-          disabled={isAcuotasSelected} // Deshabilitar si ya está en "A crédito"
-        >
+          disabled={isAcuotasSelected}>
           <Text
             style={[
               styles.switchText,
-              !isAcuotasSelected && styles.switchTextActive,
+              {
+                color: !isAcuotasSelected
+                  ? switchUI.textActive
+                  : switchUI.textInactive,
+              },
             ]}>
             De contado
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* Opción "A crédito" */}
+      {/* Opción "A cuotas" */}
       <TouchableOpacity
         style={[
           styles.switchOption,
-          isAcuotasSelected && styles.switchOptionActive,
+          {
+            backgroundColor: isAcuotasSelected
+              ? switchUI.tabActiveBg
+              : switchUI.tabInactiveBg,
+          },
         ]}
         onPress={() => {
-          setIsAcuotasSelected(true); // Selección "A crédito"
-          setIsCreditivooSelected(true); // Por defecto seleccionamos Creditivoo
+          setIsAcuotasSelected(true);
+          setIsCreditivooSelected(true);
           setInitialPercentage(DEFAULT_CREDITIVOO_PERC);
           setInitialPercentageCashea(DEFAULT_CASHEA_PERC);
         }}
-        disabled={isAcuotasSelected} // Deshabilitar si ya está en "De contado"
-      >
+        disabled={isAcuotasSelected}>
         <View style={styles.iconContainer}>
           <ProgressiveImage
-            source={ImageResource.ic_isotipo_green} // Icono de Creditivoo
+            source={ImageResource.ic_isotipo_green}
             style={styles.icon}
             resizeMode="contain"
           />
           <ProgressiveImage
-            source={ImageResource.ic_cashea_yellow} // Icono de Cashea
+            source={ImageResource.ic_cashea_yellow}
             style={styles.icon}
             resizeMode="contain"
           />
         </View>
+
         <Text
           style={[
             styles.switchText,
-            isAcuotasSelected && styles.switchTextActive,
+            {
+              color: isAcuotasSelected
+                ? switchUI.textActive
+                : switchUI.textInactive,
+            },
           ]}>
           A cuotas
         </Text>
@@ -566,12 +727,23 @@ const ProductDetails = props => {
   );
 
   const renderCreditivooCasheaSwitch = () => (
-    <View style={styles.switchContainer}>
+    <View
+      style={[
+        styles.switchContainer,
+        {
+          backgroundColor: switchUI.containerBg,
+          borderColor: switchUI.containerBorder,
+        },
+      ]}>
       {/* Creditivoo */}
       <TouchableOpacity
         style={[
           styles.switchOption,
-          isCreditivooSelected && styles.switchOptionActive,
+          {
+            backgroundColor: isCreditivooSelected
+              ? switchUI.tabActiveBg
+              : switchUI.tabInactiveBg,
+          },
         ]}
         onPress={() => {
           setIsCreditivooSelected(true);
@@ -585,7 +757,11 @@ const ProductDetails = props => {
         <Text
           style={[
             styles.switchText,
-            isCreditivooSelected && styles.switchTextActive,
+            {
+              color: isCreditivooSelected
+                ? switchUI.textActive
+                : switchUI.textInactive,
+            },
           ]}>
           Creditivoo
         </Text>
@@ -595,7 +771,11 @@ const ProductDetails = props => {
       <TouchableOpacity
         style={[
           styles.switchOption,
-          !isCreditivooSelected && styles.switchOptionActive,
+          {
+            backgroundColor: !isCreditivooSelected
+              ? switchUI.tabActiveBg
+              : switchUI.tabInactiveBg,
+          },
         ]}
         onPress={() => {
           setIsCreditivooSelected(false);
@@ -609,7 +789,11 @@ const ProductDetails = props => {
         <Text
           style={[
             styles.switchText,
-            !isCreditivooSelected && styles.switchTextActive,
+            {
+              color: !isCreditivooSelected
+                ? switchUI.textActive
+                : switchUI.textInactive,
+            },
           ]}>
           Cashea
         </Text>
@@ -631,43 +815,155 @@ const ProductDetails = props => {
     </View>
   );
 
-  // Sección de Creditivoo
+  // // Sección de Creditivoo
+  // const renderCreditivooSection = () => (
+  //   <View style={styles.creditivooMainContainer}>
+  //     <TouchableOpacity
+  //       style={styles.closeButton}
+  //       onPress={() => {
+  //         setIsCreditivooSelected(true);
+  //         setIsAcuotasSelected(false);
+  //       }}>
+  //       <Text style={styles.closeButtonText}>X</Text>
+  //     </TouchableOpacity>
+  //     <View style={styles.selectorRow}>
+  //       {[0.4, 0.5, 0.6].map(perc => (
+  //         <TouchableOpacity
+  //           key={perc}
+  //           onPress={() => setInitialPercentage(perc)}
+  //           style={[
+  //             styles.percentageBtn,
+  //             initialPercentage === perc && styles.percentageBtnActive,
+  //           ]}>
+  //           <Text
+  //             style={[
+  //               styles.percentageText,
+  //               initialPercentage === perc && styles.percentageTextActive,
+  //             ]}>
+  //             {Math.round(perc * 100)}%
+  //           </Text>
+  //         </TouchableOpacity>
+  //       ))}
+  //     </View>
+
+  //     <View style={styles.creditivooCartBadge}>
+  //       <View style={styles.hr} />
+  //       <Text style={styles.creditivooCuotas}>
+  //         Inicial: {Helper.currencyFormat(financingDetails.downPayment)}
+  //       </Text>
+  //       <Text style={styles.creditivooCuotas}>
+  //         + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
+  //       </Text>
+  //     </View>
+  //   </View>
+  // );
+
+  // // Sección de Cashea
+  // const renderCasheaSection = () => (
+  //   <View style={styles.creditivooMainContainer}>
+  //     <TouchableOpacity
+  //       style={styles.closeButton}
+  //       onPress={() => {
+  //         setIsCreditivooSelected(true);
+  //         setIsAcuotasSelected(false);
+  //       }}>
+  //       <Text style={styles.closeButtonText}>X</Text>
+  //     </TouchableOpacity>
+  //     <View style={styles.selectorRow}>
+  //       {[0.4, 0.5, 0.6].map(perc => (
+  //         <TouchableOpacity
+  //           key={perc}
+  //           onPress={() => setInitialPercentageCashea(perc)}
+  //           style={[
+  //             styles.percentageBtnCashea,
+  //             initialPercentageCashea === perc &&
+  //               styles.percentageBtnActiveCashea,
+  //           ]}>
+  //           <Text
+  //             style={[
+  //               styles.percentageText,
+  //               initialPercentageCashea === perc &&
+  //                 styles.percentageTextActiveCashea,
+  //             ]}>
+  //             {Math.round(perc * 100)}%
+  //           </Text>
+  //         </TouchableOpacity>
+  //       ))}
+  //     </View>
+
+  //     <View style={styles.creditivooCartBadge}>
+  //       <View style={styles.hr} />
+  //       <Text style={styles.creditivooCuotas}>
+  //         Inicial: {Helper.currencyFormat(financingDetails.downPayment)}
+  //       </Text>
+  //       <Text style={styles.creditivooCuotas}>
+  //         + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
+  //       </Text>
+  //     </View>
+  //   </View>
+  // );
+
   const renderCreditivooSection = () => (
-    <View style={styles.creditivooMainContainer}>
+    <View
+      style={[
+        styles.creditivooMainContainer,
+        {
+          backgroundColor: financeUI.cardBg,
+          borderColor: financeUI.cardBorder,
+        },
+      ]}>
       <TouchableOpacity
         style={styles.closeButton}
         onPress={() => {
           setIsCreditivooSelected(true);
           setIsAcuotasSelected(false);
         }}>
-        <Text style={styles.closeButtonText}>X</Text>
+        <Text style={[styles.closeButtonText, {color: financeUI.text}]}>X</Text>
       </TouchableOpacity>
+
       <View style={styles.selectorRow}>
-        {[0.4, 0.5, 0.6].map(perc => (
-          <TouchableOpacity
-            key={perc}
-            onPress={() => setInitialPercentage(perc)}
-            style={[
-              styles.percentageBtn,
-              initialPercentage === perc && styles.percentageBtnActive,
-            ]}>
-            <Text
+        {[0.4, 0.5, 0.6].map(perc => {
+          const active = initialPercentage === perc;
+          return (
+            <TouchableOpacity
+              key={perc}
+              onPress={() => setInitialPercentage(perc)}
               style={[
-                styles.percentageText,
-                initialPercentage === perc && styles.percentageTextActive,
+                styles.percentageBtn,
+                {
+                  backgroundColor: financeUI.pillBg,
+                  borderColor: financeUI.pillBorderCredit,
+                },
+                active && {
+                  backgroundColor: financeUI.activeCreditBg,
+                  borderColor: '#2E7D32',
+                },
               ]}>
-              {Math.round(perc * 100)}%
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.percentageText,
+                  {
+                    color: active
+                      ? isDark
+                        ? '#FFFFFF'
+                        : financeUI.casheaTextOnLight
+                      : financeUI.text,
+                    fontWeight: active ? 'bold' : '600',
+                  },
+                ]}>
+                {Math.round(perc * 100)}%
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <View style={styles.creditivooCartBadge}>
-        <View style={styles.hr} />
-        <Text style={styles.creditivooCuotas}>
+        <View style={[styles.hr, {borderBottomColor: financeUI.hr}]} />
+        <Text style={[styles.creditivooCuotas, {color: financeUI.text}]}>
           Inicial: {Helper.currencyFormat(financingDetails.downPayment)}
         </Text>
-        <Text style={styles.creditivooCuotas}>
+        <Text style={[styles.creditivooCuotas, {color: financeUI.text}]}>
           + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
         </Text>
       </View>
@@ -676,43 +972,66 @@ const ProductDetails = props => {
 
   // Sección de Cashea
   const renderCasheaSection = () => (
-    <View style={styles.creditivooMainContainer}>
+    <View
+      style={[
+        styles.creditivooMainContainer,
+        {
+          backgroundColor: financeUI.cardBg,
+          borderColor: financeUI.cardBorder,
+        },
+      ]}>
       <TouchableOpacity
         style={styles.closeButton}
         onPress={() => {
           setIsCreditivooSelected(true);
           setIsAcuotasSelected(false);
         }}>
-        <Text style={styles.closeButtonText}>X</Text>
+        <Text style={[styles.closeButtonText, {color: financeUI.text}]}>X</Text>
       </TouchableOpacity>
+
       <View style={styles.selectorRow}>
-        {[0.4, 0.5, 0.6].map(perc => (
-          <TouchableOpacity
-            key={perc}
-            onPress={() => setInitialPercentageCashea(perc)}
-            style={[
-              styles.percentageBtnCashea,
-              initialPercentageCashea === perc &&
-                styles.percentageBtnActiveCashea,
-            ]}>
-            <Text
+        {[0.4, 0.5, 0.6].map(perc => {
+          const active = initialPercentageCashea === perc;
+          return (
+            <TouchableOpacity
+              key={perc}
+              onPress={() => setInitialPercentageCashea(perc)}
               style={[
-                styles.percentageText,
-                initialPercentageCashea === perc &&
-                  styles.percentageTextActiveCashea,
+                styles.percentageBtnCashea,
+                {
+                  backgroundColor: financeUI.pillBg,
+                  borderColor: financeUI.pillBorderCashea,
+                },
+                active && {
+                  backgroundColor: financeUI.activeCasheaBg,
+                  borderColor: financeUI.pillBorderCashea,
+                },
               ]}>
-              {Math.round(perc * 100)}%
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[
+                  styles.percentageText,
+                  {
+                    color: active
+                      ? isDark
+                        ? '#FFFFFF'
+                        : financeUI.casheaTextOnLight
+                      : financeUI.text,
+                    fontWeight: active ? 'bold' : '600',
+                  },
+                ]}>
+                {Math.round(perc * 100)}%
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       <View style={styles.creditivooCartBadge}>
-        <View style={styles.hr} />
-        <Text style={styles.creditivooCuotas}>
+        <View style={[styles.hr, {borderBottomColor: financeUI.hr}]} />
+        <Text style={[styles.creditivooCuotas, {color: financeUI.text}]}>
           Inicial: {Helper.currencyFormat(financingDetails.downPayment)}
         </Text>
-        <Text style={styles.creditivooCuotas}>
+        <Text style={[styles.creditivooCuotas, {color: financeUI.text}]}>
           + 4 cuotas de: {Helper.currencyFormat(financingDetails.installment)}
         </Text>
       </View>
@@ -1871,6 +2190,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#000000',
     zIndex: 10,
+    columnGap: 7,
   },
   switchOption: {
     flex: 1,
