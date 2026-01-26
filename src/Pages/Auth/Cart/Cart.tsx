@@ -801,6 +801,51 @@ const Cart = () => {
   }, [CachedCartData, user, token]);
 
 
+
+  const InitialPayment = async () => {
+
+    
+    
+    const correlativoId = Math.floor(Date.now() / 1000);
+    const totalCart = CachedCartData?.customerCart?.prices?.grand_total?.value ?? 0;
+    Alert.alert(''+JSON.stringify(correlativoId))
+    try {
+
+      const paymentOrderRequest: CreatePaymentOrderRequest = {
+              
+              //amount: Number(totalCart), // Enviamos el monto para que MegaSoft genere el link
+              purchaseId: Number(correlativoId) // Solo incluir si ya creaste la orden en tu backend
+            };
+      
+             const response = await createPaymentOrder(paymentOrderRequest);
+      
+            
+      
+            const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
+            
+            if (isAutoCompleted) {
+              await handleVerificationFlow(response.referencia);
+            } else if (response.paymentUrl) {
+              // --- CAMBIO AQUÍ: ACTIVAR MODAL EN LUGAR DE NAVEGAR ---
+              console.log('[Checkout] Activando Modal de pago:', response.paymentUrl);
+              
+              setPaymentUrl(response.paymentUrl);
+              setPaymentReferencia(response.referencia);
+              setIsProcessingPayment(true);     // Muestra el Modal
+              //setPurchasePayment(purchase.id);
+            } else {
+              throw new Error("No se recibió una URL de pago válida.");
+            }
+          } catch (error: any) {
+            console.error('[Checkout] Error:', error.message);
+            Alert.alert('Error de Pago', error.message || 'Error al procesar la solicitud con MegaSoft.');
+          } finally {
+            setIsCreatingOrder(false);
+          }
+
+  };
+
+
   const handleCreditivooCheckout = async () => {
     Helper.HandleVibration();
     setIsCreatingOrder(true);
@@ -1819,7 +1864,7 @@ const Cart = () => {
                 {minimumOrderValidateMsg}
               </Text>
             )}
-
+             {isAcuotasSelected && (
             <View
               style={[
                 {
@@ -1850,14 +1895,16 @@ const Cart = () => {
                   : Helper.currencyFormat(0)
               }`}</Text>
             </View>
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={[commonStyle.h6, { color: appTheme.text }]}>Cuotas de:</Text>
-              <Text style={[commonStyle.h6, { color: appTheme.text }]}>
-                {/* Sumamos la inicial calculada del crédito más lo que sobra de contado */}
-                {Helper.currencyFormat(financingDetails.montFinance)}
-              </Text>
-            </View>
+            )}
+            {isAcuotasSelected && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={[commonStyle.h6, { color: appTheme.text }]}>Cuotas de:</Text>
+                <Text style={[commonStyle.h6, { color: appTheme.text }]}>
+                  {/* Usamos Optional Chaining (?.) para evitar el error de 'undefined' */}
+                  {Helper.currencyFormat(financingDetails?.montFinance || 0)}
+                </Text>
+              </View>
+            )}
             {montoExcedente > 0 && (
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 }}>
                 <Text style={[commonStyle.h6, { color: colorResource.pink_product_price, fontWeight: '700' }]}>
@@ -1995,16 +2042,16 @@ const Cart = () => {
                   CachedCartData,
                   global_data.email,
                 );
-
-                (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
-                  cData: CachedCartData,
-                  highDimText: highDimTextInfo,
-                  creditivooData: {
-                    initialPercentage: initialPercentage,
-                    isCartFinanciable: isCartFinanciable,
-                    financingDetails: financingDetails,
-                  }
-                });
+                InitialPayment();
+                // (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
+                //   cData: CachedCartData,
+                //   highDimText: highDimTextInfo,
+                //   creditivooData: {
+                //     initialPercentage: initialPercentage,
+                //     isCartFinanciable: isCartFinanciable,
+                //     financingDetails: financingDetails,
+                //   }
+                // });
               }}
             />
           </View>
