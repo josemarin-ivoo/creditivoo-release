@@ -2037,21 +2037,29 @@ const Cart = () => {
               onPress={() => {
                 Helper.HandleVibration();
 
+                // El Analytics se dispara en ambos casos
                 AnalyticsBeginCheckout(
                   Input_coupon_code,
                   CachedCartData,
                   global_data.email,
                 );
-                // InitialPayment();
-                (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
-                  cData: CachedCartData,
-                  highDimText: highDimTextInfo,
-                  creditivooData: {
-                    initialPercentage: initialPercentage,
-                    isCartFinanciable: isCartFinanciable,
-                    financingDetails: financingDetails,
-                  }
-                });
+
+                // Lógica condicional según el financiamiento
+                if (isCartFinanciable) {
+                  // CASO CON FINANCIAMIENTO: Navega al Checkout de Creditivoo
+                  (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
+                    cData: CachedCartData,
+                    highDimText: highDimTextInfo,
+                    creditivooData: {
+                      initialPercentage: initialPercentage,
+                      isCartFinanciable: isCartFinanciable,
+                      financingDetails: financingDetails,
+                    }
+                  });
+                } else {
+                  // CASO SIN FINANCIAMIENTO: Ejecuta el pago inicial directo
+                  InitialPayment();
+                }
               }}
             />
           </View>

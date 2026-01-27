@@ -1,5 +1,10 @@
-import {useNavigation, StackActions, useFocusEffect, useRoute, } from '@react-navigation/native';
-import React, {useContext, useEffect, useState, useCallback } from 'react';
+import {
+  useNavigation,
+  StackActions,
+  useFocusEffect,
+  useRoute,
+} from '@react-navigation/native';
+import React, {useContext, useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -10,11 +15,10 @@ import {
   StyleSheet,
   Platform,
   AppState,
-  Switch, 
+  Switch,
   Alert,
   Modal,
   Dimensions,
-  
 } from 'react-native';
 import {Icon} from 'react-native-elements';
 import {IVOO_COLORS, IVOO_TYPOGRAPHY} from '../../Auth/Creditivoo/styles';
@@ -95,15 +99,14 @@ import {
   AddAlternetAddress,
   ClearAlternetAddress,
 } from '../../../redux/AlternetAddressReducers/AlternetAddressAction';
-import ResorceColor from "../../../Utils/Colors";
-
+import ResorceColor from '../../../Utils/Colors';
 
 // imports for JAMP
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {fetchMe} from '../../../Pages/Auth/Creditivoo/store-creditivoo/slices/auth-slice';
 import {useIvoSelector, useIvoDispatch} from '../../../redux/useIvo';
 import {WebView} from 'react-native-webview';
-import CreditivooLogin from '../Creditivoo/CreditivooLogin'; 
+import CreditivooLogin from '../Creditivoo/CreditivooLogin';
 import {
   CreatePaymentOrderRequest,
   createPaymentOrder,
@@ -112,14 +115,19 @@ import {
   createTestPaymentOrder,
 } from '../../Auth/Creditivoo/services/megasoft';
 import {Payment, PaymentStatus} from '../../Auth/Creditivoo/services/purchases';
-import {getPurchaseById,
+import {
+  getPurchaseById,
   RevisionResponse,
   PurchaseSimulationResponse,
-  simulatePurchase,} from '../../Auth/Creditivoo/services/credit';
-import {getFinancingById, FinancingTypeResponse} from '../../Auth/Creditivoo/services/plan';
-import { hash } from 'react-native-fs';
+  simulatePurchase,
+} from '../../Auth/Creditivoo/services/credit';
+import {
+  getFinancingById,
+  FinancingTypeResponse,
+} from '../../Auth/Creditivoo/services/plan';
+import {hash} from 'react-native-fs';
 import Config from 'react-native-config';
-import { darkColors, lightColors } from 'Utils/themeColors';
+import {darkColors, lightColors} from 'Utils/themeColors';
 import CasheaTestWebCheckout from './CasheaTestWebCheckout';
 
 // stripe.setOptions({
@@ -133,7 +141,9 @@ const locRefreshTimeInMin = 1440;
 
 const Checkout = props => {
   const [cartData, setcartData] = useState(props.route.params.cData);
-  const [highDimText, setHighDimText] = useState(props.route.params.highDimText);
+  const [highDimText, setHighDimText] = useState(
+    props.route.params.highDimText,
+  );
   const [financeData] = useState(props.route.params.finance);
   const [isChecked, setIsChecked] = useState(false);
   // const [paymentCards, setpaymentCards] = useState( props.route.params.cardData )
@@ -219,11 +229,7 @@ const Checkout = props => {
     (state: any) => state.CheckoutCacheReducer,
   );
 
-
-
   // CONST BY JAMP 22-01-2026
-
-
 
   const [CachedCartData, setCachedCartData] = useState<any>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -231,26 +237,29 @@ const Checkout = props => {
   const IVOO_APP_TENANT_ID = 5;
 
   const percentageToId: Record<number, number> = {
-    0.40: 27,
-    0.50: 28,
-    0.60: 29
+    0.4: 27,
+    0.5: 28,
+    0.6: 29,
   };
 
   // const [cartData, setcartData] = useState(props.route.params.cData);
   const creditivooParams = props.route.params.creditivooData;
   const [initialPercentage, setInitialPercentage] = useState(
-    creditivooParams?.initialPercentage || 0.40
+    creditivooParams?.initialPercentage || 0.4,
   );
   const [isCartFinanciable, setIsCartFinanciable] = useState(
-    creditivooParams?.isCartFinanciable ?? true
+    creditivooParams?.isCartFinanciable ?? true,
   );
 
   const [financingDetails, setFinancingDetails] = useState(
-    creditivooParams?.financingDetails || { downPayment: 0, installment: 0, montFinance: 0 }
+    creditivooParams?.financingDetails || {
+      downPayment: 0,
+      installment: 0,
+      montFinance: 0,
+    },
   );
   const route = useRoute();
 
- 
   const purchaseId = (route.params as any)?.purchaseId as number;
   //const [error, setError] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -259,39 +268,35 @@ const Checkout = props => {
     null,
   );
 
-  const [purchas, setPurchasePayment] = useState<string | null>(
-    null,
-  );
+  const [purchas, setPurchasePayment] = useState<string | null>(null);
 
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
 
   const isPlanSubscription = (route.params as any)?.isPlanSubscription as
-      | boolean
-      | undefined;
+    | boolean
+    | undefined;
   const paymentsFromRoute = (route.params as any)?.payments as
     | Payment[]
     | undefined;
 
   const [purchase, setPurchase] = useState<RevisionResponse | null>(null);
-    const [financing, setFinancing] = useState<FinancingTypeResponse | null>(
-      null,
-    );
+  const [financing, setFinancing] = useState<FinancingTypeResponse | null>(
+    null,
+  );
   //variable para validar el token de usuario creditivoo
-  const {user, isLoggedIn, token} = useIvoSelector(state => state.creditivoo.auth);
+  const {user, isLoggedIn, token} = useIvoSelector(
+    state => state.creditivoo.auth,
+  );
 
   // const [initialPercentage, setInitialPercentage] = useState();
   // const [isCartFinanciable, setIsCartFinanciable] = useState(true);
 
   // const [financingDetails, setFinancingDetails] = useState({ downPayment: 0, installment: 0, montFinance: 0 });
 
-
   const [isCasheaSelected, setIsCasheaSelected] = useState(false);
 
-
   // END BY JAMP
-
-
 
   function UpdateCacheExpTime(isUpdated) {
     var expTime = new Date(new Date().setHours(new Date().getHours() + 5));
@@ -483,7 +488,6 @@ const Checkout = props => {
         isDatafilled = true;
       }
     }
-
 
     /*if (selectedDate == null) {
       isDatafilled = false;
@@ -786,162 +790,160 @@ const Checkout = props => {
     }
   }, [isAlternetAddress]);
 
-
-
   // By JAMP 22-01-2026
 
   useFocusEffect(
-      useCallback(() => {
+    useCallback(() => {
       const params = route.params as any;
       // Solo disparamos si hay señal, hay usuario y EL MONTO YA SE CALCULÓ
-      if (params?.autoCheckout && user?.username && financingDetails?.downPayment > 0) {
-        
-        console.log('[Cart] Ejecutando checkout automático con monto:', financingDetails.downPayment);
-        
+      if (
+        params?.autoCheckout &&
+        user?.username &&
+        financingDetails?.downPayment > 0
+      ) {
+        console.log(
+          '[Cart] Ejecutando checkout automático con monto:',
+          financingDetails.downPayment,
+        );
+
         // Limpiamos el parámetro para que no se repita
-        navigation.setParams({ autoCheckout: undefined } as any);
-  
+        navigation.setParams({autoCheckout: undefined} as any);
+
         // Ejecutamos
         handleCreditivooCheckout();
       }
-    }, [route.params, user?.username, financingDetails?.downPayment])
+    }, [route.params, user?.username, financingDetails?.downPayment]),
   );
 
   const handleVerificationFlow = async (referencia: string) => {
-      try {
-        setIsVerifyingPayment(true);
-        const result = await verifyPaymentOrder({
-          control: referencia,
-          purchaseId: purchaseId, // Asegúrate de tener esta variable disponible
-        });
-  
-        if (result.approved) {
-          const targetScreen = isPlanSubscription ? 'SubscriptionSuccess' : 'PurchaseSuccess';
-          (navigation as any).navigate(targetScreen, { purchaseId });
-        } else {
-          Alert.alert('Pago no verificado', 'El pago no fue aprobado.');
-        }
-      } catch (err) {
-        Alert.alert('Error', 'No se pudo verificar el pago.');
-      } finally {
-        setIsVerifyingPayment(false);
+    try {
+      setIsVerifyingPayment(true);
+      const result = await verifyPaymentOrder({
+        control: referencia,
+        purchaseId: purchaseId, // Asegúrate de tener esta variable disponible
+      });
+
+      if (result.approved) {
+        const targetScreen = isPlanSubscription
+          ? 'SubscriptionSuccess'
+          : 'PurchaseSuccess';
+        (navigation as any).navigate(targetScreen, {purchaseId});
+      } else {
+        Alert.alert('Pago no verificado', 'El pago no fue aprobado.');
       }
-    };
+    } catch (err) {
+      Alert.alert('Error', 'No se pudo verificar el pago.');
+    } finally {
+      setIsVerifyingPayment(false);
+    }
+  };
 
   const handleWebViewNavigationStateChange = (navState: any) => {
-      console.log('[WebView] URL:', navState.url);
-  
+    console.log('[WebView] URL:', navState.url);
+
     // Reemplaza 'URL_EXITO' por la cadena que devuelva Megasoft al pagar (ej: 'approved')
-      if (navState.url.includes('approved') || navState.url.includes('success')) {
-        setIsProcessingPayment(false); // Cierra el Modal
-        
-        // Ejecuta la verificación final o navega al éxito
-        (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, { 
-          purchaseId: purchaseId,
-          referencia: paymentReferencia 
-        });
-      }
-  
-      
-    };
+    if (navState.url.includes('approved') || navState.url.includes('success')) {
+      setIsProcessingPayment(false); // Cierra el Modal
 
-    
-    // comienza el flujo de creditivoo
+      // Ejecuta la verificación final o navega al éxito
+      (navigation as any).navigate(Routes.NAVIGATION_PURCHASESSUCCESS, {
+        purchaseId: purchaseId,
+        referencia: paymentReferencia,
+      });
+    }
+  };
 
+  // comienza el flujo de creditivoo
 
   const handleWebViewClose = async () => {
+    console.log('[PurchaseConfirmation] WebView cerrado por el usuario');
+    console.log(
+      '[PurchaseConfirmation] Referencia del pago:',
+      paymentReferencia,
+    );
 
-      console.log('[PurchaseConfirmation] WebView cerrado por el usuario');
+    // Cerrar el modal del WebView
+    setPaymentUrl(null);
+    setIsProcessingPayment(false);
+
+    // Si no hay referencia, no podemos verificar
+    if (!paymentReferencia) {
+      console.warn(
+        '[PurchaseConfirmation] No hay referencia para verificar el pago',
+      );
+      Alert.alert(
+        'Error',
+        'No se pudo verificar el pago. Por favor, intenta nuevamente.',
+      );
+      return;
+    }
+
+    // Verificar el estado del pago
+    try {
+      setIsVerifyingPayment(true);
       console.log(
-        '[PurchaseConfirmation] Referencia del pago:',
+        '[PurchaseConfirmation] Verificando estado del pago con referencia:',
         paymentReferencia,
       );
-  
-      // Cerrar el modal del WebView
-      setPaymentUrl(null);
-      setIsProcessingPayment(false);
-      
-      
-      // Si no hay referencia, no podemos verificar
-      if (!paymentReferencia) {
-        console.warn(
-          '[PurchaseConfirmation] No hay referencia para verificar el pago',
-        );
-        Alert.alert(
-          'Error',
-          'No se pudo verificar el pago. Por favor, intenta nuevamente.',
-        );
-        return;
-      }
-  
-      // Verificar el estado del pago
-      try {
-        setIsVerifyingPayment(true);
-        console.log(
-          '[PurchaseConfirmation] Verificando estado del pago con referencia:',
-          paymentReferencia,
-        );
 
-        
-        
-        const verificationResult = await verifyPaymentOrder({
-          control: paymentReferencia,
-          purchaseId: Number(purchas),
-        });
-        
-        
-        //Alert.alert(''+JSON.stringify(verificationResult));
-        console.log(
-          '[PurchaseConfirmation] Resultado de verificaci?n:',
-          verificationResult,
-        );
-        
-        //Alert.alert(''+JSON.stringify(verificationResult.approved));
-        if (verificationResult.approved) {
-          // Pago aprobado, navegar a la pantalla de ?xito correspondiente
-          if (isPlanSubscription) {
-            console.log(
-              '[PurchaseConfirmation] Pago aprobado, navegando a SubscriptionSuccess',
-            );
-            (navigation as any).navigate(Routes.NAVIGATION_SUSCRIPTIONSUCCESS, {
-              purchaseId: purchaseId,
-            });
-          } else {
-            console.log(
-              '[PurchaseConfirmation] Pago aprobado, navegando a PurchaseSuccess',
-            );
-            (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
-              purchaseId: purchaseId,
-            });
-          }
-        } else {
-          // Pago no aprobado o pendiente
+      const verificationResult = await verifyPaymentOrder({
+        control: paymentReferencia,
+        purchaseId: Number(purchas),
+      });
+
+      //Alert.alert(''+JSON.stringify(verificationResult));
+      console.log(
+        '[PurchaseConfirmation] Resultado de verificaci?n:',
+        verificationResult,
+      );
+
+      //Alert.alert(''+JSON.stringify(verificationResult.approved));
+      if (verificationResult.approved) {
+        // Pago aprobado, navegar a la pantalla de ?xito correspondiente
+        if (isPlanSubscription) {
           console.log(
-            '[PurchaseConfirmation] Pago no aprobado o pendiente. Estado:',
-            verificationResult.status,
+            '[PurchaseConfirmation] Pago aprobado, navegando a SubscriptionSuccess',
           );
-          Alert.alert(
-            'Pago no verificado',
-            'El pago no pudo ser verificado. Por favor, intenta nuevamente o verifica con tu banco.',
+          (navigation as any).navigate(Routes.NAVIGATION_SUSCRIPTIONSUCCESS, {
+            purchaseId: purchaseId,
+          });
+        } else {
+          console.log(
+            '[PurchaseConfirmation] Pago aprobado, navegando a PurchaseSuccess',
           );
+          (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
+            purchaseId: purchaseId,
+          });
         }
-      } catch (verifyError: any) {
-        console.error(
-          '[PurchaseConfirmation] Error al verificar el pago:',
-          verifyError,
+      } else {
+        // Pago no aprobado o pendiente
+        console.log(
+          '[PurchaseConfirmation] Pago no aprobado o pendiente. Estado:',
+          verificationResult.status,
         );
         Alert.alert(
-          'Error',
-          verifyError.message ||
-            'No se pudo verificar el estado del pago. Por favor, intenta nuevamente.',
+          'Pago no verificado',
+          'El pago no pudo ser verificado. Por favor, intenta nuevamente o verifica con tu banco.',
         );
-      } finally {
-        setIsVerifyingPayment(false);
-        // Limpiar la referencia despu?s de verificar
-        setPaymentReferencia(null);
       }
-    };
-  
+    } catch (verifyError: any) {
+      console.error(
+        '[PurchaseConfirmation] Error al verificar el pago:',
+        verifyError,
+      );
+      Alert.alert(
+        'Error',
+        verifyError.message ||
+          'No se pudo verificar el estado del pago. Por favor, intenta nuevamente.',
+      );
+    } finally {
+      setIsVerifyingPayment(false);
+      // Limpiar la referencia despu?s de verificar
+      setPaymentReferencia(null);
+    }
+  };
+
+  //add Frodriguez
   const functionTest = async () => {
     const checkout_payload = buildCasheaPayload();
 
@@ -986,49 +988,50 @@ const Checkout = props => {
       },
     };
   };
+  //end Frodriguez
 
   const handleCreditivooCheckout = async () => {
     Helper.HandleVibration();
     setIsCreatingOrder(true);
 
     const creditivooContext = {
-        initialPercentage,
-        isCartFinanciable,
-        financingDetails,
-      };
-    
+      initialPercentage,
+      isCartFinanciable,
+      financingDetails,
+    };
+
     //obtenemos lo que tiene el carrito
-   const totalCart = financingDetails?.total;
+    const totalCart = financingDetails?.total;
 
-   const cedulaUsuario = user?.document;
+    const cedulaUsuario = user?.document;
 
-  
-   // verificamos que el usuario exista en creditivoo https://api-ivoo-dev.whaledigitals.com/purchases/paymentValidator/transaction/confirm/p/@control
-      
+    // verificamos que el usuario exista en creditivoo https://api-ivoo-dev.whaledigitals.com/purchases/paymentValidator/transaction/confirm/p/@control
 
     if (!user?.username) {
-      
-    // Si no hay usuario, vamos al login directamente
-      (navigation as any).navigate("CreditivooLogin", { 
-        redirectTo: "Cart", 
+      // Si no hay usuario, vamos al login directamente
+      (navigation as any).navigate('CreditivooLogin', {
+        redirectTo: 'Cart',
         autoCheckout: true,
-        checkoutData: { 
-          selectedPercentage: initialPercentage 
-        } 
+        checkoutData: {
+          selectedPercentage: initialPercentage,
+        },
       });
       return;
     }
-    
-    try {
 
-      
+    try {
       const userUrl = 'https://api-ivoo-dev.whaledigitals.com/api';
 
-      const userCheck = await fetch(`${userUrl}/users/client/document/${cedulaUsuario}?role=CUSTOMER&document=${cedulaUsuario}&page=1&Size=1`, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json', 'Authorization': `Bearer: ${token}` }
-        
-      });
+      const userCheck = await fetch(
+        `${userUrl}/users/client/document/${cedulaUsuario}?role=CUSTOMER&document=${cedulaUsuario}&page=1&Size=1`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer: ${token}`,
+          },
+        },
+      );
 
       const userText = await userCheck.text();
       const userObj = JSON.parse(userText);
@@ -1037,149 +1040,152 @@ const Checkout = props => {
       const creditivooUser = userr;
 
       if (!creditivooUser.creditStatus) {
-        Alert.alert("Atención", "No se encontró el registro de crédito para esta cédula.");
+        Alert.alert(
+          'Atención',
+          'No se encontró el registro de crédito para esta cédula.',
+        );
         return;
       }
-      
+
       // --- BLOQUE DE VALIDACIONES CON CAMPOS REALES ---
-    
-    // Validar Estatus (creditStatus)
-    if (creditivooUser.creditStatus !== 'ACTIVE') {
-      Alert.alert("Validación", "Su línea de crédito no está activa.");
-      return;
-    }
 
-    // Validar Disponible (creditAvailable)
-    if (!creditivooUser.creditAvailable || creditivooUser.creditAvailable <= 0 ) {
-      Alert.alert("Validación", "No posee saldo disponible en su línea de crédito.");
-      return;
+      // Validar Estatus (creditStatus)
+      if (creditivooUser.creditStatus !== 'ACTIVE') {
+        Alert.alert('Validación', 'Su línea de crédito no está activa.');
+        return;
+      }
 
-    }
+      // Validar Disponible (creditAvailable)
+      if (
+        !creditivooUser.creditAvailable ||
+        creditivooUser.creditAvailable <= 0
+      ) {
+        Alert.alert(
+          'Validación',
+          'No posee saldo disponible en su línea de crédito.',
+        );
+        return;
+      }
 
-    // Validar Facturas Pendientes (hasPurchasePendingInvoice)
-    if (creditivooUser.hasPurchasePendingInvoice === true) {
-      Alert.alert("Validación", "Posee facturas pendientes de pago. Por favor regularice su situación.");
-      return;
-    }
+      // Validar Facturas Pendientes (hasPurchasePendingInvoice)
+      if (creditivooUser.hasPurchasePendingInvoice === true) {
+        Alert.alert(
+          'Validación',
+          'Posee facturas pendientes de pago. Por favor regularice su situación.',
+        );
+        return;
+      }
 
-    // Validar Compra en Progreso (hasPurchaseInProgress)
-    if (creditivooUser.hasPurchaseInProgress === true) {
-      Alert.alert("Validación", "Ya tiene una solicitud de compra en curso.");
-      return;
-    }
-
+      // Validar Compra en Progreso (hasPurchaseInProgress)
+      if (creditivooUser.hasPurchaseInProgress === true) {
+        Alert.alert('Validación', 'Ya tiene una solicitud de compra en curso.');
+        return;
+      }
 
       // Preparamos los datos que necesitan las cuotas
       const checkoutData = {
         selectedPercentage: initialPercentage,
         totalAmount: parseInt(GrandTotal.slice(1)),
-        isFinancing: true
+        isFinancing: true,
       };
-      
+
       const montoInicial = financingDetails.downPayment;
 
-      
       if (!montoInicial) {
-        Alert.alert("Error", "No se pudo obtener el monto total del carrito.");
+        Alert.alert('Error', 'No se pudo obtener el monto total del carrito.');
         return;
       }
 
       // generas la compra en status draft
       const purchaseResponse = await fetch(`${userUrl}/purchases`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
+          Authorization: `Bearer ${token}`, // Asegúrate de que el token sea el correcto
         },
-          body: JSON.stringify({
-            tenantId: Number(IVOO_APP_TENANT_ID),
-            totalAmount: parseInt(GrandTotal.slice(1)),
-            userId: Number(creditivooUser.id) // Aquí convertimos el "36" a 36
-          })
-        }
-      );
+        body: JSON.stringify({
+          tenantId: Number(IVOO_APP_TENANT_ID),
+          totalAmount: parseInt(GrandTotal.slice(1)),
+          userId: Number(creditivooUser.id), // Aquí convertimos el "36" a 36
+        }),
+      });
 
-      const responsepurchase = await purchaseResponse.text(); 
+      const responsepurchase = await purchaseResponse.text();
       const purchase = JSON.parse(responsepurchase);
-
 
       //cambiar de estatus la compra
 
-      const updatePurchase = await fetch(`${userUrl}/purchases/creditivoo/revision`, {
-        method: 'POST',
-          headers: { 
+      const updatePurchase = await fetch(
+        `${userUrl}/purchases/creditivoo/revision`,
+        {
+          method: 'POST',
+          headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
+            Authorization: `Bearer ${token}`, // Asegúrate de que el token sea el correcto
           },
-          
-        }
+        },
       );
 
-      const responseUpdatePurchase = await updatePurchase.text(); 
-      
+      const responseUpdatePurchase = await updatePurchase.text();
+
       //cargar el plan elegido para que se actualice la compra anexando la inicial a pagar y las cuotas
-      
+
       // recibiendo lo que tiene el selector
-      const selectedPerc = checkoutData?.selectedPercentage || 0.40;
+      const selectedPerc = checkoutData?.selectedPercentage || 0.4;
 
       // convirtiendolo al ID de financiamiento
       const financingId = percentageToId[selectedPerc] || 27;
 
-      const purchaseUpdate = await fetch(`${userUrl}/purchases/${purchase.id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Asegúrate de que el token sea el correcto
-        },
+      const purchaseUpdate = await fetch(
+        `${userUrl}/purchases/${purchase.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`, // Asegúrate de que el token sea el correcto
+          },
           body: JSON.stringify({
-            
-            financingTypeId: Number(financingId) // Aquí lo que carga el selector de porcentajes
-          })
-        }
+            financingTypeId: Number(financingId), // Aquí lo que carga el selector de porcentajes
+          }),
+        },
       );
 
       const paymentOrderRequest: CreatePaymentOrderRequest = {
-        
         // amount: montoInicial, // Enviamos el monto para que MegaSoft genere el link
-        purchaseId: Number(purchase.id) // Solo incluir si ya creaste la orden en tu backend
+        purchaseId: Number(purchase.id), // Solo incluir si ya creaste la orden en tu backend
       };
 
-       const response = await createPaymentOrder(paymentOrderRequest);
+      const response = await createPaymentOrder(paymentOrderRequest);
 
-      
+      const isAutoCompleted =
+        response.referencia?.includes('AUTO_COMPLETED') ||
+        (response as any).isAlreadyVerified;
 
-      const isAutoCompleted = response.referencia?.includes('AUTO_COMPLETED') || (response as any).isAlreadyVerified;
-      
       if (isAutoCompleted) {
         await handleVerificationFlow(response.referencia);
       } else if (response.paymentUrl) {
         // --- CAMBIO AQUÍ: ACTIVAR MODAL EN LUGAR DE NAVEGAR ---
         console.log('[Checkout] Activando Modal de pago:', response.paymentUrl);
-        
+
         setPaymentUrl(response.paymentUrl);
         setPaymentReferencia(response.referencia);
-        setIsProcessingPayment(true);     // Muestra el Modal
+        setIsProcessingPayment(true); // Muestra el Modal
         setPurchasePayment(purchase.id);
       } else {
-        throw new Error("No se recibió una URL de pago válida.");
+        throw new Error('No se recibió una URL de pago válida.');
       }
     } catch (error: any) {
       console.error('[Checkout] Error:', error.message);
-      Alert.alert('Error de Pago', error.message || 'Error al procesar la solicitud con MegaSoft.');
+      Alert.alert(
+        'Error de Pago',
+        error.message || 'Error al procesar la solicitud con MegaSoft.',
+      );
     } finally {
       setIsCreatingOrder(false);
     }
-  
   };
 
-
   // end By JAMP
-
-
-
-
-
-
 
   return (
     <View style={{flex: 1, backgroundColor: appTheme.background}}>
@@ -1799,54 +1805,79 @@ const Checkout = props => {
               {translate('order.lbl_payment')}
             </Text> */}
             {
-
-
-
               <View style={{marginBottom: 20, marginTop: 10}}>
-                
-                <Text style={[commonStyle.h5, {color: appTheme.text, marginBottom: 12, fontWeight: 'bold'}]}>
+                <Text
+                  style={[
+                    commonStyle.h5,
+                    {
+                      color: appTheme.text,
+                      marginBottom: 12,
+                      fontWeight: 'bold',
+                    },
+                  ]}>
                   {translate('checkout.lbl_select_payment')}
                 </Text>
 
                 {/* Opción: Creditivoo */}
-                <TouchableOpacity style={[styles.methodItem, Paymenttype === 'creditivoo' && styles.methodItemActive]} onPress={handleCreditivooCheckout}>
+                <TouchableOpacity
+                  style={[
+                    styles.methodItem,
+                    Paymenttype === 'creditivoo' && styles.methodItemActive,
+                  ]}
+                  onPress={handleCreditivooCheckout}>
                   <View style={commonStyle.flexDir_Row}>
-                    <ProgressiveImage source={ResImage.ic_creditivodark_green} style={styles.methodIcon} />
-                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>Creditivoo</Text>
+                    <ProgressiveImage
+                      source={ResImage.ic_creditivodark_green}
+                      style={styles.methodIcon}
+                    />
+                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>
+                      Creditivoo
+                    </Text>
                   </View>
-                  
-                  
                 </TouchableOpacity>
 
                 {/* Opción: Cashea */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   // Ejecutamos la función con paréntesis
                   onPress={() => {
                     setPaymentType('cashea'); // Marcamos como seleccionado
-                    functionTest();           // Ejecutamos la navegación
+                    functionTest(); // Ejecutamos la navegación
                   }}
-                  style={[styles.methodItem, Paymenttype === 'cashea' && styles.methodItemActive]}
-                >
+                  style={[
+                    styles.methodItem,
+                    Paymenttype === 'cashea' && styles.methodItemActive,
+                  ]}>
                   <View style={commonStyle.flexDir_Row}>
-                    <ProgressiveImage source={ResImage.ic_cashea} style={styles.methodIcon} />
-                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>Cashea</Text>
+                    <ProgressiveImage
+                      source={ResImage.ic_cashea}
+                      style={styles.methodIcon}
+                    />
+                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>
+                      Cashea
+                    </Text>
                   </View>
                 </TouchableOpacity>
 
                 {/* Opción: En Tienda */}
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setPaymentType('cash')}
-                  style={[styles.methodItem, Paymenttype === 'cash' && styles.methodItemActive]}
-                >
+                  style={[
+                    styles.methodItem,
+                    Paymenttype === 'cash' && styles.methodItemActive,
+                  ]}>
                   <View style={commonStyle.flexDir_Row}>
-                    <ProgressiveImage source={ResImage.ic_Cash} style={styles.methodIcon} />
-                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>Pago en Tienda</Text>
+                    <ProgressiveImage
+                      source={ResImage.ic_Cash}
+                      style={styles.methodIcon}
+                    />
+                    <Text style={[commonStyle.h5, {color: appTheme.text}]}>
+                      Pago en Tienda
+                    </Text>
                   </View>
                   {/* <View style={[styles.radioCircle, Paymenttype === 'cash' && styles.radioCircleSelected]} /> */}
                 </TouchableOpacity>
               </View>
 
-              
               // <TouchableOpacity
               //   style={{marginBottom: 80}}
               //   onPress={() => {
@@ -2147,41 +2178,43 @@ const Checkout = props => {
           </View>
         </View>
         <Modal
-            visible={isProcessingPayment && !!paymentUrl}
-            animationType="slide"
-            // onRequestClose={() => setIsProcessingPayment(false)}>
-            onRequestClose={handleWebViewClose}>
-            <View style={styles.webViewContainer}>
-              <View style={styles.webViewHeader}>
-                <Text style={styles.webViewTitle}>Procesando pago</Text>
-                <TouchableOpacity
-                  // onPress={() => setIsProcessingPayment(false)}
-                  onPress={handleWebViewClose}
-                  style={styles.closeButton}>
-                  <Icon
-                    name="close"
-                    type={IconType.Ionicons}
-                    size={24}
-                    color={IVOO_COLORS.black}
-                  />
-                </TouchableOpacity>
-              </View>
-              {paymentUrl && (
-                <WebView
-                  source={{ uri: paymentUrl }}
-                  style={styles.webView}
-                  onNavigationStateChange={handleWebViewNavigationStateChange}
-                  startInLoadingState={true}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
+          visible={isProcessingPayment && !!paymentUrl}
+          animationType="slide"
+          // onRequestClose={() => setIsProcessingPayment(false)}>
+          onRequestClose={handleWebViewClose}>
+          <View style={styles.webViewContainer}>
+            <View style={styles.webViewHeader}>
+              <Text style={styles.webViewTitle}>Procesando pago</Text>
+              <TouchableOpacity
+                // onPress={() => setIsProcessingPayment(false)}
+                onPress={handleWebViewClose}
+                style={styles.closeButton}>
+                <Icon
+                  name="close"
+                  type={IconType.Ionicons}
+                  size={24}
+                  color={IVOO_COLORS.black}
                 />
-              )}
+              </TouchableOpacity>
             </View>
-          </Modal>
+            {paymentUrl && (
+              <WebView
+                source={{uri: paymentUrl}}
+                style={styles.webView}
+                onNavigationStateChange={handleWebViewNavigationStateChange}
+                startInLoadingState={true}
+                javaScriptEnabled={true}
+                domStorageEnabled={true}
+              />
+            )}
+          </View>
+        </Modal>
       </ScrollView>
       {
         <View>
-          {highDimText.length>0 && <Text style={styles.centeredText}>{highDimText}</Text>}
+          {highDimText.length > 0 && (
+            <Text style={styles.centeredText}>{highDimText}</Text>
+          )}
         </View>
       }
 
@@ -2194,7 +2227,6 @@ const Checkout = props => {
                 ? darkColors.InputBoxBGColor
                 : colorResource.SmokeWhite,
               marginBottom: 20,
-             
             },
           ]}>
           {
@@ -2210,17 +2242,20 @@ const Checkout = props => {
                 <Text
                   style={[
                     commonStyle.h6,
-                    {color: appTheme.text, fontWeight: '700', paddingVertical:10},
+                    {
+                      color: appTheme.text,
+                      fontWeight: '700',
+                      paddingVertical: 10,
+                    },
                   ]}>
                   Monto inicial
                 </Text>
                 <Text style={[commonStyle.h6, {color: appTheme.text}]}>
                   {Helper.currencyFormat(
-                    financingDetails.downPayment
+                    financingDetails.downPayment,
                     //cartData.customerCart.prices.subtotal_excluding_tax.value,
                   )}
                 </Text>
-                
               </View>
               <View
                 style={[
@@ -2230,20 +2265,24 @@ const Checkout = props => {
                     alignItems: 'center',
                   },
                 ]}>
-                  <Text
-                    style={[
-                      commonStyle.h6,
-                      {color: appTheme.text, fontWeight: '700', paddingVertical:10},
-                    ]}>
-                    Monto a Financiar
-                  </Text>
-                  <Text style={[commonStyle.h6, {color: appTheme.text}]}>
-                    {Helper.currencyFormat(
-                      financingDetails.montFinance
-                      //cartData.customerCart.prices.subtotal_excluding_tax.value,
-                    )}
-                  </Text>
-                </View>
+                <Text
+                  style={[
+                    commonStyle.h6,
+                    {
+                      color: appTheme.text,
+                      fontWeight: '700',
+                      paddingVertical: 10,
+                    },
+                  ]}>
+                  Monto a Financiar
+                </Text>
+                <Text style={[commonStyle.h6, {color: appTheme.text}]}>
+                  {Helper.currencyFormat(
+                    financingDetails.montFinance,
+                    //cartData.customerCart.prices.subtotal_excluding_tax.value,
+                  )}
+                </Text>
+              </View>
             </View>
           }
           {cartData &&
@@ -2524,140 +2563,139 @@ const Checkout = props => {
 };
 
 const styles = StyleSheet.create({
-
   // BY JAMP 22-06-2026
-    //modal
+  //modal
 
-    webViewContainer: {
-      flex: 1,
-      backgroundColor: IVOO_COLORS.white,
+  webViewContainer: {
+    flex: 1,
+    backgroundColor: IVOO_COLORS.white,
+  },
+  webViewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+    paddingVertical: SCREEN_HEIGHT * 0.02,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: IVOO_COLORS.white,
+  },
+  webViewTitle: {
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+  },
+  closeButton: {
+    padding: SCREEN_WIDTH * 0.01,
+  },
+  webView: {
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SCREEN_WIDTH * 0.05,
+  },
+  modalContent: {
+    backgroundColor: IVOO_COLORS.white,
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: SCREEN_WIDTH * 0.9,
+    padding: SCREEN_WIDTH * 0.05,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
     },
-    webViewHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: SCREEN_WIDTH * 0.05,
-      paddingVertical: SCREEN_HEIGHT * 0.02,
-      borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-      backgroundColor: IVOO_COLORS.white,
-    },
-    webViewTitle: {
-      fontSize: SCREEN_WIDTH * 0.042,
-      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
-      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
-      color: IVOO_COLORS.black,
-    },
-    closeButton: {
-      padding: SCREEN_WIDTH * 0.01,
-    },
-    webView: {
-      flex: 1,
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: SCREEN_WIDTH * 0.05,
-    },
-    modalContent: {
-      backgroundColor: IVOO_COLORS.white,
-      borderRadius: 16,
-      width: '100%',
-      maxWidth: SCREEN_WIDTH * 0.9,
-      padding: SCREEN_WIDTH * 0.05,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.15,
-      shadowRadius: 20,
-      elevation: 10,
-    },
-    modalHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: SCREEN_HEIGHT * 0.02,
-    },
-    modalTitle: {
-      fontSize: SCREEN_WIDTH * 0.048,
-      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
-      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
-      color: IVOO_COLORS.black,
-    },
-    modalCloseButton: {
-      padding: SCREEN_WIDTH * 0.01,
-    },
-    modalBody: {
-      marginBottom: SCREEN_HEIGHT * 0.02,
-    },
-    modalLabel: {
-      fontSize: SCREEN_WIDTH * 0.038,
-      fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-      color: IVOO_COLORS.black,
-      marginBottom: SCREEN_HEIGHT * 0.01,
-    },
-    modalInput: {
-      borderWidth: 1,
-      borderColor: 'rgba(110, 113, 124, 0.3)',
-      borderRadius: 12,
-      paddingHorizontal: SCREEN_WIDTH * 0.04,
-      paddingVertical: SCREEN_HEIGHT * 0.015,
-      fontSize: SCREEN_WIDTH * 0.042,
-      fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
-      color: IVOO_COLORS.black,
-      backgroundColor: '#F9FAFC',
-    },
-    modalFooter: {
-      flexDirection: 'row',
-      gap: SCREEN_WIDTH * 0.03,
-      marginTop: SCREEN_HEIGHT * 0.01,
-    },
-    modalButton: {
-      flex: 1,
-      borderRadius: 12,
-      paddingVertical: SCREEN_HEIGHT * 0.015,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    modalButtonCancel: {
-      backgroundColor: 'transparent',
-      borderWidth: 2,
-      borderColor: IVOO_COLORS.primary,
-    },
-    modalButtonConfirm: {
-      backgroundColor: IVOO_COLORS.primary,
-    },
-    modalButtonCancelText: {
-      fontSize: SCREEN_WIDTH * 0.042,
-      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
-      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
-      color: IVOO_COLORS.primary,
-    },
-    modalButtonConfirmText: {
-      fontSize: SCREEN_WIDTH * 0.042,
-      fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
-      fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
-      color: '#FFFFFF',
-    },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SCREEN_HEIGHT * 0.02,
+  },
+  modalTitle: {
+    fontSize: SCREEN_WIDTH * 0.048,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.black,
+  },
+  modalCloseButton: {
+    padding: SCREEN_WIDTH * 0.01,
+  },
+  modalBody: {
+    marginBottom: SCREEN_HEIGHT * 0.02,
+  },
+  modalLabel: {
+    fontSize: SCREEN_WIDTH * 0.038,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.black,
+    marginBottom: SCREEN_HEIGHT * 0.01,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(110, 113, 124, 0.3)',
+    borderRadius: 12,
+    paddingHorizontal: SCREEN_WIDTH * 0.04,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interRegular,
+    color: IVOO_COLORS.black,
+    backgroundColor: '#F9FAFC',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: SCREEN_WIDTH * 0.03,
+    marginTop: SCREEN_HEIGHT * 0.01,
+  },
+  modalButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: SCREEN_HEIGHT * 0.015,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: IVOO_COLORS.primary,
+  },
+  modalButtonConfirm: {
+    backgroundColor: IVOO_COLORS.primary,
+  },
+  modalButtonCancelText: {
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: IVOO_COLORS.primary,
+  },
+  modalButtonConfirmText: {
+    fontSize: SCREEN_WIDTH * 0.042,
+    fontFamily: IVOO_TYPOGRAPHY.fonts.interBold,
+    fontWeight: IVOO_TYPOGRAPHY.fontWeight.bold,
+    color: '#FFFFFF',
+  },
 
-    creditivooCartBadge: {
-      backgroundColor: '#000000',
-      padding: 16,
-      borderRadius: 12,
-      borderWidth: 1.5,
-      borderColor: '#2E7D32', // Borde verde para resaltar sobre el negro
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 4},
-      shadowOpacity: 0.3,
-      shadowRadius: 4.65,
-      elevation: 8,
-    },
-    creditivooTag: {
+  creditivooCartBadge: {
+    backgroundColor: '#000000',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#2E7D32', // Borde verde para resaltar sobre el negro
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+  },
+  creditivooTag: {
     color: '#ffffff', // Texto verde llamativo
     fontWeight: '900',
     fontSize: 16,
@@ -2677,7 +2715,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: lightColors?.InputBoxBGColor ,
+    backgroundColor: darkColors?.InputBoxBGColor,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -2705,11 +2743,7 @@ const styles = StyleSheet.create({
     backgroundColor: colorResource.primary,
   },
 
-
   // BY JAMP
-
-
-
 
   cardNumberText: {paddingLeft: 7},
   cashitemContainer: {
@@ -2840,11 +2874,11 @@ const styles = StyleSheet.create({
   },
   centeredText: {
     textAlign: 'center',
-    color:ResorceColor.cancleclr,
+    color: ResorceColor.cancleclr,
     marginLeft: 50,
-    marginRight:50,
-    marginBottom:8,
-    marginTop:8
+    marginRight: 50,
+    marginBottom: 8,
+    marginTop: 8,
   },
 });
 
