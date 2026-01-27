@@ -772,24 +772,24 @@ const Cart = () => {
         const montoFinanciado = creditivooUser.creditAvailable;
         const montoContado = totalCart - creditivooUser.creditAvailable;
 
-        Alert.alert(
-          "Aviso de Financiamiento",
-          `Su crédito disponible ($${montoFinanciado}) no cubre el total.\n\n` +
-          `Se financiarán $${montoFinanciado.toFixed(2)} y deberá pagar $${montoContado.toFixed(2)} de contado.`,
-          [
-            { text: "Cancelar", style: "cancel" },
-            { 
-              text: "Continuar", 
-              onPress: () => {
-                setMontoExcedente(excedente); // Guardamos el excedente
-                setPaymentType('creditivoo'); // O el tipo que corresponda
-              } 
-            }
-          ]
-        );
-      }else{
+      //   Alert.alert(
+      //     "Aviso de Financiamiento",
+      //     `Su crédito disponible ($${montoFinanciado}) no cubre el total.\n\n` +
+      //     `Se financiarán $${montoFinanciado.toFixed(2)} y deberá pagar $${montoContado.toFixed(2)} de contado.`,
+      //     [
+      //       { text: "Cancelar", style: "cancel" },
+      //       { 
+      //         text: "Continuar", 
+      //         onPress: () => {
+      //           setMontoExcedente(excedente); // Guardamos el excedente
+      //           setPaymentType('creditivoo'); // O el tipo que corresponda
+      //         } 
+      //       }
+      //     ]
+      //   );
+      // }else{
 
-        setMontoExcedente(0);
+      //   setMontoExcedente(0);
       }
     } catch (error) {
       console.error("Error al obtener crédito:", error);
@@ -2042,16 +2042,16 @@ const Cart = () => {
                   CachedCartData,
                   global_data.email,
                 );
-                InitialPayment();
-                // (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
-                //   cData: CachedCartData,
-                //   highDimText: highDimTextInfo,
-                //   creditivooData: {
-                //     initialPercentage: initialPercentage,
-                //     isCartFinanciable: isCartFinanciable,
-                //     financingDetails: financingDetails,
-                //   }
-                // });
+                // InitialPayment();
+                (navigation as any).navigate(Routes.NAVIGATION_TO_CHECKOUT, {
+                  cData: CachedCartData,
+                  highDimText: highDimTextInfo,
+                  creditivooData: {
+                    initialPercentage: initialPercentage,
+                    isCartFinanciable: isCartFinanciable,
+                    financingDetails: financingDetails,
+                  }
+                });
               }}
             />
           </View>
