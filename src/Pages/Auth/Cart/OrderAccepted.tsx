@@ -15,7 +15,7 @@ import { ToastAndroid } from 'react-native';
 import { useEffect } from 'react';
 import { CustomButton } from '../../../Components/CustomButton';
 import Helper from '../../../Utils/Helper';
-import { AppContext } from '../../AppContext';
+import {AppContext} from '../../AppContext';
 import { Clear_CARTITEMS } from '../../../redux/CartCacheReducer/CartCacheAction';
 import { ClearCHECKOUT } from '../../../redux/CheckoutCacheReducer/CheckoutCacheAction';
 import { DELETE_DATETIMESLOT } from '../../../redux/DateTimeSlotReducers/DateTimeSlotAction';
@@ -50,26 +50,51 @@ const OrderAccepted = ( props ) =>
         return true;
     };
 
-    useEffect( () =>
-    {
 
-        dispatch( cartDelete() );
+    // add Frodriguez
+    useEffect(() => {
+        dispatch(cartDelete());
         // dispatch( Clear_CARTITEMS() );
-        dispatch( ClearCHECKOUT() );
-        dispatch( DELETE_DATETIMESLOT() );
-        dispatch( DELETE_PAYMETHODS() );
+        dispatch(ClearCHECKOUT());
+        dispatch(DELETE_DATETIMESLOT());
+        dispatch(DELETE_PAYMETHODS());
 
-
-        removeStoreItem( 'CartCacheStatus_customerCart' )
-        setItemInStorage( 'CartCacheStatus_isUpdated', '0' );
-        setItemInStorage( 'CartCacheStatus_expTime', new Date().toString() );
+        removeStoreItem('CartCacheStatus_customerCart');
+        setItemInStorage('CartCacheStatus_isUpdated', '0');
+        setItemInStorage('CartCacheStatus_expTime', new Date().toString());
         // Add event listener for hardware back button press on Android
-        BackHandler.addEventListener( "hardwareBackPress", backActionHandler );
+        const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        backActionHandler,
+        );
 
-        return () =>
-            // clear/remove event listener
-            BackHandler.removeEventListener( "hardwareBackPress", backActionHandler );
-    }, [] );
+        return () => {
+        // clear/remove event listener
+        subscription.remove();
+        };
+  }, []);
+  // end Frodriguez
+
+    // useEffect( () =>
+    // {
+
+    //     dispatch( cartDelete() );
+    //     // dispatch( Clear_CARTITEMS() );
+    //     dispatch( ClearCHECKOUT() );
+    //     dispatch( DELETE_DATETIMESLOT() );
+    //     dispatch( DELETE_PAYMETHODS() );
+
+
+    //     removeStoreItem( 'CartCacheStatus_customerCart' )
+    //     setItemInStorage( 'CartCacheStatus_isUpdated', '0' );
+    //     setItemInStorage( 'CartCacheStatus_expTime', new Date().toString() );
+    //     // Add event listener for hardware back button press on Android
+    //     BackHandler.addEventListener( "hardwareBackPress", backActionHandler );
+
+    //     return () =>
+    //         // clear/remove event listener
+    //         BackHandler.removeEventListener( "hardwareBackPress", backActionHandler );
+    // }, [] );
 
     return (
         <View>

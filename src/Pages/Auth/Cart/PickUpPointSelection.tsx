@@ -748,7 +748,6 @@ const styles = StyleSheet.create( {
         paddingVertical: 10,
     },
     card: {
-        elevation: 2,
         backgroundColor: colorResource.white,
         marginHorizontal: 10,
         shadowColor: colorResource.black,
