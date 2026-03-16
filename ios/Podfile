@@ -40,6 +40,14 @@ target 'ivoo_ecommerce' do
 
   config = use_native_modules!
 
+  # agregado 28-01-2026 JAMP
+  rn_maps_path = '../node_modules/react-native-maps'
+  pod 'react-native-google-maps', :path => rn_maps_path
+  pod 'GoogleMaps'
+  pod 'Google-Maps-iOS-Utils'
+
+
+
   use_react_native!(
     path: config[:reactNativePath],
     hermes_enabled: true,

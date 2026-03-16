@@ -658,7 +658,7 @@ const Home = () => {
     };
 
     const isFinanciable = toBool(rawFin);
-    const isCashea = true;
+    const isCashea = rawCashea ? toBool(rawCashea.value) : null;
 
     const finalPrice =
       item?.price_range?.minimum_price?.final_price?.value ?? 0;
@@ -673,7 +673,7 @@ const Home = () => {
         ]}
         onPress={() => {
           Helper.HandleVibration();
-          navigation.navigate(Routes.NAVIGATION_TO_PRODUCTDETAILS, {
+          (navigation as any ).navigate(Routes.NAVIGATION_TO_PRODUCTDETAILS, {
             id: item.sku,
           });
         }}>

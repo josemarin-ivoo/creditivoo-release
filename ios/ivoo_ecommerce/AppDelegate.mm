@@ -4,6 +4,7 @@
 #import <Firebase.h> 
 #import <React/RCTBundleURLProvider.h>
 #import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
+#import <GoogleMaps/GoogleMaps.h> // 1. Importar
 
 @implementation AppDelegate
 
@@ -12,8 +13,10 @@
   // 2. Configuración de Firebase (Debe ir antes de super)
   [FIRApp configure];
 
+  [GMSServices provideAPIKey:@"AIzaSyAEauWY8tB9iKYjYEy3B48JgsEAMlXU91s"];
+
   // 3. Configuración de React Native
-  self.moduleName = @"ivoo";
+  self.moduleName = @"ivoo_ecommerce";
   self.dependencyProvider = [RCTAppDependencyProvider new];
   
   // Props iniciales personalizadas

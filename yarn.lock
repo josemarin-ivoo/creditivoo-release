@@ -8275,7 +8275,7 @@ prompts@^2.0.1, prompts@^2.4.2:
     kleur "^3.0.3"
     sisteransi "^1.0.5"
 
-prop-types@*, prop-types@^15.5.7, prop-types@^15.6.1, prop-types@^15.6.2, prop-types@^15.7.2, prop-types@^15.8.1:
+prop-types@*, prop-types@^15.5.7, prop-types@^15.6.0, prop-types@^15.6.1, prop-types@^15.6.2, prop-types@^15.7.2, prop-types@^15.8.1:
   version "15.8.1"
   resolved "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz"
   integrity sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==
@@ -8578,7 +8578,7 @@ react-native-gesture-handler@^2.20.0:
     hoist-non-react-statics "^3.3.0"
     invariant "^2.2.4"
 
-react-native-google-places-autocomplete@^2.6.3:
+react-native-google-places-autocomplete@^2.6.4:
   version "2.6.4"
   resolved "https://registry.npmjs.org/react-native-google-places-autocomplete/-/react-native-google-places-autocomplete-2.6.4.tgz"
   integrity sha512-/DjXEa20doSJYiykqLbTAPL3GtIHVRdjpAoPpxnLXK6uFi103wdqXZoqXnKdqlov/lJLIO8Wex6GIu6MZz3Osw==
@@ -8635,10 +8635,18 @@ react-native-localize@^3.0.2:
   resolved "https://registry.npmjs.org/react-native-localize/-/react-native-localize-3.6.1.tgz"
   integrity sha512-0kVFUh8TWeh+8p13yVIDjbcdxR2ZOfPBFNcY/VBh/3/g8KfvXywY/XJkCuCVrX5dCLumMi3aXmy+MmJNy4IaYQ==
 
-react-native-maps@1.13.0:
-  version "1.13.0"
-  resolved "https://registry.npmjs.org/react-native-maps/-/react-native-maps-1.13.0.tgz"
-  integrity sha512-NC5gD3/F2t/0uw/PrKrJKO/1fdBWcaYYEeH/M6IyrhRwyKRgSG/WV/3sN+7Yy6ID8n1jl/EbESduIV4kMJ6kWg==
+react-native-maps-directions@^1.9.0:
+  version "1.9.0"
+  resolved "https://registry.npmjs.org/react-native-maps-directions/-/react-native-maps-directions-1.9.0.tgz"
+  integrity sha512-68SrMOUg4WQ5PmpS9sNOTZaYtdyVYJnnjQOOhABrgiKnb5BXCZRU2gDoS11gYf23hjUBjq8JXzgfn37WcINLwA==
+  dependencies:
+    lodash.isequal "^4.5.0"
+    prop-types "^15.6.0"
+
+react-native-maps@^1.18.0:
+  version "1.18.0"
+  resolved "https://registry.npmjs.org/react-native-maps/-/react-native-maps-1.18.0.tgz"
+  integrity sha512-S17nYUqeMptgIPaAZuVRo+eRelPreBBYQWw6jsxU7qQ12p+THSfFaqabcNn7fBmsXhT3T27iIl8ek8v1H8BaGw==
   dependencies:
     "@types/geojson" "^7946.0.13"
 

@@ -1,4 +1,4 @@
-import {useMutation, gql} from '@apollo/client';
+import { useMutation, gql } from '@apollo/client';
 
 export const getToken = () => {
   return useMutation(gql`
@@ -401,6 +401,32 @@ export const homeSections = gql`
     }
   }
 `;
+
+export const setShippingAddressOnCartById = () => {
+  return useMutation(gql`
+    mutation ($cID: String!, $customer_address_id: Int!) {
+      setShippingAddressesOnCart(
+        input: {
+          cart_id: $cID
+          shipping_addresses: [
+            {
+              customer_address_id: $customer_address_id
+            }
+          ]
+        }
+      ) {
+        cart {
+          shipping_addresses {
+            firstname
+            lastname
+            street
+            city
+          }
+        }
+      }
+    }
+  `);
+};
 // end Frodriguez
 
 export const phoneVerification = gql`
@@ -517,6 +543,7 @@ export const productDetailInfo = gql`
         id
         sku
         name
+        
         __typename
         additional_attributes {
           code
@@ -894,7 +921,11 @@ export const productToCart = () => {
     mutation ($cartId: String!, $quantity: Float!, $sku: String!) {
       addProductsToCart(
         cartId: $cartId
-        cartItems: [{quantity: $quantity, sku: $sku}]
+        cartItems: [{
+        quantity: $quantity,
+         sku: $sku, 
+         
+         }]
       ) {
         user_errors {
           code
@@ -906,6 +937,10 @@ export const productToCart = () => {
             product {
               name
               sku
+              additional_attributes {
+                code
+                value
+              }
             }
             quantity
           }
@@ -939,33 +974,38 @@ export const highdimension = gql`
 export const configuredProductsToCart = () => {
   return useMutation(gql`
     mutation (
-      $cartId: String!
-      $quantity: Float!
-      $parent_sku: String!
-      $sku: String!
+    $cartId: String!, 
+    $quantity: Float!, 
+    $parent_sku: String!, 
+    $sku: String!, 
+    $dimensiones: String,
+
     ) {
       addProductsToCart(
         cartId: $cartId
-        cartItems: [{quantity: $quantity, parent_sku: $parent_sku, sku: $sku}]
+        cartItems: [{
+          quantity: $quantity, 
+          parent_sku: $parent_sku, 
+          sku: $sku, 
+          
+        }]
       ) {
-        user_errors {
-          code
-          message
-        }
+        user_errors { code message }
         cart {
           items {
             id
             product {
-              name
               sku
+              name
+              additional_attributes{ code value }
             }
-            quantity
           }
         }
       }
     }
   `);
 };
+
 
 export const customerAddressList = gql`
   query {
@@ -1394,9 +1434,14 @@ export const cartList = gql`
         product {
           name
           sku
+          additional_attributes{
+            code
+            value
+          }
           small_image {
             url
           }
+          
         }
         has_error
         errors {
@@ -1536,6 +1581,97 @@ export const GetDeliveryCharge = gql`
   }
 `;
 
+// export const cartDelete = () => {
+//   return useMutation(gql`
+//     mutation ($cart_id: String!, $cart_item_id: Int!) {
+//       removeItemFromCart(
+//         input: {cart_id: $cart_id, cart_item_id: $cart_item_id}
+//       ) {
+//         cart {
+//           id
+//           items {
+//             id
+//             product {
+//               name
+//               sku
+//               small_image {
+//                 url
+//               }
+//             }
+//             has_error
+//             errors {
+//               message
+//             }
+//             quantity
+//             prices {
+//               discounts {
+//                 amount {
+//                   value
+//                   currency
+//                 }
+//                 label
+//               }
+//               row_total {
+//                 currency
+//                 value
+//               }
+//             }
+//           }
+//           validate_order_amount {
+//             status
+//             message
+//           }
+//           applied_coupons {
+//             code
+//           }
+//           prices {
+//             discounts {
+//               amount {
+//                 value
+//                 currency
+//               }
+//               label
+//             }
+//             payment_fee {
+//               value
+//             }
+//             grand_total {
+//               value
+//             }
+//             subtotal_excluding_tax {
+//               value
+//             }
+//           }
+//           available_payment_methods {
+//             code
+//             title
+//             payment_fee {
+//               value
+//             }
+//           }
+//           shipping_addresses {
+//             selected_shipping_method {
+//               amount {
+//                 currency
+//                 value
+//               }
+//             }
+//           }
+//           shipping_addresses {
+//             available_shipping_methods {
+//               amount {
+//                 currency
+//                 value
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+//   `);
+// };
+
+// add Frodriguez
 export const cartDelete = () => {
   return useMutation(gql`
     mutation ($cart_id: String!, $cart_item_id: Int!) {
@@ -1549,6 +1685,10 @@ export const cartDelete = () => {
             product {
               name
               sku
+              additional_attributes {
+                code
+                value
+              }
               small_image {
                 url
               }
@@ -1611,8 +1751,6 @@ export const cartDelete = () => {
                 value
               }
             }
-          }
-          shipping_addresses {
             available_shipping_methods {
               amount {
                 currency
@@ -1625,6 +1763,7 @@ export const cartDelete = () => {
     }
   `);
 };
+// end Frodriguez
 
 //delivery_date_time
 
@@ -1919,12 +2058,42 @@ export const getDeliveryTime = gql`
   }
 `;
 
+// export const setShippingAddressesOnCart = () => {
+//   return useMutation(gql`
+//     mutation (
+//       $customer_address_id: Int
+//       $pickup_location_code: String
+//       $cID: String!
+//     ) {
+//       setShippingAddressesOnCart(
+//         input: {
+//           cart_id: $cID
+//           shipping_addresses: [
+//             {
+//               customer_address_id: $customer_address_id
+//               pickup_location_code: $pickup_location_code
+//             }
+//           ]
+//         }
+//       ) {
+//         cart {
+//           shipping_addresses {
+//             pickup_location_code
+//           }
+//         }
+//       }
+//     }
+//   `);
+// };
+
+
 export const setShippingAddressesOnCart = () => {
   return useMutation(gql`
     mutation (
-      $customer_address_id: Int!
-      $pickup_location_code: String!
       $cID: String!
+      $customer_address_id: Int
+      $address: CartAddressInput 
+      $pickup_location_code: String
     ) {
       setShippingAddressesOnCart(
         input: {
@@ -1932,6 +2101,7 @@ export const setShippingAddressesOnCart = () => {
           shipping_addresses: [
             {
               customer_address_id: $customer_address_id
+              address: $address
               pickup_location_code: $pickup_location_code
             }
           ]
@@ -1939,6 +2109,10 @@ export const setShippingAddressesOnCart = () => {
       ) {
         cart {
           shipping_addresses {
+            firstname
+            lastname
+            street
+            city
             pickup_location_code
           }
         }
@@ -1967,7 +2141,7 @@ export const setPickupddressesOnCart = () => {
           shipping_addresses: [
             {
               address: {
-                firstname: $fName
+                firstname: $fName   
                 lastname: $lName
                 street: $street
                 city: $city
@@ -2037,15 +2211,17 @@ export const setAlternateAddressesOnCart = () => {
   `);
 };
 
+
+
 export const setDeliveryTime = () => {
   return useMutation(gql`
     mutation (
-      $deliveryDate: String!
-      $deliveryFrom: String!
+      $date: String!,
+      $deliveryFrom: String!,
       $deliveryTo: String!
     ) {
       setDeliveryTime(
-        date: $deliveryDate
+        date: $date
         from: $deliveryFrom
         to: $deliveryTo
       ) {
@@ -2223,6 +2399,8 @@ export const setPaymentMethodOnCartstripe = () => {
 //   } `)
 // };
 
+
+
 export const placeOrder = () => {
   return useMutation(gql`
     mutation ($cart_id: String!) {
@@ -2264,6 +2442,28 @@ export const DeliveryShippingMethod = () => {
                 value
                 currency
               }
+            }
+          }
+        }
+      }
+    }
+  `);
+};
+
+export const setShippingMethodsOnCart = () => {
+  return useMutation(gql`
+    mutation ($cID: String!, $ccode: String!, $mcode: String!) {
+      setShippingMethodsOnCart(
+        input: {
+          cart_id: $cID
+          shipping_methods: [{ carrier_code: $ccode, method_code: $mcode }]
+        }
+      ) {
+        cart {
+          shipping_addresses {
+            selected_shipping_method {
+              carrier_code
+              method_code
             }
           }
         }
@@ -2621,6 +2821,100 @@ export const syncCustomerInfo = () => {
     }
   `);
 };
+// export const updateCartItemsQTY = () => {
+//   return useMutation(gql`
+//     mutation ($cart_id: String!, $cart_item_id: Int!, $quantity: Float!) {
+//       updateCartItems(
+//         input: {
+//           cart_id: $cart_id
+//           cart_items: {cart_item_id: $cart_item_id, quantity: $quantity}
+//         }
+//       ) {
+//         cart {
+//           id
+//           items {
+//             id
+//             product {
+//               name
+//               sku
+//               small_image {
+//                 url
+//               }
+//             }
+//             has_error
+//             errors {
+//               message
+//             }
+//             quantity
+//             prices {
+//               discounts {
+//                 amount {
+//                   value
+//                   currency
+//                 }
+//                 label
+//               }
+//               row_total {
+//                 currency
+//                 value
+//               }
+//             }
+//           }
+//           validate_order_amount {
+//             status
+//             message
+//           }
+//           applied_coupons {
+//             code
+//           }
+//           prices {
+//             discounts {
+//               amount {
+//                 value
+//                 currency
+//               }
+//               label
+//             }
+//             payment_fee {
+//               value
+//             }
+//             grand_total {
+//               value
+//             }
+//             subtotal_excluding_tax {
+//               value
+//             }
+//           }
+//           available_payment_methods {
+//             code
+//             title
+//             payment_fee {
+//               value
+//             }
+//           }
+//           shipping_addresses {
+//             selected_shipping_method {
+//               amount {
+//                 currency
+//                 value
+//               }
+//             }
+//           }
+//           shipping_addresses {
+//             available_shipping_methods {
+//               amount {
+//                 currency
+//                 value
+//               }
+//             }
+//           }
+//         }
+//       }
+//     }
+//   `);
+// };
+
+// add Frodriguez
 export const updateCartItemsQTY = () => {
   return useMutation(gql`
     mutation ($cart_id: String!, $cart_item_id: Int!, $quantity: Float!) {
@@ -2637,6 +2931,10 @@ export const updateCartItemsQTY = () => {
             product {
               name
               sku
+              additional_attributes {
+                code
+                value
+              }
               small_image {
                 url
               }
@@ -2699,8 +2997,6 @@ export const updateCartItemsQTY = () => {
                 value
               }
             }
-          }
-          shipping_addresses {
             available_shipping_methods {
               amount {
                 currency
@@ -2713,6 +3009,7 @@ export const updateCartItemsQTY = () => {
     }
   `);
 };
+// end Frodriguez
 export const setDeviceId = () => {
   return useMutation(gql`
     mutation ($device_id: String!, $latitude: String!, $longitude: String!) {
@@ -2820,6 +3117,176 @@ export const checkIfHighDimensionProduct = gql`
       highdimension2 {
         is_high_dimension
         text
+      }
+    }
+  }
+`;
+
+export const setAddressMutation = () => {
+  return useMutation(gql`
+    mutation (
+      $cID: String!, $fName: String!, $lName: String!, $telephone: String!, 
+      $street: [String]!, $city: String!, $postcode: String!, $country: String!, $region_id: Int
+    ) {
+      setShippingAddressesOnCart(
+        input: {
+          cart_id: $cID
+          shipping_addresses: [
+            {
+              address: {
+                firstname: $fName,   
+                lastname: $lName,    
+                telephone: $telephone
+                street: $street
+                city: $city
+                postcode: $postcode
+                country_code: $country
+                save_in_address_book: false
+                region_id: $region_id
+              }
+            }
+          ]
+        }
+      ) {
+        cart {
+          shipping_addresses {
+            firstname  
+            lastname   
+            street
+            city
+            available_shipping_methods { 
+              carrier_code
+              method_code
+            }
+          }
+        }
+      }
+    }
+  `);
+};
+
+// Función para Seteo de Método de Envío (Carrier)
+export const setShippingMethodMutation = () => {
+  return useMutation(gql`
+    mutation ($cart_id: String!, $carrier_code: String!, $method_code: String!) {
+      setShippingMethodsOnCart(
+        input: {
+          cart_id: $cart_id
+          shipping_methods: [{ carrier_code: $carrier_code, method_code: $method_code }]
+        }
+      ) {
+        cart {
+          shipping_addresses {
+            selected_shipping_method {
+              carrier_code
+              method_code
+            }
+          }
+        }
+      }
+    }
+  `);
+};
+
+export const GetShipMethods = () => {
+  return useMutation(gql`
+    mutacion($cartId: String!) {
+      cart(cart_id: $cartId) {
+        shipping_addresses {
+          available_shipping_methods {
+            carrier_code
+            method_code
+            carrier_title
+            method_title
+          }
+          selected_shipping_method {
+            carrier_code
+            method_code
+          }
+        }
+      }
+  `)
+}
+
+// Función para Ejecutar Orden
+export const placeOrderMutation = () => {
+  return useMutation(gql`
+    mutation ($cart_id: String!) {
+      placeOrder(input: { cart_id: $cart_id }) {
+        order {
+          order_number
+        }
+      }
+    }
+  `);
+};
+
+export const setBillingAddressMutation = () => {
+  return useMutation(gql`
+    mutation ($cart_id: String!, $firstname: String!, $lastname: String!, $street: [String]!, $city: String!, $postcode: String!, $country_code: String!, $telephone: String!) {
+      setBillingAddressOnCart(
+        input: {
+          cart_id: $cart_id
+          billing_address: {
+            address: {
+              firstname: $firstname
+              lastname: $lastname
+              street: $street
+              city: $city
+              postcode: $postcode
+              country_code: $country_code
+              telephone: $telephone
+              save_in_address_book: false
+            }
+          }
+        }
+      ) {
+        cart {
+          billing_address {
+            firstname
+            lastname
+          }
+        }
+      }
+    }
+  `);
+};
+
+export const setPaymentMethodOnCart = () => {
+  return useMutation(gql`
+    mutation ($cart_id: String!, $code: String!) {
+      setPaymentMethodOnCart(
+        input: { cart_id: $cart_id, payment_method: { code: $code } }
+      ) {
+        cart {
+          selected_payment_method {
+            code
+          }
+        }
+      }
+    }
+  `);
+};
+
+export const GET_CUSTOMER_CART = gql`
+  query GetCustomerCart {
+    customerCart {
+      id
+      shipping_addresses {
+        selected_shipping_method {
+          carrier_code
+          method_code
+        }
+        available_shipping_methods {
+          carrier_code
+          method_code
+          carrier_title
+          method_title
+          amount {
+            value
+            currency
+          }
+        }
       }
     }
   }
